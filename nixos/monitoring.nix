@@ -1,11 +1,14 @@
-{config, ...}: {
+{config, ...}: let
+  grafanaPort = 2342;
+in {
+  networking.firewall.allowedTCPPorts = [grafanaPort];
   services = {
     grafana = {
       enable = true;
       settings = {
         server = {
           http_addr = "0.0.0.0";
-          http_port = 2342;
+          http_port = grafanaPort;
           domain = "localhost";
         };
       };
