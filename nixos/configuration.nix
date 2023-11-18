@@ -60,6 +60,7 @@
   system.stateVersion = "23.05";
 
   imports = [
+    ./tailscale.nix
     ./monitoring.nix
     ./jellyfin.nix
     ./nzbget.nix
