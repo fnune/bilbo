@@ -62,5 +62,6 @@
     ./jellyfin.nix
     ./nzbget.nix
     ./radarr.nix
+    ./sonarr.nix
   ];
 }
