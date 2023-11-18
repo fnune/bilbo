@@ -20,7 +20,10 @@
     };
     bilboVirtual = nixpkgs.lib.nixosSystem {
       inherit system;
-      modules = [./nixos/configuration.nix];
+      modules = [
+        ./nixos/configuration.nix
+        ./nixos/development-configuration.nix
+      ];
     };
   in {
     nixosConfigurations.bilbo = bilbo;
