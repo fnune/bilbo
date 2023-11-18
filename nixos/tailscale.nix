@@ -1,14 +1,12 @@
 {...}: let
-  caddyUser = "caddy";
   host = "bilbo.taile08bf.ts.net";
 in {
   services.tailscale = {
     enable = true;
-    permitCertUid = caddyUser;
+    permitCertUid = "caddy";
   };
   services.caddy = {
     enable = true;
-    user = caddyUser;
     virtualHosts = {
       "${host}".extraConfig = ''
         reverse_proxy localhost:8096
