@@ -61,5 +61,6 @@
   imports = [
     ./jellyfin.nix
     ./nzbget.nix
+    ./radarr.nix
   ];
 }
