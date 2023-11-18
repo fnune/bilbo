@@ -1,6 +1,7 @@
 {...}: let
   host = "bilbo.taile08bf.ts.net";
 in {
+  networking.firewall.allowedTCPPorts = [443];
   services.tailscale = {
     enable = true;
     permitCertUid = "caddy";
