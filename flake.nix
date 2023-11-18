@@ -3,13 +3,8 @@
 
   inputs.nixpkgs.url = "github:nixos/nixpkgs/release-23.05";
 
-  outputs = {
-    self,
-    nixpkgs,
-    ...
-  }: let
+  outputs = {nixpkgs, ...}: let
     system = "x86_64-linux";
-    pkgs = import nixpkgs {inherit system;};
     bilbo = nixpkgs.lib.nixosSystem {
       inherit system;
       modules = [
