@@ -2,6 +2,10 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
+  nixpkgs.config.allowUnfree = true;
+  nixpkgs.config.allowUnfreePredicate = _: true;
+  nix.settings.experimental-features = ["nix-command" "flakes"];
+
   networking = {
     hostName = "bilbo";
     firewall.allowedTCPPorts = [22];
@@ -56,6 +60,6 @@
 
   imports = [
     ./jellyfin.nix
-    ./sabnzbd.nix
+    ./nzbget.nix
   ];
 }
