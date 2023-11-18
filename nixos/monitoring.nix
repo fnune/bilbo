@@ -16,6 +16,8 @@ in {
     prometheus = {
       enable = true;
       exporters = {
+        # Consider importing some nice premade dashboards:
+        # https://raw.githubusercontent.com/rfmoz/grafana-dashboards/master/prometheus/node-exporter-full.json
         node = {
           enable = true;
           enabledCollectors = ["systemd"];
