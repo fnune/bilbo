@@ -56,5 +56,6 @@
 
   imports = [
     ./jellyfin.nix
+    ./sabnzbd.nix
   ];
 }
