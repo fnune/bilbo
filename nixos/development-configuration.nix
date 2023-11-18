@@ -6,4 +6,6 @@
     packages = [];
     initialPassword = "vmfausto";
   };
+
+  virtualisation.vmVariant.virtualisation.graphics = false;
 }
