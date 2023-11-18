@@ -9,26 +9,26 @@ in {
   services.caddy = {
     enable = true;
     user = caddyUser;
-    configFile = pkgs.writeText "Caddyfile" ''
-      jellyfin.${host} {
-          reverse_proxy localhost:8096
-      }
+    virtualHosts = {
+      "jellyfin.${host}".extraConfig = ''
+        reverse_proxy localhost:8096
+      '';
 
-      nzbget.${host} {
-          reverse_proxy localhost:6789
-      }
+      "nzbget.${host}".extraConfig = ''
+        reverse_proxy localhost:6789
+      '';
 
-      grafana.${host} {
-          reverse_proxy localhost:2342
-      }
+      "grafana.${host}".extraConfig = ''
+        reverse_proxy localhost:2342
+      '';
 
-      radarr.${host} {
-          reverse_proxy localhost:7878
-      }
+      "radarr.${host}".extraConfig = ''
+        reverse_proxy localhost:7878
+      '';
 
-      sonarr.${host} {
-          reverse_proxy localhost:8989
-      }
-    '';
+      "sonarr.${host}".extraConfig = ''
+        reverse_proxy localhost:8989
+      '';
+    };
   };
 }
