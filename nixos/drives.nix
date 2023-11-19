@@ -1,12 +1,75 @@
 {...}: let
   mirroredStorageIdentifier = "mirrored";
   mirroredStorageMount = "/mnt/mirrored";
-  downloadsMount = "/mnt/downloads";
+  downloadsSmallMount = "/mnt/downloads-sm";
+  downloadsLargeMount = "/mnt/downloads-lg";
 in {
-  # The main OS drive nvme0n1 is not handled by disko.
   disko.devices = {
     disk = {
-      sda = {
+      main = {
+        type = "disk";
+        device = "/dev/nvme0n1";
+        content = {
+          type = "gpt";
+          partitions = {
+            boot = {
+              size = "1M";
+              type = "EF02";
+            };
+            ESP = {
+              size = "512M";
+              type = "EF00";
+              content = {
+                type = "filesystem";
+                format = "vfat";
+                mountpoint = "/boot";
+              };
+            };
+            swap = {
+              size = "16G";
+              content = {
+                type = "swap";
+                randomEncryption = true;
+                resumeDevice = true;
+              };
+            };
+            root = {
+              size = "128G";
+              content = {
+                type = "filesystem";
+                format = "ext4";
+                mountpoint = "/";
+              };
+            };
+            downloadsSmall = {
+              size = "100%";
+              content = {
+                type = "filesystem";
+                format = "ext4";
+                mountpoint = downloadsSmallMount;
+              };
+            };
+          };
+        };
+      };
+      downloadsLarge = {
+        type = "disk";
+        device = "/dev/nvme1n1";
+        content = {
+          type = "gpt";
+          partitions = {
+            media = {
+              size = "100%";
+              content = {
+                type = "filesystem";
+                format = "ext4";
+                mountpoint = downloadsLargeMount;
+              };
+            };
+          };
+        };
+      };
+      mirror1 = {
         type = "disk";
         device = "/dev/sda";
         content = {
@@ -22,7 +85,7 @@ in {
           };
         };
       };
-      sdb = {
+      mirror2 = {
         type = "disk";
         device = "/dev/sdb";
         content = {
@@ -38,25 +101,8 @@ in {
           };
         };
       };
-      nvme1n1 = {
-        type = "disk";
-        device = "/dev/nvme1n1";
-        content = {
-          type = "gpt";
-          partitions = {
-            media = {
-              size = "100%";
-              content = {
-                type = "filesystem";
-                format = "ext4";
-                mountpoint = downloadsMount;
-              };
-            };
-          };
-        };
-      };
     };
-    mdadm = {
+    mirror = {
       "${mirroredStorageIdentifier}" = {
         type = "mdadm";
         level = 1;
