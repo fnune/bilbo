@@ -5,8 +5,8 @@
       settings = {
         server = {
           http_addr = "0.0.0.0";
-          http_port = 2342;
-          domain = "localhost";
+          root_url = "http://localhost:2342/grafana";
+          serve_from_sub_path = true;
         };
       };
     };
