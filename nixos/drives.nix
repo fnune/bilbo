@@ -4,22 +4,18 @@
   downloads-1t-mount = "/mnt/downloads-1t";
   downloads-2t-mount = "/mnt/downloads-2t";
 in {
-  fileSystems = {
-    "/mnt/downloads-1t" = {
-      device = "/dev/disk/by-partlabel/disk-main-downloads-1t";
-      fsType = "ext4";
-      options = ["defaults" "uid=1000" "gid=100" "umask=002"];
-    };
-    "/mnt/downloads-2t" = {
-      device = "/dev/disk/by-partlabel/disk-downloads-2t-media";
-      fsType = "ext4";
-      options = ["defaults" "uid=1000" "gid=100" "umask=002"];
-    };
-    "/mnt/mirrored" = {
-      device = "/dev/disk/by-id/md-name-any:mirrored-part1";
-      fsType = "ext4";
-      options = ["defaults" "uid=1000" "gid=100" "umask=002"];
-    };
+  systemd.services.adjustMountPoints = {
+    description = "Adjust mount point permissions";
+    wantedBy = ["multi-user.target"];
+    before = ["multi-user.target"];
+    script = ''
+      chown -R fausto:users /mnt/downloads-1t
+      chown -R fausto:users /mnt/downloads-2t
+      chown -R fausto:users /mnt/mirrored
+      chmod 775 /mnt/downloads-1t
+      chmod 775 /mnt/downloads-2t
+      chmod 775 /mnt/mirrored
+    '';
   };
   disko.devices = {
     disk = {
