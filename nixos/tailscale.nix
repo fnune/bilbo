@@ -10,11 +10,11 @@ in {
     enable = true;
     virtualHosts = {
       "bilbo.${host}".extraConfig = ''
-        reverse_proxy localhost:8096
-
         handle_path /grafana/* {
           reverse_proxy localhost:2342
         }
+
+        reverse_proxy localhost:8096
       '';
     };
   };
