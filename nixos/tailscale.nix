@@ -10,7 +10,7 @@ in {
     enable = true;
     virtualHosts = {
       "bilbo.${host}".extraConfig = ''
-        handle_path /grafana/* {
+        handle /grafana* {
           reverse_proxy localhost:2342
         }
 
