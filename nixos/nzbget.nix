@@ -7,5 +7,4 @@
       MainDir = "${config.users.users.fausto.home}/nzbget";
     };
   };
-  networking.firewall.allowedTCPPorts = [6789];
 }

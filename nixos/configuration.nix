@@ -8,7 +8,6 @@
 
   networking = {
     hostName = "bilbo";
-    firewall.allowedTCPPorts = [22];
     networkmanager.enable = true;
   };
 
@@ -56,6 +55,7 @@
       KbdInteractiveAuthentication = false;
     };
   };
+  networking.firewall.allowedTCPPorts = [22];
 
   system.stateVersion = "23.05";
 
