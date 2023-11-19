@@ -4,6 +4,23 @@
   downloads-1t-mount = "/mnt/downloads-1t";
   downloads-2t-mount = "/mnt/downloads-2t";
 in {
+  fileSystems = {
+    "/mnt/downloads-1t" = {
+      device = "/dev/disk/by-partlabel/disk-main-downloads-1t";
+      fsType = "ext4";
+      options = ["defaults" "uid=1000" "gid=100" "umask=002"];
+    };
+    "/mnt/downloads-2t" = {
+      device = "/dev/disk/by-partlabel/disk-downloads-2t-media";
+      fsType = "ext4";
+      options = ["defaults" "uid=1000" "gid=100" "umask=002"];
+    };
+    "/mnt/mirrored" = {
+      device = "/dev/disk/by-id/md-name-any:mirrored-part1";
+      fsType = "ext4";
+      options = ["defaults" "uid=1000" "gid=100" "umask=002"];
+    };
+  };
   disko.devices = {
     disk = {
       main = {
