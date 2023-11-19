@@ -1,8 +1,8 @@
 {...}: let
-  mirroredStorageIdentifier = "mirrored";
-  mirroredStorageMount = "/mnt/mirrored";
-  downloadsSmallMount = "/mnt/downloads-sm";
-  downloadsLargeMount = "/mnt/downloads-lg";
+  mirrored-storage = "mirrored";
+  mirrored-storage-mount = "/mnt/mirrored";
+  downloads-1t-mount = "/mnt/downloads-1t";
+  downloads-2t-mount = "/mnt/downloads-2t";
 in {
   disko.devices = {
     disk = {
@@ -41,18 +41,18 @@ in {
                 mountpoint = "/";
               };
             };
-            downloadsSmall = {
+            downloads-1t = {
               size = "100%";
               content = {
                 type = "filesystem";
                 format = "ext4";
-                mountpoint = downloadsSmallMount;
+                mountpoint = downloads-1t-mount;
               };
             };
           };
         };
       };
-      downloadsLarge = {
+      downloads-2t = {
         type = "disk";
         device = "/dev/nvme1n1";
         content = {
@@ -63,7 +63,7 @@ in {
               content = {
                 type = "filesystem";
                 format = "ext4";
-                mountpoint = downloadsLargeMount;
+                mountpoint = downloads-2t-mount;
               };
             };
           };
@@ -79,7 +79,7 @@ in {
               size = "100%";
               content = {
                 type = "mdraid";
-                name = mirroredStorageIdentifier;
+                name = mirrored-storage;
               };
             };
           };
@@ -95,15 +95,15 @@ in {
               size = "100%";
               content = {
                 type = "mdraid";
-                name = mirroredStorageIdentifier;
+                name = mirrored-storage;
               };
             };
           };
         };
       };
     };
-    mirror = {
-      "${mirroredStorageIdentifier}" = {
+    mdadm = {
+      "${mirrored-storage}" = {
         type = "mdadm";
         level = 1;
         content = {
@@ -114,7 +114,7 @@ in {
               content = {
                 type = "filesystem";
                 format = "ext4";
-                mountpoint = mirroredStorageMount;
+                mountpoint = mirrored-storage-mount;
               };
             };
           };
