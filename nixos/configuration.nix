@@ -46,6 +46,7 @@
     git
     htop
     neovim
+    tmux
   ];
 
   # To add my identity:
