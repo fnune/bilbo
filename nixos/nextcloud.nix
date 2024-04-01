@@ -16,5 +16,8 @@ in {
     };
     extraAppsEnable = true;
     configureRedis = true;
+    config = {
+      adminpassFile = "/mnt/mirrored/nextcloud.apf";
+    };
   };
 }
