@@ -7,7 +7,7 @@
   packages = config.services.nextcloud.package.packages;
 in {
   users.users.nextcloud = {
-    isNormalUser = true;
+    isSystemUser = true;
     createHome = false;
   };
   users.groups.nextcloud = {};
