@@ -70,5 +70,6 @@
     ./nzbget.nix
     ./radarr.nix
     ./sonarr.nix
+    ./nextcloud.nix
   ];
 }
