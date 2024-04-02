@@ -6,6 +6,7 @@
   host = "walrus-dorian.ts.net";
   packages = config.services.nextcloud.package.packages;
 in {
+  services.nginx.enable = false;
   services.nextcloud = {
     enable = true;
     home = "/mnt/mirrored/nextcloud";
