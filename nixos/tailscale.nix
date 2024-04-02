@@ -22,8 +22,8 @@ in {
         reverse_proxy /sonarr/* localhost:8989
         reverse_proxy /sonarr localhost:8989
 
-        reverse_proxy /nextcloud/* localhost:80
-        reverse_proxy /nextcloud localhost:80
+        reverse_proxy /nextcloud/* localhost:8080
+        reverse_proxy /nextcloud localhost:8080
 
         reverse_proxy localhost:8096
       '';

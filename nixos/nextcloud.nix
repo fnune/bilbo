@@ -6,7 +6,6 @@
   host = "walrus-dorian.ts.net";
   packages = config.services.nextcloud.package.packages;
 in {
-  services.nginx.enable = false;
   services.nextcloud = {
     enable = true;
     home = "/mnt/mirrored/nextcloud";
@@ -19,6 +18,23 @@ in {
     configureRedis = true;
     config = {
       adminpassFile = "/mnt/mirrored/nextcloud/nextcloud.apf";
+    };
+  };
+  services.nginx = {
+    enable = true;
+    virtualHosts = {
+      "${host}" = {
+        listen = [
+          {
+            addr = "0.0.0.0";
+            port = 8080;
+          }
+          {
+            addr = "[::]";
+            port = 8080;
+          }
+        ];
+      };
     };
   };
 }
