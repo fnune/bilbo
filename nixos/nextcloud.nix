@@ -18,6 +18,7 @@ in {
     configureRedis = true;
     config = {
       adminpassFile = "/mnt/mirrored/nextcloud/nextcloud.apf";
+      extraTrustedDomains = [host];
     };
   };
   services.nginx = {
