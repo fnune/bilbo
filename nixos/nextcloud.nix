@@ -3,7 +3,7 @@
   config,
   ...
 }: let
-  host = "walrus-dorian.ts.net";
+  host = "bilbo.walrus-dorian.ts.net";
   packages = config.services.nextcloud.package.packages;
 in {
   services.nextcloud = {
@@ -18,7 +18,6 @@ in {
     configureRedis = true;
     config = {
       adminpassFile = "/mnt/mirrored/nextcloud/nextcloud.apf";
-      extraTrustedDomains = [host];
     };
   };
   services.nginx = {
