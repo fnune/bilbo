@@ -4,6 +4,7 @@ in {
   systemd.services.set-ethernet-speed = {
     description = "Set Ethernet Speed to 1 Gbit/s";
     after = ["network-online.target"];
+    wants = ["network-online.target"];
     wantedBy = ["multi-user.target"];
 
     serviceConfig = {
