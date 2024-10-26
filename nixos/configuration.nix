@@ -64,7 +64,6 @@
   system.stateVersion = "23.05";
 
   imports = [
-    ./invidious.nix
     ./jellyfin.nix
     ./monitoring.nix
     ./nextcloud.nix
