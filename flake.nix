@@ -22,6 +22,7 @@
         ./nixos/drives.nix
         ./nixos/hardware-configuration.nix
         ./nixos/hardware-acceleration.nix
+        ./nixos/network-configuration.nix
         disko.nixosModules.disko
       ];
     };
