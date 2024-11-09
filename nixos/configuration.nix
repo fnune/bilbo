@@ -70,6 +70,7 @@
     ./nzbget.nix
     ./radarr.nix
     ./sonarr.nix
+    ./bazarr.nix
     ./tailscale.nix
   ];
 }
