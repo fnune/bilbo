@@ -13,6 +13,7 @@ Within Bilbo, run `tailscale up` to register the machine on the Tailnet.
 Before starting, run:
 
 ```sh
+mkdir /mnt/downloads-1t/Books
 mkdir /mnt/downloads-1t/Movies
 mkdir /mnt/downloads-2t/Series
 ```
@@ -23,13 +24,13 @@ Now, configure each service:
   - Visit [NZBGet][nzbget]—the default credentials are `nzbget`/`tegbzn6789`
   - In Security: and change the username and password
   - In Paths: set `MainPath` to `/mnt/downloads-1t/.nzbget`
-  - In Categories: set the `DestDir` for "Movies" and "Series" to
-    `/mnt/downloads-{1,2}t/{Movies,Series}`, and whatever else is necessary
+  - In Categories: set the `DestDir` for "Books", "Movies" and "Series" to
+    `/mnt/downloads-{1,2}t/{Books,Movies,Series}`, and whatever else is necessary
   - In News Servers: configure your server
     - Use port `563` for SSL
     - Enable encryption
     - Bump the connection limit to whatever your server allows (`50`)
-- [Radarr][radarr] and [Sonarr][sonarr]
+- [Radarr][radarr] and [Sonarr][sonarr], and other "arr"s
   - For Radarr, go to Settings -> Profiles and set the language to "Original"
     in all profiles
   - For both:
