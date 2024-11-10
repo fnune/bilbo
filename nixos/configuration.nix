@@ -64,13 +64,14 @@
   system.stateVersion = "23.05";
 
   imports = [
+    ./bazarr.nix
+    ./caddy.nix
     ./jellyfin.nix
     ./monitoring.nix
     ./nextcloud.nix
     ./nzbget.nix
     ./radarr.nix
+    ./readarr.nix
     ./sonarr.nix
-    ./bazarr.nix
-    ./tailscale.nix
   ];
 }
