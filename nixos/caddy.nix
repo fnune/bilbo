@@ -14,7 +14,7 @@ in {
   services = {
     cloudflare-dyndns = {
       enable = true;
-      proxied = false;
+      proxied = true;
       domains = [bilbo immich];
       apiTokenFile = "/etc/cloudflare/token";
     };
