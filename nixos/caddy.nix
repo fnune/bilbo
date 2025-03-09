@@ -13,7 +13,7 @@ in {
     cloudflare-dyndns = {
       enable = true;
       proxied = true;
-      domains = [host "immich.${host}"];
+      domains = [host "immich"];
       apiTokenFile = "/etc/cloudflare/token";
     };
     caddy = let
@@ -44,7 +44,7 @@ in {
       virtualHosts = {
         "${host}".extraConfig = proxies;
         ":80".extraConfig = proxies;
-        "immich.${host}".extraConfig = "reverse_proxy localhost:2283";
+        "immich".extraConfig = "reverse_proxy localhost:2283";
       };
     };
   };
