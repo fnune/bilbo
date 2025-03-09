@@ -1,6 +1,35 @@
 {...}: {
   services.homepage-dashboard = {
     enable = true;
+    widgets = [
+      {
+        resources = {
+          label = "System";
+          cpu = true;
+          memory = true;
+          uptime = true;
+          network = true;
+        };
+      }
+      {
+        resources = {
+          label = "Replicated Storage";
+          disk = "/mnt/mirrored";
+        };
+      }
+      {
+        resources = {
+          label = "Movies & Books";
+          disk = "/mnt/downloads-1t";
+        };
+      }
+      {
+        resources = {
+          label = "Series";
+          disk = "/mnt/downloads-2t";
+        };
+      }
+    ];
     services = [
       {
         "Entertainment" = [
