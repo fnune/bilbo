@@ -9,21 +9,17 @@ in {
       };
     };
   };
-
   services = {
     cloudflare-dyndns = {
       enable = true;
       proxied = true;
-      domains = [host];
+      domains = [host "immich.${host}"];
       apiTokenFile = "/etc/cloudflare/token";
     };
     caddy = let
       proxies = ''
         reverse_proxy /grafana/* localhost:2342
         reverse_proxy /grafana localhost:2342
-
-        reverse_proxy /immich/* localhost:2283
-        reverse_proxy /immich localhost:2283
 
         reverse_proxy /nzbget/* localhost:6789
         reverse_proxy /nzbget localhost:6789
@@ -48,6 +44,7 @@ in {
       virtualHosts = {
         "${host}".extraConfig = proxies;
         ":80".extraConfig = proxies;
+        "immich.${host}".extraConfig = "reverse_proxy localhost:2283";
       };
     };
   };
