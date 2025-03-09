@@ -12,9 +12,9 @@ in {
       chown -R fausto:users /mnt/downloads-1t
       chown -R fausto:users /mnt/downloads-2t
       chown -R fausto:users /mnt/mirrored
-      chmod 775 /mnt/downloads-1t
-      chmod 775 /mnt/downloads-2t
-      chmod 775 /mnt/mirrored
+      chmod -R 775 /mnt/downloads-1t
+      chmod -R 775 /mnt/downloads-2t
+      chmod -R 775 /mnt/mirrored
     '';
   };
   disko.devices = {
