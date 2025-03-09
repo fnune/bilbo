@@ -1,7 +1,7 @@
 {config, ...}: {
   services = {
     grafana = {
-      enable = false;
+      enable = true;
       settings = {
         server = {
           http_addr = "0.0.0.0";
@@ -12,7 +12,7 @@
       };
     };
     prometheus = {
-      enable = false;
+      enable = true;
       exporters = {
         # Consider importing some nice premade dashboards:
         # https://raw.githubusercontent.com/rfmoz/grafana-dashboards/master/prometheus/node-exporter-full.json
