@@ -12,7 +12,8 @@ in {
 
   services = {
     cloudflare-dyndns = {
-      enable = false;
+      enable = true;
+      proxied = true;
       domains = [host];
     };
     caddy = let
