@@ -8,16 +8,6 @@
       target = "_self";
       hideVersion = true;
       color = "neutral";
-      layout = {
-        Entertainment = {
-          style = "row";
-          columns = 5;
-        };
-        Tools = {
-          style = "row";
-          columns = 3;
-        };
-      };
     };
     widgets = [
       {
