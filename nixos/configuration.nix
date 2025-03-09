@@ -68,7 +68,6 @@
     ./caddy.nix
     ./jellyfin.nix
     ./monitoring.nix
-    ./nextcloud.nix
     ./nzbget.nix
     ./radarr.nix
     ./readarr.nix

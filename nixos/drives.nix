@@ -15,9 +15,6 @@ in {
       chmod 775 /mnt/downloads-1t
       chmod 775 /mnt/downloads-2t
       chmod 775 /mnt/mirrored
-      mkdir -p /mnt/mirrored/nextcloud
-      touch /mnt/mirrored/nextcloud/nextcloud.apf
-      chown -R nextcloud:nextcloud /mnt/mirrored/nextcloud
     '';
   };
   disko.devices = {

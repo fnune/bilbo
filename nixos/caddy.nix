@@ -28,9 +28,6 @@ in {
         reverse_proxy /readarr/* localhost:8787
         reverse_proxy /readarr localhost:8787
 
-        reverse_proxy /nextcloud/* localhost:8080
-        reverse_proxy /nextcloud localhost:8080
-
         reverse_proxy localhost:8096
       '';
     };

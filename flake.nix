@@ -2,9 +2,9 @@
   description = "fnune's Bilbo—A media server";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.05";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
     disko = {
-      url = "github:nix-community/disko/v1.5.0";
+      url = "github:nix-community/disko/v1.11.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
