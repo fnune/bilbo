@@ -1,4 +1,5 @@
-{...}: {
+{pkgs, ...}: {
+  environment.systemPackages = with pkgs; [immich-go];
   services.postgresql = {
     enable = true;
     ensureUsers = [{name = "fausto";}];
