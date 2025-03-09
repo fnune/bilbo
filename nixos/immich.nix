@@ -5,8 +5,11 @@
   };
   services.immich = {
     enable = true;
-    user = "fausto";
     group = "users";
     mediaLocation = "/mnt/mirrored/immich";
+    database = {
+      user = "immich";
+      name = "immich";
+    };
   };
 }
