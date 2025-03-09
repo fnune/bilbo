@@ -15,6 +15,7 @@ in {
       enable = true;
       proxied = true;
       domains = [host];
+      apiTokenFile = "/etc/cloudflare/token";
     };
     caddy = let
       proxies = ''
