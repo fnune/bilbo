@@ -22,6 +22,9 @@ in {
         reverse_proxy /grafana/* localhost:2342
         reverse_proxy /grafana localhost:2342
 
+        reverse_proxy /immich/* localhost:2283
+        reverse_proxy /immich localhost:2283
+
         reverse_proxy /nzbget/* localhost:6789
         reverse_proxy /nzbget localhost:6789
 
