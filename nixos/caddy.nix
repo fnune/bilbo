@@ -40,16 +40,27 @@ in {
 
         reverse_proxy /jellyfin/* localhost:8096
         reverse_proxy /jellyfin localhost:8096
-
+      '';
+      rootIsHomepage = ''
         reverse_proxy /* localhost:8082
         reverse_proxy / localhost:8082
+      '';
+      rootIsImmich = ''
+        reverse_proxy /* localhost:2283
+        reverse_proxy / localhost:2283
       '';
     in {
       enable = true;
       virtualHosts = {
-        "${immich}".extraConfig = "reverse_proxy localhost:2283";
-        "${bilbo}".extraConfig = proxiesSupportingSubpath;
-        ":80".extraConfig = proxiesSupportingSubpath;
+        "${immich}".extraConfig = rootIsImmich;
+        "${bilbo}".extraConfig = ''
+          ${rootIsHomepage}
+          ${proxiesSupportingSubpath}
+        '';
+        ":80".extraConfig = ''
+          ${proxiesSupportingSubpath}
+          ${rootIsImmich}
+        '';
       };
     };
   };
