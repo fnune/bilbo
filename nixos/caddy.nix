@@ -1,8 +1,15 @@
 {...}: let
   host = "bilbo.fnune.com";
-  local = "192.168.178.36";
 in {
-  networking.firewall.allowedTCPPorts = [80 443];
+  networking.firewall = {
+    allowedTCPPorts = [443];
+    interfaces = {
+      "eno1" = {
+        allowedTCPPorts = [80];
+      };
+    };
+  };
+
   services = {
     cloudflare-dyndns = {
       enable = false;
@@ -35,14 +42,7 @@ in {
       enable = true;
       virtualHosts = {
         "${host}".extraConfig = proxies;
-        "${local}" = {
-          listenAddresses = ["${local}:80"];
-          extraConfig = ''
-            auto_https off
-
-            ${proxies}
-          '';
-        };
+        ":80".extraConfig = proxies;
       };
     };
   };
