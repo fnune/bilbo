@@ -11,9 +11,11 @@
       layout = {
         Entertainment = {
           style = "row";
+          columns = 5;
         };
         Tools = {
           style = "row";
+          columns = 3;
         };
       };
     };
@@ -87,9 +89,9 @@
         ];
       }
       {
-        "Monitoring" = [
+        "Tools" = [
           {
-            "Tools" = {
+            "Grafana" = {
               icon = "grafana.svg";
               description = "Dashboard for metrics and system monitoring";
               href = "/grafana";
