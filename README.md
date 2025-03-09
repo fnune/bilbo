@@ -4,10 +4,6 @@ My media server.
 
 ## First-time setup
 
-### Tailscale
-
-Within Bilbo, run `tailscale up` to register the machine on the Tailnet.
-
 ### Services
 
 Before starting, run:
@@ -41,10 +37,10 @@ Now, configure each service:
   - Create a media library for Movies in `/mnt/downloads-1t/Movies`
   - Create a media library for Series in `/mnt/downloads-2t/Series`
 
-[jellyfin]: https://bilbo.walrus-dorian.ts.net
-[nzbget]: https://bilbo.walrus-dorian.ts.net/nzbget
-[radarr]: https://bilbo.walrus-dorian.ts.net/radarr
-[sonarr]: https://bilbo.walrus-dorian.ts.net/sonarr
+[jellyfin]: https://bilbo.fnune.com.ts.net/jellyfin
+[nzbget]: https://bilbo.fnune.com.ts.net/nzbget
+[radarr]: https://bilbo.fnune.com.ts.net/radarr
+[sonarr]: https://bilbo.fnune.com.ts.net/sonarr
 
 ## Running in a VM
 

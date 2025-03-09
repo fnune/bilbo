@@ -1,15 +1,15 @@
 {...}: let
-  host = "walrus-dorian.ts.net";
+  host = "bilbo.fnune.com";
+  local = "192.168.178.36";
 in {
   networking.firewall.allowedTCPPorts = [80 443];
-  services.tailscale = {
-    enable = true;
-    permitCertUid = "caddy";
-  };
-  services.caddy = {
-    enable = true;
-    virtualHosts = {
-      "bilbo.${host}".extraConfig = ''
+  services = {
+    cloudflare-dyndns = {
+      enable = false;
+      domains = [host];
+    };
+    caddy = let
+      proxies = ''
         reverse_proxy /grafana/* localhost:2342
         reverse_proxy /grafana localhost:2342
 
@@ -28,8 +28,22 @@ in {
         reverse_proxy /readarr/* localhost:8787
         reverse_proxy /readarr localhost:8787
 
-        reverse_proxy localhost:8096
+        reverse_proxy /jellyfin/* localhost:8096
+        reverse_proxy /jellyfin localhost:8096
       '';
+    in {
+      enable = true;
+      virtualHosts = {
+        "${host}".extraConfig = proxies;
+        "${local}" = {
+          listenAddresses = ["${local}:80"];
+          extraConfig = ''
+            auto_https off
+
+            ${proxies}
+          '';
+        };
+      };
     };
   };
 }

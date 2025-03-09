@@ -5,7 +5,6 @@ in {
     enable = true;
     user = "fausto";
     group = "users";
-    openFirewall = true;
     inherit dataDir;
   };
   systemd.services.radarr = {
