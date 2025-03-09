@@ -1,6 +1,22 @@
 {...}: {
   services.homepage-dashboard = {
     enable = true;
+    settings = {
+      title = "Bilbo";
+      description = "My media server";
+      headerStyle = "clean";
+      target = "_self";
+      hideVersion = true;
+      color = "neutral";
+      layout = {
+        Entertainment = {
+          style = "row";
+        };
+        Tools = {
+          style = "row";
+        };
+      };
+    };
     widgets = [
       {
         resources = {
@@ -68,22 +84,22 @@
               href = "/readarr";
             };
           }
-          {
-            "NZBGet" = {
-              icon = "nzbget.svg";
-              description = "Usenet downloader for media files";
-              href = "/nzbget";
-            };
-          }
         ];
       }
       {
         "Monitoring" = [
           {
-            "Grafana" = {
+            "Tools" = {
               icon = "grafana.svg";
               description = "Dashboard for metrics and system monitoring";
               href = "/grafana";
+            };
+          }
+          {
+            "NZBGet" = {
+              icon = "nzbget.svg";
+              description = "Usenet downloader for media files";
+              href = "/nzbget";
             };
           }
         ];
