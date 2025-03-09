@@ -1,5 +1,7 @@
 {...}: let
-  host = "bilbo.fnune.com";
+  domain = "fnune.com";
+  bilbo = "bilbo.${domain}";
+  immich = "immich.${domain}";
 in {
   networking.firewall = {
     allowedTCPPorts = [443];
@@ -13,11 +15,11 @@ in {
     cloudflare-dyndns = {
       enable = true;
       proxied = true;
-      domains = [host "immich"];
+      domains = [bilbo immich];
       apiTokenFile = "/etc/cloudflare/token";
     };
     caddy = let
-      proxies = ''
+      proxiesSupportingSubpath = ''
         reverse_proxy /grafana/* localhost:2342
         reverse_proxy /grafana localhost:2342
 
@@ -42,9 +44,9 @@ in {
     in {
       enable = true;
       virtualHosts = {
-        "${host}".extraConfig = proxies;
-        ":80".extraConfig = proxies;
-        "immich".extraConfig = "reverse_proxy localhost:2283";
+        "${immich}".extraConfig = "reverse_proxy localhost:2283";
+        "${bilbo}".extraConfig = proxiesSupportingSubpath;
+        ":80".extraConfig = proxiesSupportingSubpath;
       };
     };
   };
