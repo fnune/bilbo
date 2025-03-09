@@ -61,6 +61,8 @@
   };
   networking.firewall.allowedTCPPorts = [22];
 
+  security.sudo.extraConfig = "Defaults pwfeedback";
+
   system.stateVersion = "23.05";
 
   imports = [
