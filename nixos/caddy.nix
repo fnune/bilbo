@@ -40,6 +40,9 @@ in {
 
         reverse_proxy /jellyfin/* localhost:8096
         reverse_proxy /jellyfin localhost:8096
+
+        reverse_proxy /* localhost:8082
+        reverse_proxy / localhost:8082
       '';
     in {
       enable = true;

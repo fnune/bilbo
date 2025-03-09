@@ -68,6 +68,7 @@
   imports = [
     ./bazarr.nix
     ./caddy.nix
+    ./homepage.nix
     ./immich.nix
     ./jellyfin.nix
     ./monitoring.nix
