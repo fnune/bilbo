@@ -47,8 +47,11 @@
     htop
     neovim
     tmux
-    vi
   ];
+
+  environment.sessionVariables = {
+    EDITOR = "nvim";
+  };
 
   # To add my identity:
   # ssh-copy-id -i ~/.ssh/id_ed25519.pub fausto@bilbo-ip
