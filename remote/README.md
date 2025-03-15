@@ -38,3 +38,15 @@ pulumi import aws:s3/bucketV2:BucketV2 bilbo-backups bilbo-backups-123456
 ```
 
 There is [more documentation on the Pulumi website](https://www.pulumi.com/docs/iac/adopting-pulumi/import/).
+
+## Restoring from backups
+
+The [`restore.sh`](./restore.sh) script automates restoring Borg backups from
+AWS S3 Glacier Deep Archive. It uses Pulumi stack outputs to retrieve bucket
+configuration.
+
+1. Initiate restoration with `./restore.sh initiate`
+2. Check status with `./restore.sh status`
+3. Download files once available with `./restore.sh download [destination]`
+
+> Restoring should cost about ~90€ per 1TB.

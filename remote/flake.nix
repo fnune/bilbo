@@ -14,6 +14,7 @@
           nodejs
           pulumi
           pulumiPackages.pulumi-language-nodejs
+          rclone
           yarn
         ];
       };

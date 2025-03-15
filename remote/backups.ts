@@ -37,7 +37,13 @@ const policy = new aws.iam.Policy(`${NAME}-policy`, {
     Statement: [
       {
         Effect: "Allow" as const,
-        Action: ["s3:PutObject", "s3:GetObject", "s3:ListBucket", "s3:DeleteObject"],
+        Action: [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:ListBucket",
+          "s3:DeleteObject",
+          "s3:RestoreObject",
+        ],
         Resource: [arn, `${arn}/*`],
       },
     ],
