@@ -6,6 +6,7 @@
   };
   services.immich = {
     enable = true;
+    package = pkgs.unstable.immich;
     group = "users";
     mediaLocation = "/mnt/mirrored/immich";
     database = {
