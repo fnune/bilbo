@@ -30,7 +30,6 @@ in {
           BUCKET_NAME=$(cat ${mirroredBucketNamePath})
           ${pkgs.rclone}/bin/rclone sync ${mirroredRepoPath} aws-glacier:$BUCKET_NAME/mirrored \
             --config ${mirroredRcloneConfPath} \
-            --storage-class=DEEP_ARCHIVE \
             || echo "Warning: S3 upload failed, but local backup completed successfully"
         '';
       };
