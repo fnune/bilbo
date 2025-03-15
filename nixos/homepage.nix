@@ -33,7 +33,7 @@
       }
       {
         resources = {
-          label = "Series";
+          label = "Series & Backups";
           disk = "/mnt/downloads-2t";
         };
       }

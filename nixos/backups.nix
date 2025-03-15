@@ -1,5 +1,5 @@
 {pkgs, ...}: let
-  mirroredRepoPath = "/var/lib/borg/mirrored";
+  mirroredRepoPath = "/mnt/downloads-2t/Backups/borg/mirrored";
   mirroredSourcePath = "/mnt/mirrored";
   # Generate secrets by running `pulumi stack output` in `../remote`:
   mirroredBucketNamePath = "/etc/nixos/secrets/borg-s3-bucket-name";
