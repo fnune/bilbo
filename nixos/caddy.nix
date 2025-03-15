@@ -38,6 +38,9 @@ in {
         reverse_proxy /readarr/* localhost:8787
         reverse_proxy /readarr localhost:8787
 
+        reverse_proxy /filebrowser/* localhost:8080
+        reverse_proxy /filebrowser localhost:8080
+
         reverse_proxy /jellyfin/* localhost:8096
         reverse_proxy /jellyfin localhost:8096
       '';

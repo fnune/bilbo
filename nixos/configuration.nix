@@ -73,6 +73,7 @@
     ./backups.nix
     ./bazarr.nix
     ./caddy.nix
+    ./filebrowser.nix
     ./homepage.nix
     ./immich.nix
     ./jellyfin.nix
