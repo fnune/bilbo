@@ -14,7 +14,7 @@ in {
         startAt = "weekly";
         inhibitsSleep = false;
         compression = "auto,lzma";
-        extraCreateArgs = ["--stats"];
+        extraCreateArgs = ["--stats" "--progress"];
         group = "users";
         encryption = {
           mode = "repokey";
@@ -30,6 +30,8 @@ in {
           BUCKET_NAME=$(cat ${mirroredBucketNamePath})
           ${pkgs.rclone}/bin/rclone sync ${mirroredRepoPath} aws-glacier:$BUCKET_NAME/mirrored \
             --config ${mirroredRcloneConfPath} \
+            --progress \
+            --stats 1m \
             || echo "Warning: S3 upload failed, but local backup completed successfully"
         '';
       };
