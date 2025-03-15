@@ -1,0 +1,10 @@
+{
+  "files": {
+    "ignore": ["node_modules", "bin"]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "lineWidth": 100
+  }
+}

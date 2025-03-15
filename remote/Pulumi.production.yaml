@@ -1,0 +1,5 @@
+encryptionsalt: v1:cUREiJi0bEk=:v1:8gWrVK+2t0iYNFbB:ireP9UyOpZ+CVP8Oq56OTrmPTx8tqw==
+config:
+  aws:region: eu-central-1
+  pulumi:tags:
+    pulumi:template: aws-typescript

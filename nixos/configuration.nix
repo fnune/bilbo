@@ -70,6 +70,7 @@
   system.stateVersion = "23.05";
 
   imports = [
+    ./backups.nix
     ./bazarr.nix
     ./caddy.nix
     ./homepage.nix

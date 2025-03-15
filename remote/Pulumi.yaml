@@ -1,0 +1,10 @@
+name: bilbo-remote
+description: Remote infrastucture for Bilbo containing things like backup S3 buckets
+runtime:
+  name: nodejs
+  options:
+    packagemanager: yarn
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-typescript
