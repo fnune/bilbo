@@ -11,6 +11,7 @@
         buildInputs = with pkgs; [
           awscli2
           biome
+          borgbackup
           nodejs
           pulumi
           pulumiPackages.pulumi-language-nodejs

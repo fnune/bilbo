@@ -50,3 +50,32 @@ configuration.
 3. Download files once available with `./restore.sh download [destination]`
 
 > Restoring should cost about ~90€ per 1TB.
+
+Once the download is finished, you'll need to restore it using `borg`, because
+it's a `borg` archive. Note that the archive is passphrase-protected. Look for
+_Bilbo Borg + S3 + Pulumi Credentials -> Borg Repository Password_ in
+Bitwarden.
+
+To start, list the available archives:
+
+```sh
+borg list ./borg-restore
+
+Enter passphrase for key /home/fausto/Development/bilbo/remote/borg-restore:
+bilbo-mirrored-2025-03-15T17:10:29   Sat, 2025-03-15 17:10:32 [57d057f03ea932d3448e8f1892ff19dce7b7af3ebc6db28f3fd49a15f16fbe53]
+bilbo-mirrored-2025-03-15T17:46:14   Sat, 2025-03-15 17:46:16 [8a65ed0026069d11200e2f021707c77d5c5389598972b0fb024485f53c866418]
+```
+
+Then, you can choose to mount a repository, e.g.:
+
+```sh
+mkdir ./borg-mount
+borg mount ./borg-restore::bilbo-mirrored-2025-03-15T17:10:29 ./borg-mount
+umount ./borg-mount
+```
+
+Or extract it:
+
+```sh
+borg extract ./borg-restore::bilbo-mirrored-2025-03-15T17:10:29 ./borg-out
+```
