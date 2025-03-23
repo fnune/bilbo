@@ -1,5 +1,5 @@
 {pkgs, ...}: {
-  environment.systemPackages = with pkgs; [immich-cli immich-go];
+  environment.systemPackages = with pkgs; [immich-cli];
   services.postgresql = {
     enable = true;
     ensureUsers = [{name = "fausto";}];
