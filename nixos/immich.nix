@@ -1,5 +1,5 @@
 {pkgs, ...}: {
-  environment.systemPackages = with pkgs; [immich-cli];
+  environment.systemPackages = with pkgs; [immich-cli exiftool];
   services.postgresql = {
     enable = true;
     ensureUsers = [{name = "fausto";}];
