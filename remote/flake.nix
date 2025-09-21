@@ -14,7 +14,7 @@
           borgbackup
           nodejs
           pulumi
-          pulumiPackages.pulumi-language-nodejs
+          pulumiPackages.pulumi-nodejs
           rclone
           yarn
         ];
