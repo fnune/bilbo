@@ -796,6 +796,13 @@
     docker-classic "npm:@pulumi/docker@3.6.1"
     mime "^2.0.0"
 
+"@pulumi/cloudflare@^6.9.1":
+  version "6.9.1"
+  resolved "https://registry.yarnpkg.com/@pulumi/cloudflare/-/cloudflare-6.9.1.tgz#e0267bc0479ddd247c661fff39b8087a09367a78"
+  integrity sha512-DpZXRXhRyRat8BQxPIBO+V/opFjqktXA0tMrKBmZIo8QgjB5cDnrjvUWv5DrZRtHldE9Z3gTLT2T3OxgkD+f3g==
+  dependencies:
+    "@pulumi/pulumi" "^3.142.0"
+
 "@pulumi/docker-build@^0.0.8":
   version "0.0.8"
   resolved "https://registry.yarnpkg.com/@pulumi/docker-build/-/docker-build-0.0.8.tgz#203bdd9eed062ed0d3ddd2ef275ffcc45a87b3f4"
