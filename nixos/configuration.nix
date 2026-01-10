@@ -3,11 +3,20 @@
     enable = true;
     efiSupport = true;
     efiInstallAsRemovable = true;
+    configurationLimit = 2;
   };
 
   nixpkgs.config.allowUnfree = true;
   nixpkgs.config.allowUnfreePredicate = _: true;
-  nix.settings.experimental-features = ["nix-command" "flakes"];
+
+  nix = {
+    settings.experimental-features = ["nix-command" "flakes"];
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 1d";
+    };
+  };
 
   networking = {
     hostName = "bilbo";
