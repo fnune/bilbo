@@ -52,11 +52,18 @@ in {
         reverse_proxy /* localhost:2283
         reverse_proxy / localhost:2283
       '';
+      tlsOriginKey = ''
+        tls /etc/cloudflare/origin-cert.pem /etc/cloudflare/origin-key.pem
+      '';
     in {
       enable = true;
       virtualHosts = {
-        "${immich}".extraConfig = rootIsImmich;
+        "${immich}".extraConfig = ''
+          ${tlsOriginKey}
+          ${rootIsImmich}
+        '';
         "${bilbo}".extraConfig = ''
+          ${tlsOriginKey}
           ${rootIsHomepage}
           ${proxiesSupportingSubpath}
         '';
