@@ -29,15 +29,28 @@ pulumi stack output --show-secrets
 
 ## Bootstrapping
 
-This project uses local state, and if state were lost, it could be recovered by
-gathering some information on AWS and importing it like so:
+If state were lost, it could be recovered by running:
 
 ```sh
 pulumi import '<type>'                 '<name>'      '<id>'
-pulumi import aws:s3/bucketV2:BucketV2 bilbo-backups bilbo-backups-123456
+
+# Cloudflare
+pulumi import "cloudflare:index/zeroTrustAccessPolicy:ZeroTrustAccessPolicy" "bilbo-access-policy" "accounts/<ACCOUNT_ID>/<POLICY_ID>"
+pulumi import "cloudflare:index/zeroTrustAccessApplication:ZeroTrustAccessApplication" "bilbo-access-app" "accounts/<ACCOUNT_ID>/<APP_ID>"
+
+# AWS S3
+pulumi import "aws:s3/bucketV2:BucketV2" "bilbo-backups" "<BUCKET_NAME>"
+pulumi import "aws:s3/bucketPublicAccessBlock:BucketPublicAccessBlock" "bilbo-backups-bucket-public-access-block" "<BUCKET_NAME>"
+pulumi import "aws:s3/bucketLifecycleConfigurationV2:BucketLifecycleConfigurationV2" "bilbo-backups-lifecycle" "<BUCKET_NAME>"
+
+# AWS IAM
+pulumi import "aws:iam/user:User" "bilbo-backups-user" "<USER_NAME>"
+pulumi import "aws:iam/accessKey:AccessKey" "bilbo-backups-user-keys" "<ACCESS_KEY_ID>"
+pulumi import "aws:iam/policy:Policy" "bilbo-backups-policy" "<POLICY_ARN>"
+pulumi import "aws:iam/userPolicyAttachment:UserPolicyAttachment" "bilbo-backups-policy-attachment" "<USER_NAME>/<POLICY_ARN>"
 ```
 
-There is [more documentation on the Pulumi website](https://www.pulumi.com/docs/iac/adopting-pulumi/import/).
+There is [more documentation on the Pulumi website](https://www.pulumi.com/docs/iac/adopting-pulumi/import/). Find [the Pulumi stack on Pulumi Cloud](https://app.pulumi.com/fnune/bilbo-remote/production).
 
 ## Restoring from backups
 
