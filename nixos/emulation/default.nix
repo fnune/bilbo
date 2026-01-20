@@ -49,7 +49,6 @@
     romSystems = builtins.filter (s: layout.romFolder s != null) cfg.systems;
     saveMappings = builtins.filter (x: x != null) (map layout.saveFolder cfg.systems);
     saveTargets = lib.unique (map (m: m.target) saveMappings);
-    biosSystems = builtins.filter (s: layout.biosFolder s != null) cfg.systems;
   in
     [
       (dir "${base}/_targets/${name}")
@@ -58,14 +57,12 @@
       (dir "${base}/_targets/${name}/bios")
     ]
     ++ map (s: dir "${base}/_targets/${name}/roms/${layout.romFolder s}") romSystems
-    ++ map (t: dir "${base}/_targets/${name}/saves/${t}") saveTargets
-    ++ map (s: dir "${base}/_targets/${name}/bios/${layout.biosFolder s}") biosSystems;
+    ++ map (t: dir "${base}/_targets/${name}/saves/${t}") saveTargets;
 
   mkTargetMounts = name: cfg: let
     layout = layouts.${cfg.layout};
     romSystems = builtins.filter (s: layout.romFolder s != null) cfg.systems;
     saveMappings = lib.unique (builtins.filter (x: x != null) (map layout.saveFolder cfg.systems));
-    biosSystems = builtins.filter (s: layout.biosFolder s != null) cfg.systems;
   in
     (map (s: {
       name = "${base}/_targets/${name}/roms/${layout.romFolder s}";
@@ -81,13 +78,13 @@
         options = ["bind"];
       };
     }) saveMappings)
-    ++ (map (s: {
-      name = "${base}/_targets/${name}/bios/${layout.biosFolder s}";
+    ++ [{
+      name = "${base}/_targets/${name}/bios";
       value = {
-        device = "${base}/bios/${s}";
+        device = "${base}/bios";
         options = ["bind"];
       };
-    }) biosSystems);
+    }];
 
   baseBiosSystems = lib.unique (
     lib.concatMap (cfg:
