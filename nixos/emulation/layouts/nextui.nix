@@ -1,5 +1,11 @@
 # https://nextui.loveretro.games/
 {
+  devicePaths = {
+    roms = "Roms";
+    saves = "Saves";
+    bios = "Bios";
+  };
+
   romFolder = system:
     {
       gb = "Game Boy (GB)";
@@ -61,7 +67,7 @@
 
   biosFolder = system:
     {
-      dreamcast = "DC";
+      dreamcast = "dc";
     }
     .${
       system

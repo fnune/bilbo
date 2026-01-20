@@ -1,5 +1,11 @@
 # https://emudeck.github.io/cheat-sheet/
 {
+  devicePaths = {
+    roms = "roms";
+    saves = "saves";
+    bios = "bios";
+  };
+
   romFolder = system: system;
 
   # https://emudeck.github.io/save-management/steamos/save-management/

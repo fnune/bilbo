@@ -15,19 +15,6 @@
     nextui = import ./layouts/nextui.nix;
   };
 
-  layoutDevicePaths = {
-    emudeck-steamos = {
-      roms = "roms";
-      saves = "saves";
-      bios = "bios";
-    };
-    nextui = {
-      roms = "Roms";
-      saves = "Saves";
-      bios = "Bios";
-    };
-  };
-
   targets = {
     feanor = {
       layout = "emudeck-steamos";
@@ -36,13 +23,6 @@
   };
 
   dir = path: "d \"${path}\" 0755 ${user} ${group} -";
-
-  parentPaths = path: let
-    parts = lib.splitString "/" path;
-    indices = lib.range 1 (builtins.length parts);
-  in map (n: lib.concatStringsSep "/" (lib.take n parts)) indices;
-
-  allSaveParents = lib.unique (lib.concatMap parentPaths baseSaveDirs);
 
   mkTargetDirs = name: cfg: let
     layout = layouts.${cfg.layout};
@@ -86,10 +66,11 @@
       };
     }];
 
-  baseBiosSystems = lib.unique (
-    lib.concatMap (cfg:
-      builtins.filter (s: (layouts.${cfg.layout}).biosFolder s != null) cfg.systems
-    ) (lib.attrValues targets)
+  baseBiosDirs = lib.unique (
+    builtins.filter (x: x != null)
+      (lib.concatMap (cfg:
+        map (layouts.${cfg.layout}).biosFolder cfg.systems
+      ) (lib.attrValues targets))
   );
 
   baseSaveDirs = lib.unique (
@@ -99,7 +80,7 @@
   );
 
   mkSetupScript = name: cfg: let
-    device = layoutDevicePaths.${cfg.layout};
+    device = layouts.${cfg.layout}.devicePaths;
   in pkgs.writeScript "${name}-setup.sh" ''
     #!/usr/bin/env bash
     set -euo pipefail
@@ -259,13 +240,12 @@ in {
       (dir "${base}/roms")
       (dir "${base}/bios")
       (dir "${base}/saves")
-      (dir "${base}/state")
       (dir "${base}/_targets")
+      (dir "${base}/_config")
     ]
-    ++ [(dir "${base}/_config")]
     ++ map (s: dir "${base}/roms/${s}") systems
-    ++ map (s: dir "${base}/bios/${s}") baseBiosSystems
-    ++ map (s: dir "${base}/saves/${s}") allSaveParents
+    ++ map (s: dir "${base}/bios/${s}") baseBiosDirs
+    ++ map (s: dir "${base}/saves/${s}") baseSaveDirs
     ++ lib.concatLists (lib.mapAttrsToList mkTargetDirs targets);
 
   fileSystems = lib.listToAttrs (
@@ -284,34 +264,25 @@ in {
         localAnnounceEnabled = true;
         relaysEnabled = true;
       };
-      folders =
-        lib.mapAttrs' (name: _cfg: {
-          name = "${name}-roms";
-          value = {
+      folders = let
+        mkFolders = name: _cfg: {
+          "${name}-roms" = {
             path = "${base}/_targets/${name}/roms";
             label = "${name} ROMs";
             type = "sendonly";
           };
-        })
-        targets
-        // lib.mapAttrs' (name: _cfg: {
-          name = "${name}-saves";
-          value = {
+          "${name}-saves" = {
             path = "${base}/_targets/${name}/saves";
             label = "${name} saves";
             type = "sendreceive";
           };
-        })
-        targets
-        // lib.mapAttrs' (name: _cfg: {
-          name = "${name}-bios";
-          value = {
+          "${name}-bios" = {
             path = "${base}/_targets/${name}/bios";
             label = "${name} BIOS";
             type = "sendonly";
           };
-        })
-        targets;
+        };
+      in lib.foldl' lib.mergeAttrs {} (lib.mapAttrsToList mkFolders targets);
     };
   };
 
