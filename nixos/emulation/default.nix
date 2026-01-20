@@ -259,6 +259,8 @@ in {
     configDir = "${config.users.users.fausto.home}/.config/syncthing";
     dataDir = base;
     settings = {
+      overrideDevices = false;
+      overrideFolders = false;
       options = {
         urAccepted = -1;
         localAnnounceEnabled = true;
