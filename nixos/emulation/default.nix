@@ -15,6 +15,12 @@
     nextui = import ./layouts/nextui.nix;
   };
 
+  # Device IDs from: syncthing --device-id
+  # Or from Syncthing web UI: Actions > Show ID
+  deviceIds = {
+    feanor = "5DH5XRC-UIS26BR-CJNHQRJ-2TMGY4C-2KB2OZL-V66D22Y-ORCFTMR-UNHXPQ6";
+  };
+
   targets = {
     feanor = {
       layout = "emudeck-steamos";
@@ -259,8 +265,7 @@ in {
     configDir = "${config.users.users.fausto.home}/.config/syncthing";
     dataDir = base;
     settings = {
-      overrideDevices = false;
-      overrideFolders = false;
+      devices = lib.mapAttrs (_name: id: { inherit id; }) deviceIds;
       options = {
         urAccepted = -1;
         localAnnounceEnabled = true;
@@ -272,16 +277,19 @@ in {
             path = "${base}/_targets/${name}/roms";
             label = "${name} ROMs";
             type = "sendonly";
+            devices = [name];
           };
           "${name}-saves" = {
             path = "${base}/_targets/${name}/saves";
             label = "${name} saves";
             type = "sendreceive";
+            devices = [name];
           };
           "${name}-bios" = {
             path = "${base}/_targets/${name}/bios";
             label = "${name} BIOS";
             type = "sendonly";
+            devices = [name];
           };
         };
       in lib.foldl' lib.mergeAttrs {} (lib.mapAttrsToList mkFolders targets);
