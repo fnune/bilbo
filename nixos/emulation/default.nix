@@ -18,7 +18,7 @@
   layoutDevicePaths = {
     emudeck-steamos = {
       roms = "roms";
-      saves = "saves/retroarch/saves";
+      saves = "saves";
       bios = "bios";
     };
     nextui = {

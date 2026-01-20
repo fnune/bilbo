@@ -6,24 +6,24 @@
   saveFolder = system:
     {
       # nintendo
-      gb = "Gambatte";
-      gbc = "Gambatte";
-      sgb = "Gambatte";
-      gba = "mGBA";
-      nes = "Mesen";
-      famicom = "Mesen";
-      fds = "Mesen";
-      snes = "Snes9x";
-      sfc = "Snes9x";
-      snesna = "Snes9x";
-      sneshd = "Snes9x";
-      satellaview = "Snes9x";
-      sufami = "Snes9x";
-      n64 = "Mupen64Plus-Next";
-      n64dd = "Mupen64Plus-Next";
-      nds = "melonDS";
-      virtualboy = "Beetle VB";
-      pokemini = "PokeMini";
+      gb = "retroarch/saves/Gambatte";
+      gbc = "retroarch/saves/Gambatte";
+      sgb = "retroarch/saves/Gambatte";
+      gba = "retroarch/saves/mGBA";
+      nes = "retroarch/saves/Mesen";
+      famicom = "retroarch/saves/Mesen";
+      fds = "retroarch/saves/Mesen";
+      snes = "retroarch/saves/Snes9x";
+      sfc = "retroarch/saves/Snes9x";
+      snesna = "retroarch/saves/Snes9x";
+      sneshd = "retroarch/saves/Snes9x";
+      satellaview = "retroarch/saves/Snes9x";
+      sufami = "retroarch/saves/Snes9x";
+      n64 = "retroarch/saves/Mupen64Plus-Next";
+      n64dd = "retroarch/saves/Mupen64Plus-Next";
+      nds = "melonDS/saves";
+      virtualboy = "retroarch/saves/Beetle VB";
+      pokemini = "retroarch/saves/PokeMini";
       gamecube = "dolphin/GC";
       gc = "dolphin/GC";
       wii = "dolphin/Wii";
@@ -33,104 +33,104 @@
       switch = "ryujinx/saves";
 
       # sega
-      genesis = "Genesis Plus GX";
-      megadrive = "Genesis Plus GX";
-      megadrivejp = "Genesis Plus GX";
-      genesiswide = "Genesis Plus GX Wide";
-      mastersystem = "Genesis Plus GX";
-      gamegear = "Genesis Plus GX";
-      sg-1000 = "Genesis Plus GX";
-      segacd = "Genesis Plus GX";
-      megacd = "Genesis Plus GX";
-      megacdjp = "Genesis Plus GX";
-      sega32x = "PicoDrive";
-      sega32xjp = "PicoDrive";
-      sega32xna = "PicoDrive";
-      saturn = "Beetle Saturn";
-      saturnjp = "Beetle Saturn";
-      dreamcast = "Flycast";
-      naomi = "Flycast";
-      naomi2 = "Flycast";
-      naomigd = "Flycast";
-      atomiswave = "Flycast";
+      genesis = "retroarch/saves/Genesis Plus GX";
+      megadrive = "retroarch/saves/Genesis Plus GX";
+      megadrivejp = "retroarch/saves/Genesis Plus GX";
+      genesiswide = "retroarch/saves/Genesis Plus GX Wide";
+      mastersystem = "retroarch/saves/Genesis Plus GX";
+      gamegear = "retroarch/saves/Genesis Plus GX";
+      sg-1000 = "retroarch/saves/Genesis Plus GX";
+      segacd = "retroarch/saves/Genesis Plus GX";
+      megacd = "retroarch/saves/Genesis Plus GX";
+      megacdjp = "retroarch/saves/Genesis Plus GX";
+      sega32x = "retroarch/saves/PicoDrive";
+      sega32xjp = "retroarch/saves/PicoDrive";
+      sega32xna = "retroarch/saves/PicoDrive";
+      saturn = "retroarch/saves/Beetle Saturn";
+      saturnjp = "retroarch/saves/Beetle Saturn";
+      dreamcast = "retroarch/saves/Flycast";
+      naomi = "retroarch/saves/Flycast";
+      naomi2 = "retroarch/saves/Flycast";
+      naomigd = "retroarch/saves/Flycast";
+      atomiswave = "retroarch/saves/Flycast";
 
       # sony
       psx = "duckstation/saves";
       ps2 = "pcsx2/sstates";
       ps3 = "rpcs3/saves";
-      psp = "PPSSPP";
+      psp = "ppsspp/memstick/PSP/SAVEDATA";
       psvita = "vita3k/saves";
 
       # nec
-      pcengine = "Beetle PCE";
-      pcenginecd = "Beetle PCE";
-      tg16 = "Beetle PCE";
-      tg-cd = "Beetle PCE";
-      supergrafx = "Beetle SuperGrafx";
-      pcfx = "Beetle PC-FX";
+      pcengine = "retroarch/saves/Beetle PCE";
+      pcenginecd = "retroarch/saves/Beetle PCE";
+      tg16 = "retroarch/saves/Beetle PCE";
+      tg-cd = "retroarch/saves/Beetle PCE";
+      supergrafx = "retroarch/saves/Beetle SuperGrafx";
+      pcfx = "retroarch/saves/Beetle PC-FX";
 
       # snk
-      neogeo = "FinalBurn Neo";
-      neogeocd = "NeoCD";
-      neogeocdjp = "NeoCD";
-      ngp = "Beetle NeoPop";
-      ngpc = "Beetle NeoPop";
+      neogeo = "retroarch/saves/FinalBurn Neo";
+      neogeocd = "retroarch/saves/NeoCD";
+      neogeocdjp = "retroarch/saves/NeoCD";
+      ngp = "retroarch/saves/Beetle NeoPop";
+      ngpc = "retroarch/saves/Beetle NeoPop";
 
       # atari
-      atari2600 = "Stella";
-      atari5200 = "a5200";
-      atari7800 = "ProSystem";
-      atari800 = "Atari800";
-      atarixe = "Atari800";
-      atarilynx = "Beetle Lynx";
-      atarijaguar = "BigPEmu";
-      atarist = "Hatari";
+      atari2600 = "retroarch/saves/Stella";
+      atari5200 = "retroarch/saves/a5200";
+      atari7800 = "retroarch/saves/ProSystem";
+      atari800 = "retroarch/saves/Atari800";
+      atarixe = "retroarch/saves/Atari800";
+      atarilynx = "retroarch/saves/Beetle Lynx";
+      atarijaguar = "bigpemu/saves";
+      atarist = "retroarch/saves/Hatari";
 
       # other consoles
-      "3do" = "Opera";
-      colecovision = "blueMSX";
-      intellivision = "FreeIntv";
-      odyssey2 = "O2EM";
-      videopac = "O2EM";
-      vectrex = "vecx";
-      channelf = "FreeChaF";
-      wonderswan = "Beetle Cygne";
-      wonderswancolor = "Beetle Cygne";
-      supervision = "Potator";
+      "3do" = "retroarch/saves/Opera";
+      colecovision = "retroarch/saves/blueMSX";
+      intellivision = "retroarch/saves/FreeIntv";
+      odyssey2 = "retroarch/saves/O2EM";
+      videopac = "retroarch/saves/O2EM";
+      vectrex = "retroarch/saves/vecx";
+      channelf = "retroarch/saves/FreeChaF";
+      wonderswan = "retroarch/saves/Beetle Cygne";
+      wonderswancolor = "retroarch/saves/Beetle Cygne";
+      supervision = "retroarch/saves/Potator";
 
       # computers
-      amiga = "PUAE";
-      amiga1200 = "PUAE";
-      amiga600 = "PUAE";
-      amigacd32 = "PUAE";
-      cdtv = "PUAE";
-      c64 = "VICE x64sc";
-      c16 = "VICE xplus4";
-      vic20 = "VICE xvic";
-      msx = "blueMSX";
-      msx1 = "blueMSX";
-      msx2 = "blueMSX";
-      msxturbor = "blueMSX";
-      dos = "DOSBox Pure";
-      pc = "DOSBox Pure";
-      pc88 = "QUASI88";
-      pc98 = "Neko Project II kai";
-      x68000 = "PX68K";
-      zxspectrum = "Fuse";
-      zx81 = "EightyOne";
-      amstradcpc = "Caprice32";
-      scummvm = "ScummVM";
+      amiga = "retroarch/saves/PUAE";
+      amiga1200 = "retroarch/saves/PUAE";
+      amiga600 = "retroarch/saves/PUAE";
+      amigacd32 = "retroarch/saves/PUAE";
+      cdtv = "retroarch/saves/PUAE";
+      c64 = "retroarch/saves/VICE x64sc";
+      c16 = "retroarch/saves/VICE xplus4";
+      vic20 = "retroarch/saves/VICE xvic";
+      msx = "retroarch/saves/blueMSX";
+      msx1 = "retroarch/saves/blueMSX";
+      msx2 = "retroarch/saves/blueMSX";
+      msxturbor = "retroarch/saves/blueMSX";
+      dos = "retroarch/saves/DOSBox Pure";
+      pc = "retroarch/saves/DOSBox Pure";
+      pc88 = "retroarch/saves/QUASI88";
+      pc98 = "retroarch/saves/Neko Project II kai";
+      x68000 = "retroarch/saves/PX68K";
+      zxspectrum = "retroarch/saves/Fuse";
+      zx81 = "retroarch/saves/EightyOne";
+      amstradcpc = "retroarch/saves/Caprice32";
+      scummvm = "scummvm/saves";
 
       # arcade
-      arcade = "FinalBurn Neo";
-      fba = "FinalBurn Neo";
-      fbneo = "FinalBurn Neo";
-      cps = "FinalBurn Neo";
-      cps1 = "FinalBurn Neo";
-      cps2 = "FinalBurn Neo";
-      cps3 = "FinalBurn Neo";
-      mame = "MAME 2003-Plus";
-      daphne = "DirkSimple";
+      arcade = "retroarch/saves/FinalBurn Neo";
+      fba = "retroarch/saves/FinalBurn Neo";
+      fbneo = "retroarch/saves/FinalBurn Neo";
+      cps = "retroarch/saves/FinalBurn Neo";
+      cps1 = "retroarch/saves/FinalBurn Neo";
+      cps2 = "retroarch/saves/FinalBurn Neo";
+      cps3 = "retroarch/saves/FinalBurn Neo";
+      mame = "retroarch/saves/MAME 2003-Plus";
+      daphne = "retroarch/saves/DirkSimple";
     }
     .${
       system
