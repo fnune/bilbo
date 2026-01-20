@@ -43,6 +43,19 @@ in {
 
         reverse_proxy /jellyfin/* localhost:8096
         reverse_proxy /jellyfin localhost:8096
+
+        redir /syncthing /syncthing/
+        handle_path /syncthing/* {
+          reverse_proxy localhost:8384 {
+            header_up Host {upstream_hostport}
+          }
+        }
+
+        redir /emulation /emulation/
+        handle_path /emulation/* {
+          root * /mnt/downloads-2t/Emulation/_config
+          file_server browse
+        }
       '';
       rootIsHomepage = ''
         reverse_proxy /* localhost:8082
