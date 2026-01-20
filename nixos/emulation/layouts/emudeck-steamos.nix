@@ -35,7 +35,7 @@
       wii = { base = "dolphin-wii"; target = "dolphin/Wii"; };
       primehacks = { base = "dolphin-wii"; target = "dolphin/Wii"; };
       n3ds = { base = "azahar"; target = "azahar"; };
-      wiiu = { base = "cemu"; target = "Cemu/saves"; };
+      wiiu = { base = "cemu-mlc"; target = "cemu-mlc"; };
       switch = { base = "eden"; target = "eden"; };
 
       # sega
