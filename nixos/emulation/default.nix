@@ -17,9 +17,9 @@
 
   layoutDevicePaths = {
     emudeck-steamos = {
-      roms = "Emulation/roms";
-      saves = "Emulation/saves/retroarch/saves";
-      bios = "Emulation/bios";
+      roms = "roms";
+      saves = "saves/retroarch/saves";
+      bios = "bios";
     };
     nextui = {
       roms = "Roms";
@@ -104,6 +104,29 @@
     err() { echo "$*" >&2; }
     die() { err "$*"; exit 1; }
 
+    usage() {
+      echo "Usage: $0 <base-path> [--apply]"
+      echo ""
+      echo "Sets up Syncthing to sync emulation folders with bilbo."
+      echo ""
+      echo "Arguments:"
+      echo "  base-path  Root of your emulation setup, e.g. ~/Emulation"
+      echo "  --apply    Apply changes (dry run without this flag)"
+      echo ""
+      echo "Folders to be synced under base-path:"
+      echo "  ${device.roms}/"
+      echo "  ${device.saves}/"
+      echo "  ${device.bios}/"
+      exit 1
+    }
+
+    [[ $# -ge 1 && "''${1:-}" != "-h" && "''${1:-}" != "--help" ]] || usage
+
+    readonly BASE_PATH="''${1%/}"
+    shift
+
+    [[ -d "$BASE_PATH" ]] || die "Base path does not exist: $BASE_PATH"
+
     command -v syncthing >/dev/null || die "syncthing not found - install it first"
     command -v xmlstarlet >/dev/null || die "xmlstarlet not found - install it (e.g., 'sudo pacman -S xmlstarlet' or 'sudo apt install xmlstarlet')"
 
@@ -122,6 +145,11 @@
     echo "  - ${name}-roms"
     echo "  - ${name}-saves"
     echo "  - ${name}-bios"
+    echo ""
+    echo "Folders to sync under: $BASE_PATH"
+    echo "  $BASE_PATH/${device.roms}"
+    echo "  $BASE_PATH/${device.saves}"
+    echo "  $BASE_PATH/${device.bios}"
     echo ""
 
     readonly CONFIG="$SYNCTHING_CONFIG/config.xml"
@@ -143,7 +171,7 @@
     sleep 1
 
     cp "$CONFIG" "$CONFIG.bak"
-    trap 'err "Error occurred, restoring backup..."; cp "$CONFIG.bak" "$CONFIG"' ERR
+    trap 'err "Error occurred, restoring backup..."; cp "$CONFIG.bak" "$CONFIG"' ERR INT TERM
 
     if ! xmlstarlet sel -t -v "/configuration/device[@id='$SERVER_ID']/@id" "$CONFIG" &>/dev/null; then
       echo "Adding server device..."
@@ -179,9 +207,9 @@
         "$CONFIG"
     }
 
-    add_folder "${name}-roms" "${device.roms}" "receiveonly"
-    add_folder "${name}-saves" "${device.saves}" "sendreceive"
-    add_folder "${name}-bios" "${device.bios}" "receiveonly"
+    add_folder "${name}-roms" "$BASE_PATH/${device.roms}" "receiveonly"
+    add_folder "${name}-saves" "$BASE_PATH/${device.saves}" "sendreceive"
+    add_folder "${name}-bios" "$BASE_PATH/${device.bios}" "receiveonly"
 
     echo "Starting Syncthing..."
     systemctl --user start syncthing.service 2>/dev/null || syncthing serve --config="$SYNCTHING_CONFIG" &
