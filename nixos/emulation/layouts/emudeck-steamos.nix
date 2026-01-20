@@ -21,15 +21,15 @@
       sufami = "retroarch/saves/Snes9x";
       n64 = "retroarch/saves/Mupen64Plus-Next";
       n64dd = "retroarch/saves/Mupen64Plus-Next";
-      nds = "melonDS/saves";
+      nds = "melonds/saves";
       virtualboy = "retroarch/saves/Beetle VB";
       pokemini = "retroarch/saves/PokeMini";
       gamecube = "dolphin/GC";
       gc = "dolphin/GC";
       wii = "dolphin/Wii";
       primehacks = "dolphin/Wii";
-      n3ds = "citra/sdmc";
-      wiiu = "cemu/saves";
+      n3ds = "azahar/saves";
+      wiiu = "Cemu/saves";
       switch = "ryujinx/saves";
 
       # sega
@@ -57,9 +57,9 @@
       # sony
       psx = "duckstation/saves";
       ps2 = "pcsx2/sstates";
-      ps3 = "rpcs3/saves";
-      psp = "ppsspp/memstick/PSP/SAVEDATA";
-      psvita = "vita3k/saves";
+      ps3 = "rpcs3/trophy";
+      psp = "ppsspp/saves";
+      psvita = "Vita3K/saves";
 
       # nec
       pcengine = "retroarch/saves/Beetle PCE";
