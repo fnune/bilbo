@@ -37,6 +37,13 @@
 
   dir = path: "d \"${path}\" 0755 ${user} ${group} -";
 
+  parentPaths = path: let
+    parts = lib.splitString "/" path;
+    indices = lib.range 1 (builtins.length parts);
+  in map (n: lib.concatStringsSep "/" (lib.take n parts)) indices;
+
+  allSaveParents = lib.unique (lib.concatMap parentPaths baseSaveDirs);
+
   mkTargetDirs = name: cfg: let
     layout = layouts.${cfg.layout};
     romSystems = builtins.filter (s: layout.romFolder s != null) cfg.systems;
@@ -253,7 +260,7 @@ in {
     ++ [(dir "${base}/_config")]
     ++ map (s: dir "${base}/roms/${s}") systems
     ++ map (s: dir "${base}/bios/${s}") baseBiosSystems
-    ++ map (s: dir "${base}/saves/${s}") baseSaveDirs
+    ++ map (s: dir "${base}/saves/${s}") allSaveParents
     ++ lib.concatLists (lib.mapAttrsToList mkTargetDirs targets);
 
   fileSystems = lib.listToAttrs (
