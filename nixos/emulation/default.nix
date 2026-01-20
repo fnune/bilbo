@@ -36,10 +36,8 @@
   };
 
   dir = path: "d \"${path}\" 0755 ${user} ${group} -";
-  escape = str: builtins.replaceStrings [" "] ["\\x20"] str;
-  link = path: target: "L+ \"${path}\" - - - - ${escape target}";
 
-  mkTargetRules = name: cfg: let
+  mkTargetDirs = name: cfg: let
     layout = layouts.${cfg.layout};
     romSystems = builtins.filter (s: layout.romFolder s != null) cfg.systems;
     saveCores = lib.unique (builtins.filter (x: x != null) (map layout.saveFolder cfg.systems));
@@ -51,9 +49,37 @@
       (dir "${base}/_targets/${name}/saves")
       (dir "${base}/_targets/${name}/bios")
     ]
-    ++ map (s: link "${base}/_targets/${name}/roms/${layout.romFolder s}" "${base}/roms/${s}") romSystems
-    ++ map (c: link "${base}/_targets/${name}/saves/${c}" "${base}/saves/${c}") saveCores
-    ++ map (s: link "${base}/_targets/${name}/bios/${layout.biosFolder s}" "${base}/bios/${s}") biosSystems;
+    ++ map (s: dir "${base}/_targets/${name}/roms/${layout.romFolder s}") romSystems
+    ++ map (c: dir "${base}/_targets/${name}/saves/${c}") saveCores
+    ++ map (s: dir "${base}/_targets/${name}/bios/${layout.biosFolder s}") biosSystems;
+
+  mkTargetMounts = name: cfg: let
+    layout = layouts.${cfg.layout};
+    romSystems = builtins.filter (s: layout.romFolder s != null) cfg.systems;
+    saveCores = lib.unique (builtins.filter (x: x != null) (map layout.saveFolder cfg.systems));
+    biosSystems = builtins.filter (s: layout.biosFolder s != null) cfg.systems;
+  in
+    (map (s: {
+      name = "${base}/_targets/${name}/roms/${layout.romFolder s}";
+      value = {
+        device = "${base}/roms/${s}";
+        options = ["bind"];
+      };
+    }) romSystems)
+    ++ (map (c: {
+      name = "${base}/_targets/${name}/saves/${c}";
+      value = {
+        device = "${base}/saves/${c}";
+        options = ["bind"];
+      };
+    }) saveCores)
+    ++ (map (s: {
+      name = "${base}/_targets/${name}/bios/${layout.biosFolder s}";
+      value = {
+        device = "${base}/bios/${s}";
+        options = ["bind"];
+      };
+    }) biosSystems);
 
   baseBiosSystems = lib.unique (
     lib.concatMap (cfg:
@@ -200,7 +226,11 @@ in {
     ++ map (s: dir "${base}/roms/${s}") systems
     ++ map (s: dir "${base}/bios/${s}") baseBiosSystems
     ++ map (s: dir "${base}/saves/${s}") baseSaveDirs
-    ++ lib.concatLists (lib.mapAttrsToList mkTargetRules targets);
+    ++ lib.concatLists (lib.mapAttrsToList mkTargetDirs targets);
+
+  fileSystems = lib.listToAttrs (
+    lib.concatLists (lib.mapAttrsToList mkTargetMounts targets)
+  );
 
   services.syncthing = {
     enable = true;
