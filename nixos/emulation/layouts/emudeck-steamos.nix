@@ -3,139 +3,136 @@
   romFolder = system: system;
 
   # https://emudeck.github.io/save-management/steamos/save-management/
-  saveFolder = system:
-    {
+  saveFolder = system: let
+    mappings = {
       # nintendo
-      gb = "retroarch/saves/Gambatte";
-      gbc = "retroarch/saves/Gambatte";
-      sgb = "retroarch/saves/Gambatte";
-      gba = "retroarch/saves/mGBA";
-      nes = "retroarch/saves/Mesen";
-      famicom = "retroarch/saves/Mesen";
-      fds = "retroarch/saves/Mesen";
-      snes = "retroarch/saves/Snes9x";
-      sfc = "retroarch/saves/Snes9x";
-      snesna = "retroarch/saves/Snes9x";
-      sneshd = "retroarch/saves/Snes9x";
-      satellaview = "retroarch/saves/Snes9x";
-      sufami = "retroarch/saves/Snes9x";
-      n64 = "retroarch/saves/Mupen64Plus-Next";
-      n64dd = "retroarch/saves/Mupen64Plus-Next";
-      nds = "melonds/saves";
-      virtualboy = "retroarch/saves/Beetle VB";
-      pokemini = "retroarch/saves/PokeMini";
-      gamecube = "dolphin/GC";
-      gc = "dolphin/GC";
-      wii = "dolphin/Wii";
-      primehacks = "dolphin/Wii";
-      n3ds = "azahar/saves";
-      wiiu = "Cemu/saves";
-      switch = "ryujinx/saves";
+      gb = { base = "gambatte"; target = "retroarch/saves/Gambatte"; };
+      gbc = { base = "gambatte"; target = "retroarch/saves/Gambatte"; };
+      sgb = { base = "gambatte"; target = "retroarch/saves/Gambatte"; };
+      gba = { base = "mgba"; target = "retroarch/saves/mGBA"; };
+      nes = { base = "mesen"; target = "retroarch/saves/Mesen"; };
+      famicom = { base = "mesen"; target = "retroarch/saves/Mesen"; };
+      fds = { base = "mesen"; target = "retroarch/saves/Mesen"; };
+      snes = { base = "snes9x"; target = "retroarch/saves/Snes9x"; };
+      sfc = { base = "snes9x"; target = "retroarch/saves/Snes9x"; };
+      snesna = { base = "snes9x"; target = "retroarch/saves/Snes9x"; };
+      sneshd = { base = "snes9x"; target = "retroarch/saves/Snes9x"; };
+      satellaview = { base = "snes9x"; target = "retroarch/saves/Snes9x"; };
+      sufami = { base = "snes9x"; target = "retroarch/saves/Snes9x"; };
+      n64 = { base = "mupen64plus"; target = "retroarch/saves/Mupen64Plus-Next"; };
+      n64dd = { base = "mupen64plus"; target = "retroarch/saves/Mupen64Plus-Next"; };
+      nds = { base = "melonds"; target = "melonds/saves"; };
+      virtualboy = { base = "beetle-vb"; target = "retroarch/saves/Beetle VB"; };
+      pokemini = { base = "pokemini"; target = "retroarch/saves/PokeMini"; };
+      gamecube = { base = "dolphin-gc"; target = "dolphin/GC"; };
+      gc = { base = "dolphin-gc"; target = "dolphin/GC"; };
+      wii = { base = "dolphin-wii"; target = "dolphin/Wii"; };
+      primehacks = { base = "dolphin-wii"; target = "dolphin/Wii"; };
+      n3ds = { base = "azahar"; target = "azahar/saves"; };
+      wiiu = { base = "cemu"; target = "Cemu/saves"; };
+      switch = { base = "ryujinx"; target = "ryujinx/saves"; };
 
       # sega
-      genesis = "retroarch/saves/Genesis Plus GX";
-      megadrive = "retroarch/saves/Genesis Plus GX";
-      megadrivejp = "retroarch/saves/Genesis Plus GX";
-      genesiswide = "retroarch/saves/Genesis Plus GX Wide";
-      mastersystem = "retroarch/saves/Genesis Plus GX";
-      gamegear = "retroarch/saves/Genesis Plus GX";
-      sg-1000 = "retroarch/saves/Genesis Plus GX";
-      segacd = "retroarch/saves/Genesis Plus GX";
-      megacd = "retroarch/saves/Genesis Plus GX";
-      megacdjp = "retroarch/saves/Genesis Plus GX";
-      sega32x = "retroarch/saves/PicoDrive";
-      sega32xjp = "retroarch/saves/PicoDrive";
-      sega32xna = "retroarch/saves/PicoDrive";
-      saturn = "retroarch/saves/Beetle Saturn";
-      saturnjp = "retroarch/saves/Beetle Saturn";
-      dreamcast = "retroarch/saves/Flycast";
-      naomi = "retroarch/saves/Flycast";
-      naomi2 = "retroarch/saves/Flycast";
-      naomigd = "retroarch/saves/Flycast";
-      atomiswave = "retroarch/saves/Flycast";
+      genesis = { base = "genesis-plus-gx"; target = "retroarch/saves/Genesis Plus GX"; };
+      megadrive = { base = "genesis-plus-gx"; target = "retroarch/saves/Genesis Plus GX"; };
+      megadrivejp = { base = "genesis-plus-gx"; target = "retroarch/saves/Genesis Plus GX"; };
+      genesiswide = { base = "genesis-plus-gx-wide"; target = "retroarch/saves/Genesis Plus GX Wide"; };
+      mastersystem = { base = "genesis-plus-gx"; target = "retroarch/saves/Genesis Plus GX"; };
+      gamegear = { base = "genesis-plus-gx"; target = "retroarch/saves/Genesis Plus GX"; };
+      sg-1000 = { base = "genesis-plus-gx"; target = "retroarch/saves/Genesis Plus GX"; };
+      segacd = { base = "genesis-plus-gx"; target = "retroarch/saves/Genesis Plus GX"; };
+      megacd = { base = "genesis-plus-gx"; target = "retroarch/saves/Genesis Plus GX"; };
+      megacdjp = { base = "genesis-plus-gx"; target = "retroarch/saves/Genesis Plus GX"; };
+      sega32x = { base = "picodrive"; target = "retroarch/saves/PicoDrive"; };
+      sega32xjp = { base = "picodrive"; target = "retroarch/saves/PicoDrive"; };
+      sega32xna = { base = "picodrive"; target = "retroarch/saves/PicoDrive"; };
+      saturn = { base = "beetle-saturn"; target = "retroarch/saves/Beetle Saturn"; };
+      saturnjp = { base = "beetle-saturn"; target = "retroarch/saves/Beetle Saturn"; };
+      dreamcast = { base = "flycast"; target = "retroarch/saves/Flycast"; };
+      naomi = { base = "flycast"; target = "retroarch/saves/Flycast"; };
+      naomi2 = { base = "flycast"; target = "retroarch/saves/Flycast"; };
+      naomigd = { base = "flycast"; target = "retroarch/saves/Flycast"; };
+      atomiswave = { base = "flycast"; target = "retroarch/saves/Flycast"; };
 
       # sony
-      psx = "duckstation/saves";
-      ps2 = "pcsx2/sstates";
-      ps3 = "rpcs3/trophy";
-      psp = "ppsspp/saves";
-      psvita = "Vita3K/saves";
+      psx = { base = "duckstation"; target = "duckstation/saves"; };
+      ps2 = { base = "pcsx2"; target = "pcsx2/sstates"; };
+      ps3 = { base = "rpcs3"; target = "rpcs3/trophy"; };
+      psp = { base = "ppsspp"; target = "ppsspp/saves"; };
+      psvita = { base = "vita3k"; target = "Vita3K/saves"; };
 
       # nec
-      pcengine = "retroarch/saves/Beetle PCE";
-      pcenginecd = "retroarch/saves/Beetle PCE";
-      tg16 = "retroarch/saves/Beetle PCE";
-      tg-cd = "retroarch/saves/Beetle PCE";
-      supergrafx = "retroarch/saves/Beetle SuperGrafx";
-      pcfx = "retroarch/saves/Beetle PC-FX";
+      pcengine = { base = "beetle-pce"; target = "retroarch/saves/Beetle PCE"; };
+      pcenginecd = { base = "beetle-pce"; target = "retroarch/saves/Beetle PCE"; };
+      tg16 = { base = "beetle-pce"; target = "retroarch/saves/Beetle PCE"; };
+      tg-cd = { base = "beetle-pce"; target = "retroarch/saves/Beetle PCE"; };
+      supergrafx = { base = "beetle-supergrafx"; target = "retroarch/saves/Beetle SuperGrafx"; };
+      pcfx = { base = "beetle-pcfx"; target = "retroarch/saves/Beetle PC-FX"; };
 
       # snk
-      neogeo = "retroarch/saves/FinalBurn Neo";
-      neogeocd = "retroarch/saves/NeoCD";
-      neogeocdjp = "retroarch/saves/NeoCD";
-      ngp = "retroarch/saves/Beetle NeoPop";
-      ngpc = "retroarch/saves/Beetle NeoPop";
+      neogeo = { base = "fbneo"; target = "retroarch/saves/FinalBurn Neo"; };
+      neogeocd = { base = "neocd"; target = "retroarch/saves/NeoCD"; };
+      neogeocdjp = { base = "neocd"; target = "retroarch/saves/NeoCD"; };
+      ngp = { base = "beetle-neopop"; target = "retroarch/saves/Beetle NeoPop"; };
+      ngpc = { base = "beetle-neopop"; target = "retroarch/saves/Beetle NeoPop"; };
 
       # atari
-      atari2600 = "retroarch/saves/Stella";
-      atari5200 = "retroarch/saves/a5200";
-      atari7800 = "retroarch/saves/ProSystem";
-      atari800 = "retroarch/saves/Atari800";
-      atarixe = "retroarch/saves/Atari800";
-      atarilynx = "retroarch/saves/Beetle Lynx";
-      atarijaguar = "bigpemu/saves";
-      atarist = "retroarch/saves/Hatari";
+      atari2600 = { base = "stella"; target = "retroarch/saves/Stella"; };
+      atari5200 = { base = "a5200"; target = "retroarch/saves/a5200"; };
+      atari7800 = { base = "prosystem"; target = "retroarch/saves/ProSystem"; };
+      atari800 = { base = "atari800"; target = "retroarch/saves/Atari800"; };
+      atarixe = { base = "atari800"; target = "retroarch/saves/Atari800"; };
+      atarilynx = { base = "beetle-lynx"; target = "retroarch/saves/Beetle Lynx"; };
+      atarijaguar = { base = "bigpemu"; target = "bigpemu/saves"; };
+      atarist = { base = "hatari"; target = "retroarch/saves/Hatari"; };
 
       # other consoles
-      "3do" = "retroarch/saves/Opera";
-      colecovision = "retroarch/saves/blueMSX";
-      intellivision = "retroarch/saves/FreeIntv";
-      odyssey2 = "retroarch/saves/O2EM";
-      videopac = "retroarch/saves/O2EM";
-      vectrex = "retroarch/saves/vecx";
-      channelf = "retroarch/saves/FreeChaF";
-      wonderswan = "retroarch/saves/Beetle Cygne";
-      wonderswancolor = "retroarch/saves/Beetle Cygne";
-      supervision = "retroarch/saves/Potator";
+      "3do" = { base = "opera"; target = "retroarch/saves/Opera"; };
+      colecovision = { base = "bluemsx"; target = "retroarch/saves/blueMSX"; };
+      intellivision = { base = "freeintv"; target = "retroarch/saves/FreeIntv"; };
+      odyssey2 = { base = "o2em"; target = "retroarch/saves/O2EM"; };
+      videopac = { base = "o2em"; target = "retroarch/saves/O2EM"; };
+      vectrex = { base = "vecx"; target = "retroarch/saves/vecx"; };
+      channelf = { base = "freechaf"; target = "retroarch/saves/FreeChaF"; };
+      wonderswan = { base = "beetle-cygne"; target = "retroarch/saves/Beetle Cygne"; };
+      wonderswancolor = { base = "beetle-cygne"; target = "retroarch/saves/Beetle Cygne"; };
+      supervision = { base = "potator"; target = "retroarch/saves/Potator"; };
 
       # computers
-      amiga = "retroarch/saves/PUAE";
-      amiga1200 = "retroarch/saves/PUAE";
-      amiga600 = "retroarch/saves/PUAE";
-      amigacd32 = "retroarch/saves/PUAE";
-      cdtv = "retroarch/saves/PUAE";
-      c64 = "retroarch/saves/VICE x64sc";
-      c16 = "retroarch/saves/VICE xplus4";
-      vic20 = "retroarch/saves/VICE xvic";
-      msx = "retroarch/saves/blueMSX";
-      msx1 = "retroarch/saves/blueMSX";
-      msx2 = "retroarch/saves/blueMSX";
-      msxturbor = "retroarch/saves/blueMSX";
-      dos = "retroarch/saves/DOSBox Pure";
-      pc = "retroarch/saves/DOSBox Pure";
-      pc88 = "retroarch/saves/QUASI88";
-      pc98 = "retroarch/saves/Neko Project II kai";
-      x68000 = "retroarch/saves/PX68K";
-      zxspectrum = "retroarch/saves/Fuse";
-      zx81 = "retroarch/saves/EightyOne";
-      amstradcpc = "retroarch/saves/Caprice32";
-      scummvm = "scummvm/saves";
+      amiga = { base = "puae"; target = "retroarch/saves/PUAE"; };
+      amiga1200 = { base = "puae"; target = "retroarch/saves/PUAE"; };
+      amiga600 = { base = "puae"; target = "retroarch/saves/PUAE"; };
+      amigacd32 = { base = "puae"; target = "retroarch/saves/PUAE"; };
+      cdtv = { base = "puae"; target = "retroarch/saves/PUAE"; };
+      c64 = { base = "vice-x64sc"; target = "retroarch/saves/VICE x64sc"; };
+      c16 = { base = "vice-xplus4"; target = "retroarch/saves/VICE xplus4"; };
+      vic20 = { base = "vice-xvic"; target = "retroarch/saves/VICE xvic"; };
+      msx = { base = "bluemsx"; target = "retroarch/saves/blueMSX"; };
+      msx1 = { base = "bluemsx"; target = "retroarch/saves/blueMSX"; };
+      msx2 = { base = "bluemsx"; target = "retroarch/saves/blueMSX"; };
+      msxturbor = { base = "bluemsx"; target = "retroarch/saves/blueMSX"; };
+      dos = { base = "dosbox-pure"; target = "retroarch/saves/DOSBox Pure"; };
+      pc = { base = "dosbox-pure"; target = "retroarch/saves/DOSBox Pure"; };
+      pc88 = { base = "quasi88"; target = "retroarch/saves/QUASI88"; };
+      pc98 = { base = "np2kai"; target = "retroarch/saves/Neko Project II kai"; };
+      x68000 = { base = "px68k"; target = "retroarch/saves/PX68K"; };
+      zxspectrum = { base = "fuse"; target = "retroarch/saves/Fuse"; };
+      zx81 = { base = "eightyone"; target = "retroarch/saves/EightyOne"; };
+      amstradcpc = { base = "caprice32"; target = "retroarch/saves/Caprice32"; };
+      scummvm = { base = "scummvm"; target = "scummvm/saves"; };
 
       # arcade
-      arcade = "retroarch/saves/FinalBurn Neo";
-      fba = "retroarch/saves/FinalBurn Neo";
-      fbneo = "retroarch/saves/FinalBurn Neo";
-      cps = "retroarch/saves/FinalBurn Neo";
-      cps1 = "retroarch/saves/FinalBurn Neo";
-      cps2 = "retroarch/saves/FinalBurn Neo";
-      cps3 = "retroarch/saves/FinalBurn Neo";
-      mame = "retroarch/saves/MAME 2003-Plus";
-      daphne = "retroarch/saves/DirkSimple";
-    }
-    .${
-      system
-    }
-    or null;
+      arcade = { base = "fbneo"; target = "retroarch/saves/FinalBurn Neo"; };
+      fba = { base = "fbneo"; target = "retroarch/saves/FinalBurn Neo"; };
+      fbneo = { base = "fbneo"; target = "retroarch/saves/FinalBurn Neo"; };
+      cps = { base = "fbneo"; target = "retroarch/saves/FinalBurn Neo"; };
+      cps1 = { base = "fbneo"; target = "retroarch/saves/FinalBurn Neo"; };
+      cps2 = { base = "fbneo"; target = "retroarch/saves/FinalBurn Neo"; };
+      cps3 = { base = "fbneo"; target = "retroarch/saves/FinalBurn Neo"; };
+      mame = { base = "mame2003plus"; target = "retroarch/saves/MAME 2003-Plus"; };
+      daphne = { base = "dirksimple"; target = "retroarch/saves/DirkSimple"; };
+    };
+  in mappings.${system} or null;
 
   biosFolder = system:
     {

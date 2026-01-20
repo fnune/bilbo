@@ -31,36 +31,33 @@
     }
     or null;
 
-  saveFolder = system:
-    {
-      gb = "GB";
-      gbc = "GBC";
-      gba = "GBA";
-      nes = "FC";
-      famicom = "FC";
-      snes = "SFC";
-      sfc = "SFC";
-      genesis = "MD";
-      megadrive = "MD";
-      mastersystem = "MS";
-      gamegear = "GG";
-      segacd = "SEGACD";
-      psx = "PS";
-      nds = "NDS";
-      dreamcast = "DC";
-      pcengine = "PCE";
-      tg16 = "PCE";
-      neogeo = "FBN";
-      arcade = "FBN";
-      fbneo = "FBN";
-      atarilynx = "LYNX";
-      pokemini = "PKM";
-      pico8 = "PICO";
-    }
-    .${
-      system
-    }
-    or null;
+  saveFolder = system: let
+    mappings = {
+      gb = { base = "gambatte"; target = "GB"; };
+      gbc = { base = "gambatte"; target = "GBC"; };
+      gba = { base = "mgba"; target = "GBA"; };
+      nes = { base = "mesen"; target = "FC"; };
+      famicom = { base = "mesen"; target = "FC"; };
+      snes = { base = "snes9x"; target = "SFC"; };
+      sfc = { base = "snes9x"; target = "SFC"; };
+      genesis = { base = "genesis-plus-gx"; target = "MD"; };
+      megadrive = { base = "genesis-plus-gx"; target = "MD"; };
+      mastersystem = { base = "genesis-plus-gx"; target = "MS"; };
+      gamegear = { base = "genesis-plus-gx"; target = "GG"; };
+      segacd = { base = "genesis-plus-gx"; target = "SEGACD"; };
+      psx = { base = "duckstation"; target = "PS"; };
+      nds = { base = "melonds"; target = "NDS"; };
+      dreamcast = { base = "flycast"; target = "DC"; };
+      pcengine = { base = "beetle-pce"; target = "PCE"; };
+      tg16 = { base = "beetle-pce"; target = "PCE"; };
+      neogeo = { base = "fbneo"; target = "FBN"; };
+      arcade = { base = "fbneo"; target = "FBN"; };
+      fbneo = { base = "fbneo"; target = "FBN"; };
+      atarilynx = { base = "beetle-lynx"; target = "LYNX"; };
+      pokemini = { base = "pokemini"; target = "PKM"; };
+      pico8 = { base = "pico8"; target = "PICO"; };
+    };
+  in mappings.${system} or null;
 
   biosFolder = system:
     {

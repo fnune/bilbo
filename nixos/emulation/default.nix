@@ -47,7 +47,8 @@
   mkTargetDirs = name: cfg: let
     layout = layouts.${cfg.layout};
     romSystems = builtins.filter (s: layout.romFolder s != null) cfg.systems;
-    saveCores = lib.unique (builtins.filter (x: x != null) (map layout.saveFolder cfg.systems));
+    saveMappings = builtins.filter (x: x != null) (map layout.saveFolder cfg.systems);
+    saveTargets = lib.unique (map (m: m.target) saveMappings);
     biosSystems = builtins.filter (s: layout.biosFolder s != null) cfg.systems;
   in
     [
@@ -57,13 +58,13 @@
       (dir "${base}/_targets/${name}/bios")
     ]
     ++ map (s: dir "${base}/_targets/${name}/roms/${layout.romFolder s}") romSystems
-    ++ map (c: dir "${base}/_targets/${name}/saves/${c}") saveCores
+    ++ map (t: dir "${base}/_targets/${name}/saves/${t}") saveTargets
     ++ map (s: dir "${base}/_targets/${name}/bios/${layout.biosFolder s}") biosSystems;
 
   mkTargetMounts = name: cfg: let
     layout = layouts.${cfg.layout};
     romSystems = builtins.filter (s: layout.romFolder s != null) cfg.systems;
-    saveCores = lib.unique (builtins.filter (x: x != null) (map layout.saveFolder cfg.systems));
+    saveMappings = lib.unique (builtins.filter (x: x != null) (map layout.saveFolder cfg.systems));
     biosSystems = builtins.filter (s: layout.biosFolder s != null) cfg.systems;
   in
     (map (s: {
@@ -73,13 +74,13 @@
         options = ["bind"];
       };
     }) romSystems)
-    ++ (map (c: {
-      name = "${base}/_targets/${name}/saves/${c}";
+    ++ (map (m: {
+      name = "${base}/_targets/${name}/saves/${m.target}";
       value = {
-        device = "${base}/saves/${c}";
+        device = "${base}/saves/${m.base}";
         options = ["bind"];
       };
-    }) saveCores)
+    }) saveMappings)
     ++ (map (s: {
       name = "${base}/_targets/${name}/bios/${layout.biosFolder s}";
       value = {
@@ -95,8 +96,9 @@
   );
 
   baseSaveDirs = lib.unique (
-    builtins.filter (x: x != null)
-    (lib.concatMap (cfg: map (layouts.${cfg.layout}).saveFolder cfg.systems) (lib.attrValues targets))
+    map (m: m.base)
+    (builtins.filter (x: x != null)
+      (lib.concatMap (cfg: map (layouts.${cfg.layout}).saveFolder cfg.systems) (lib.attrValues targets)))
   );
 
   mkSetupScript = name: cfg: let
