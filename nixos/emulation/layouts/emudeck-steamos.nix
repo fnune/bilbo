@@ -151,6 +151,7 @@
       pcfx = "pcfx";
       nds = "nds";
       n3ds = "citra";
+      psx = "duckstation";
       ps2 = "pcsx2";
       ps3 = "rpcs3";
       psp = "ppsspp";
