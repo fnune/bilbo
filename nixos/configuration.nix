@@ -52,10 +52,18 @@
   };
 
   environment.systemPackages = with pkgs; [
+    curl
+    fd
+    file
     git
     htop
+    jq
     neovim
+    ripgrep
     tmux
+    tree
+    unzip
+    wget
   ];
 
   environment.sessionVariables = {
