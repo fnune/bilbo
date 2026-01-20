@@ -55,7 +55,7 @@
       atomiswave = "Flycast";
 
       # sony
-      psx = "Beetle PSX HW";
+      psx = "duckstation/saves";
       ps2 = "pcsx2/sstates";
       ps3 = "rpcs3/saves";
       psp = "PPSSPP";
