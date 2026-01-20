@@ -108,7 +108,13 @@
     set -euo pipefail
 
     readonly SERVER_ID="__SERVER_ID__"
-    readonly SYNCTHING_CONFIG="''${SYNCTHING_CONFIG:-$HOME/.config/syncthing}"
+    if [[ -n "''${SYNCTHING_CONFIG:-}" ]]; then
+      readonly SYNCTHING_CONFIG="$SYNCTHING_CONFIG"
+    elif [[ -f "$HOME/.local/state/syncthing/config.xml" ]]; then
+      readonly SYNCTHING_CONFIG="$HOME/.local/state/syncthing"
+    else
+      readonly SYNCTHING_CONFIG="$HOME/.config/syncthing"
+    fi
 
     err() { echo "$*" >&2; }
     die() { err "$*"; exit 1; }
@@ -141,10 +147,10 @@
 
     if [[ ! -f "$SYNCTHING_CONFIG/config.xml" ]]; then
       echo "No Syncthing config found. Generating keys..."
-      syncthing generate --config="$SYNCTHING_CONFIG"
+      syncthing generate --home="$SYNCTHING_CONFIG"
     fi
 
-    readonly LOCAL_ID=$(syncthing --device-id --config="$SYNCTHING_CONFIG" 2>/dev/null)
+    readonly LOCAL_ID=$(xmlstarlet sel -t -v "/configuration/device[1]/@id" "$SYNCTHING_CONFIG/config.xml" 2>/dev/null)
     [[ -n "$LOCAL_ID" ]] || die "Failed to get device ID"
 
     echo "Server ID: $SERVER_ID"
@@ -221,7 +227,7 @@
     add_folder "${name}-bios" "$BASE_PATH/${device.bios}" "receiveonly"
 
     echo "Starting Syncthing..."
-    systemctl --user start syncthing.service 2>/dev/null || syncthing serve --config="$SYNCTHING_CONFIG" &
+    systemctl --user start syncthing.service 2>/dev/null || syncthing serve --home="$SYNCTHING_CONFIG" &
 
     echo "Done! (Backup at $CONFIG.bak)"
   '';
