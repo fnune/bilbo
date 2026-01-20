@@ -62,7 +62,7 @@
 
       # sony
       psx = { base = "duckstation"; target = "duckstation/saves"; };
-      ps2 = { base = "pcsx2"; target = "pcsx2/sstates"; };
+      ps2 = { base = "pcsx2"; target = "pcsx2/saves"; };
       ps3 = { base = "rpcs3"; target = "rpcs3/trophy"; };
       psp = { base = "ppsspp"; target = "ppsspp/saves"; };
       psvita = { base = "vita3k"; target = "Vita3K/saves"; };
