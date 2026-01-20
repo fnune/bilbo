@@ -27,7 +27,7 @@
       sufami = { base = "snes9x"; target = "retroarch/saves/Snes9x"; };
       n64 = { base = "mupen64plus"; target = "retroarch/saves/Mupen64Plus-Next"; };
       n64dd = { base = "mupen64plus"; target = "retroarch/saves/Mupen64Plus-Next"; };
-      nds = { base = "melonds"; target = "melonds/saves"; };
+      nds = { base = "melonds"; target = "retroarch/saves/melonDS DS"; };
       virtualboy = { base = "beetle-vb"; target = "retroarch/saves/Beetle VB"; };
       pokemini = { base = "pokemini"; target = "retroarch/saves/PokeMini"; };
       gamecube = { base = "dolphin-gc"; target = "dolphin/GC"; };
