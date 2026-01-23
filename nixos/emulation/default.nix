@@ -19,10 +19,15 @@
   # Or from Syncthing web UI: Actions > Show ID
   deviceIds = {
     feanor = "5DH5XRC-UIS26BR-CJNHQRJ-2TMGY4C-2KB2OZL-V66D22Y-ORCFTMR-UNHXPQ6";
+    steamdeck = "Q7N4DRS-7A5GSDL-TBTLECF-JQTRI5O-FJN4LXE-CDJQF3X-CVIWGVN-QEPB4QT";
   };
 
   targets = {
     feanor = {
+      layout = "emudeck-steamos";
+      systems = systems;
+    };
+    steamdeck = {
       layout = "emudeck-steamos";
       systems = systems;
     };
