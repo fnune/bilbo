@@ -90,7 +90,6 @@
     ./backups.nix
     ./bazarr.nix
     ./caddy.nix
-    ./emulation
     ./filebrowser.nix
     ./homepage.nix
     ./immich.nix
