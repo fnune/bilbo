@@ -80,12 +80,8 @@
       KbdInteractiveAuthentication = false;
     };
   };
-  networking.firewall.allowedTCPPorts = [22];
-
-  services.syncthing = {
-    openDefaultPorts = true;
-    systemService = false;
-  };
+  networking.firewall.allowedTCPPorts = [22 22100];
+  networking.firewall.allowedUDPPorts = [22100 21127];
 
   security.sudo.extraConfig = "Defaults pwfeedback";
 
