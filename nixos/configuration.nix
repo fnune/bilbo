@@ -82,6 +82,11 @@
   };
   networking.firewall.allowedTCPPorts = [22];
 
+  services.syncthing = {
+    openDefaultPorts = true;
+    systemService = false;
+  };
+
   security.sudo.extraConfig = "Defaults pwfeedback";
 
   system.stateVersion = "23.05";
