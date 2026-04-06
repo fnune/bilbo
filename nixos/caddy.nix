@@ -1,7 +1,34 @@
-{...}: let
+{pkgs, ...}: let
   domain = "fnune.com";
   bilbo = "bilbo.${domain}";
   immich = "immich.${domain}";
+
+  immichDyndns = pkgs.writeShellApplication {
+    name = "immich-dyndns";
+    runtimeInputs = with pkgs; [curl jq];
+    text = ''
+      TOKEN=$(cat /etc/cloudflare/token)
+      IP=$(curl -sf https://api.ipify.org)
+
+      ZONE_ID=$(curl -sf -H "Authorization: Bearer $TOKEN" \
+        "https://api.cloudflare.com/client/v4/zones?name=${domain}" | jq -r '.result[0].id')
+
+      RECORD=$(curl -sf -H "Authorization: Bearer $TOKEN" \
+        "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=${immich}&type=A")
+
+      RECORD_ID=$(echo "$RECORD" | jq -r '.result[0].id')
+
+      if [ "$RECORD_ID" = "null" ]; then
+        curl -sf -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+          -d "{\"type\":\"A\",\"name\":\"${immich}\",\"content\":\"$IP\",\"proxied\":false}" \
+          "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records"
+      else
+        curl -sf -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+          -d "{\"type\":\"A\",\"name\":\"${immich}\",\"content\":\"$IP\",\"proxied\":false}" \
+          "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID"
+      fi
+    '';
+  };
 in {
   networking.firewall = {
     allowedTCPPorts = [443];
@@ -11,11 +38,23 @@ in {
       };
     };
   };
+
+  systemd.services.immich-dyndns = {
+    description = "Update Cloudflare DNS for ${immich} (DNS-only, no proxy)";
+    after = ["network-online.target"];
+    wants = ["network-online.target"];
+    startAt = "*:0/5";
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${immichDyndns}/bin/immich-dyndns";
+    };
+  };
+
   services = {
     cloudflare-dyndns = {
       enable = true;
       proxied = true;
-      domains = [bilbo immich];
+      domains = [bilbo];
       apiTokenFile = "/etc/cloudflare/token";
     };
     caddy = let
@@ -60,7 +99,6 @@ in {
       enable = true;
       virtualHosts = {
         "${immich}".extraConfig = ''
-          ${tlsOriginKey}
           ${rootIsImmich}
         '';
         "${bilbo}".extraConfig = ''
