@@ -1,6 +1,7 @@
 {...}: {
   services.homepage-dashboard = {
     enable = true;
+    allowedHosts = "bilbo.fnune.com";
     settings = {
       title = "Bilbo";
       description = "My media server";
