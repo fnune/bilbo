@@ -67,38 +67,38 @@ in {
         }
       '';
       proxiesSupportingSubpath = ''
-        reverse_proxy /grafana/* localhost:2342
-        reverse_proxy /grafana localhost:2342
+        reverse_proxy /grafana/* 127.0.0.1:2342
+        reverse_proxy /grafana 127.0.0.1:2342
 
-        reverse_proxy /nzbget/* localhost:6789
-        reverse_proxy /nzbget localhost:6789
+        reverse_proxy /nzbget/* 127.0.0.1:6789
+        reverse_proxy /nzbget 127.0.0.1:6789
 
-        reverse_proxy /radarr/* localhost:7878
-        reverse_proxy /radarr localhost:7878
+        reverse_proxy /radarr/* 127.0.0.1:7878
+        reverse_proxy /radarr 127.0.0.1:7878
 
-        reverse_proxy /sonarr/* localhost:8989
-        reverse_proxy /sonarr localhost:8989
+        reverse_proxy /sonarr/* 127.0.0.1:8989
+        reverse_proxy /sonarr 127.0.0.1:8989
 
-        reverse_proxy /bazarr/* localhost:6767
-        reverse_proxy /bazarr localhost:6767
+        reverse_proxy /bazarr/* 127.0.0.1:6767
+        reverse_proxy /bazarr 127.0.0.1:6767
 
-        reverse_proxy /readarr/* localhost:8787
-        reverse_proxy /readarr localhost:8787
+        reverse_proxy /readarr/* 127.0.0.1:8787
+        reverse_proxy /readarr 127.0.0.1:8787
 
-        reverse_proxy /filebrowser/* localhost:8080
-        reverse_proxy /filebrowser localhost:8080
+        reverse_proxy /filebrowser/* 127.0.0.1:8080
+        reverse_proxy /filebrowser 127.0.0.1:8080
 
-        reverse_proxy /jellyfin/* localhost:8096
-        reverse_proxy /jellyfin localhost:8096
+        reverse_proxy /jellyfin/* 127.0.0.1:8096
+        reverse_proxy /jellyfin 127.0.0.1:8096
 
       '';
       rootIsHomepage = ''
-        reverse_proxy /* localhost:8082
-        reverse_proxy / localhost:8082
+        reverse_proxy /* 127.0.0.1:8082
+        reverse_proxy / 127.0.0.1:8082
       '';
       rootIsImmich = ''
-        reverse_proxy /* localhost:2283
-        reverse_proxy / localhost:2283
+        reverse_proxy /* 127.0.0.1:2283
+        reverse_proxy / 127.0.0.1:2283
       '';
       tlsOriginKey = ''
         tls /etc/cloudflare/origin-cert.pem /etc/cloudflare/origin-key.pem
