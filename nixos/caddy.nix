@@ -50,6 +50,8 @@ in {
     };
   };
 
+  systemd.services.caddy.serviceConfig.EnvironmentFile = "/etc/cloudflare/caddy-env";
+
   services = {
     cloudflare-dyndns = {
       enable = true;
@@ -58,6 +60,12 @@ in {
       apiTokenFile = "/etc/cloudflare/token";
     };
     caddy = let
+      cloudflareToken = "{$CLOUDFLARE_API_TOKEN}";
+      tlsDnsCloudflare = ''
+        tls {
+          dns cloudflare ${cloudflareToken}
+        }
+      '';
       proxiesSupportingSubpath = ''
         reverse_proxy /grafana/* localhost:2342
         reverse_proxy /grafana localhost:2342
@@ -97,8 +105,13 @@ in {
       '';
     in {
       enable = true;
+      package = pkgs.caddy.withPlugins {
+        plugins = ["github.com/caddy-dns/cloudflare@v0.2.4"];
+        hash = "";
+      };
       virtualHosts = {
         "${immich}".extraConfig = ''
+          ${tlsDnsCloudflare}
           ${rootIsImmich}
         '';
         "${bilbo}".extraConfig = ''
