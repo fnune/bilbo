@@ -1,20 +1,9 @@
-{pkgs, ...}: let
+{pkgs, config, ...}: let
   port = "3210";
-  dataDir = "/var/lib/pincho";
-  appDir = "/opt/pincho";
+  homeDir = config.users.users.fausto.home;
+  appDir = "${homeDir}/pincho";
+  dataDir = "${appDir}/data";
 in {
-  systemd.tmpfiles.rules = [
-    "d ${dataDir} 0755 pincho users -"
-    "d ${appDir} 0755 pincho users -"
-  ];
-
-  users.users.pincho = {
-    isSystemUser = true;
-    group = "users";
-    home = dataDir;
-    createHome = true;
-  };
-
   systemd.services.pincho = {
     description = "Pincho - T1D insulin dose calculator";
     after = ["network.target"];
@@ -22,10 +11,10 @@ in {
     serviceConfig = {
       ExecStart = "${pkgs.nodejs_22}/bin/node ${appDir}/packages/backend/dist/server.js";
       Restart = "always";
-      User = "pincho";
+      User = "fausto";
       Group = "users";
       WorkingDirectory = "${appDir}/packages/backend";
-      EnvironmentFile = "${dataDir}/.env";
+      EnvironmentFile = "${appDir}/.env";
       Environment = [
         "PORT=${port}"
         "DATA_DIR=${dataDir}"
