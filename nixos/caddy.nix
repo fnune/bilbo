@@ -91,6 +91,9 @@ in {
         reverse_proxy /jellyfin/* localhost:8096
         reverse_proxy /jellyfin localhost:8096
 
+        reverse_proxy /pincho/* localhost:3210
+        reverse_proxy /pincho localhost:3210
+
       '';
       rootIsHomepage = ''
         reverse_proxy /* localhost:8082

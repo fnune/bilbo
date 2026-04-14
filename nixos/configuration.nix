@@ -97,6 +97,7 @@
     ./jellyfin.nix
     ./monitoring.nix
     ./nzbget.nix
+    ./pincho.nix
     ./radarr.nix
     ./readarr.nix
     ./sonarr.nix
