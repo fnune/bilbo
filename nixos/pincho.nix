@@ -4,15 +4,15 @@
   appDir = "${homeDir}/pincho";
   dataDir = "${appDir}/data";
 in {
-  systemd.services.pincho = {
+  users.users.fausto.linger = true;
+
+  systemd.user.services.pincho = {
     description = "Pincho - T1D insulin dose calculator";
     after = ["network.target"];
-    wantedBy = ["multi-user.target"];
+    wantedBy = ["default.target"];
     serviceConfig = {
       ExecStart = "${pkgs.nodejs_22}/bin/node ${appDir}/packages/backend/dist/server.js";
       Restart = "always";
-      User = "fausto";
-      Group = "users";
       WorkingDirectory = "${appDir}/packages/backend";
       EnvironmentFile = "${appDir}/.env";
       Environment = [
