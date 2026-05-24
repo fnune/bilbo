@@ -4,6 +4,7 @@
   virtualisation.oci-containers.containers.bindery = {
     image = "ghcr.io/vavallee/bindery:latest";
     autoStart = true;
+    user = "1000:100";
     ports = ["127.0.0.1:8787:8787"];
     volumes = [
       "/var/lib/bindery:/config"
