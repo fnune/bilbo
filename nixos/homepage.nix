@@ -71,10 +71,10 @@
             };
           }
           {
-            "Bindery" = {
-              icon = "mdi-book-search";
-              description = "Book download automation (Readarr replacement)";
-              href = "/bindery";
+            "LazyLibrarian" = {
+              icon = "lazylibrarian.svg";
+              description = "Book download automation";
+              href = "/lazylibrarian";
             };
           }
           {

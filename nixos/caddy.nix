@@ -82,8 +82,8 @@ in {
         reverse_proxy /bazarr/* 127.0.0.1:6767
         reverse_proxy /bazarr 127.0.0.1:6767
 
-        redir /bindery /bindery/ 308
-        reverse_proxy /bindery/* localhost:8787
+        redir /lazylibrarian /lazylibrarian/ 308
+        reverse_proxy /lazylibrarian/* localhost:5299
 
         redir /calibre /calibre/ 308
         reverse_proxy /calibre/* 127.0.0.1:8083 {

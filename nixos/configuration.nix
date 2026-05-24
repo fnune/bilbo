@@ -90,13 +90,13 @@
   imports = [
     ./backups.nix
     ./bazarr.nix
-    ./bindery.nix
     ./caddy.nix
     ./calibre.nix
     ./filebrowser.nix
     ./homepage.nix
     ./immich.nix
     ./jellyfin.nix
+    ./lazylibrarian.nix
     ./monitoring.nix
     ./nzbget.nix
     ./pincho.nix
