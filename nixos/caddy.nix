@@ -82,11 +82,13 @@ in {
         reverse_proxy /bazarr/* 127.0.0.1:6767
         reverse_proxy /bazarr 127.0.0.1:6767
 
+        redir /bindery /bindery/ 308
         reverse_proxy /bindery/* localhost:8787
-        reverse_proxy /bindery localhost:8787
 
-        reverse_proxy /calibre/* 127.0.0.1:8083
-        reverse_proxy /calibre 127.0.0.1:8083
+        redir /calibre /calibre/ 308
+        reverse_proxy /calibre/* 127.0.0.1:8083 {
+          header_up X-Script-Name /calibre
+        }
 
         reverse_proxy /filebrowser/* localhost:8080
         reverse_proxy /filebrowser localhost:8080
