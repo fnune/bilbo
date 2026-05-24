@@ -88,6 +88,8 @@ in {
         redir /calibre /calibre/ 308
         reverse_proxy /calibre/* 127.0.0.1:8083 {
           header_up X-Script-Name /calibre
+          header_up X-Scheme {scheme}
+          header_up X-Forwarded-Host {host}
         }
 
         reverse_proxy /filebrowser/* localhost:8080
