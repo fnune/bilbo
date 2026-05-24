@@ -1,6 +1,7 @@
-{...}: {
+{pkgs, ...}: {
   services.calibre-web = {
     enable = true;
+    package = pkgs.unstable.calibre-web;
     user = "fausto";
     group = "users";
     listen.ip = "127.0.0.1";
