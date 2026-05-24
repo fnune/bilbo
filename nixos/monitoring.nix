@@ -9,6 +9,9 @@
           root_url = "http://localhost:2342/grafana";
           serve_from_sub_path = true;
         };
+        security = {
+          secret_key = "$__file{/etc/grafana/secret-key}";
+        };
       };
     };
     prometheus = {
