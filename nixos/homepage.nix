@@ -71,10 +71,17 @@
             };
           }
           {
-            "Readarr" = {
-              icon = "readarr.svg";
-              description = "Book collection manager and automation";
-              href = "/readarr";
+            "Bindery" = {
+              icon = "mdi-book-search";
+              description = "Book download automation (Readarr replacement)";
+              href = "/bindery";
+            };
+          }
+          {
+            "Calibre" = {
+              icon = "calibre-web.svg";
+              description = "Ebook library with OPDS feed for e-readers";
+              href = "/calibre";
             };
           }
         ];

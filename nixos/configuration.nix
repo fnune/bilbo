@@ -90,7 +90,9 @@
   imports = [
     ./backups.nix
     ./bazarr.nix
+    ./bindery.nix
     ./caddy.nix
+    ./calibre.nix
     ./filebrowser.nix
     ./homepage.nix
     ./immich.nix
@@ -99,7 +101,6 @@
     ./nzbget.nix
     ./pincho.nix
     ./radarr.nix
-    ./readarr.nix
     ./sonarr.nix
   ];
 }
