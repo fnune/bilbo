@@ -12,6 +12,7 @@
       calibreLibrary = "/mnt/downloads-1t/Books";
       enableBookConversion = true;
       enableBookUploading = true;
+      enableKepubify = true;
     };
   };
 }
