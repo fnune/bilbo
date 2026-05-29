@@ -131,8 +131,12 @@ in {
         reverse_proxy / localhost:2283
       '';
       rootIsCalibre = ''
-        reverse_proxy /* 127.0.0.1:8083
-        reverse_proxy / 127.0.0.1:8083
+        reverse_proxy /* 127.0.0.1:8083 {
+          header_up X-Scheme {scheme}
+        }
+        reverse_proxy / 127.0.0.1:8083 {
+          header_up X-Scheme {scheme}
+        }
       '';
       tlsOriginKey = ''
         tls /etc/cloudflare/origin-cert.pem /etc/cloudflare/origin-key.pem
