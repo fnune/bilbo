@@ -1,7 +1,9 @@
 {pkgs, ...}: {
   services.calibre-web = {
     enable = true;
-    package = pkgs.unstable.calibre-web;
+    package = pkgs.unstable.calibre-web.overridePythonAttrs (prev: {
+      dependencies = prev.dependencies ++ prev.optional-dependencies.kobo;
+    });
     user = "fausto";
     group = "users";
     listen.ip = "127.0.0.1";
