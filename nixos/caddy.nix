@@ -1,33 +1,60 @@
-{pkgs, ...}: let
+{
+  pkgs,
+  lib,
+  ...
+}: let
   domain = "fnune.com";
   bilbo = "bilbo.${domain}";
   immich = "immich.${domain}";
+  calibre = "calibre.${domain}";
 
-  immichDyndns = pkgs.writeShellApplication {
-    name = "immich-dyndns";
-    runtimeInputs = with pkgs; [curl jq];
-    text = ''
-      TOKEN=$(cat /etc/cloudflare/token)
-      IP=$(curl -sf https://api.ipify.org)
+  dnsOnlyHosts = [immich calibre];
 
-      ZONE_ID=$(curl -sf -H "Authorization: Bearer $TOKEN" \
-        "https://api.cloudflare.com/client/v4/zones?name=${domain}" | jq -r '.result[0].id')
+  mkDyndns = hostname: let
+    slug = lib.replaceStrings ["."] ["-"] hostname;
+  in
+    pkgs.writeShellApplication {
+      name = "dyndns-${slug}";
+      runtimeInputs = with pkgs; [curl jq];
+      text = ''
+        TOKEN=$(cat /etc/cloudflare/token)
+        IP=$(curl -sf https://api.ipify.org)
 
-      RECORD=$(curl -sf -H "Authorization: Bearer $TOKEN" \
-        "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=${immich}&type=A")
+        ZONE_ID=$(curl -sf -H "Authorization: Bearer $TOKEN" \
+          "https://api.cloudflare.com/client/v4/zones?name=${domain}" | jq -r '.result[0].id')
 
-      RECORD_ID=$(echo "$RECORD" | jq -r '.result[0].id')
+        RECORD=$(curl -sf -H "Authorization: Bearer $TOKEN" \
+          "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=${hostname}&type=A")
 
-      if [ "$RECORD_ID" = "null" ]; then
-        curl -sf -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-          -d "{\"type\":\"A\",\"name\":\"${immich}\",\"content\":\"$IP\",\"proxied\":false}" \
-          "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records"
-      else
-        curl -sf -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-          -d "{\"type\":\"A\",\"name\":\"${immich}\",\"content\":\"$IP\",\"proxied\":false}" \
-          "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID"
-      fi
-    '';
+        RECORD_ID=$(echo "$RECORD" | jq -r '.result[0].id')
+
+        if [ "$RECORD_ID" = "null" ]; then
+          curl -sf -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+            -d "{\"type\":\"A\",\"name\":\"${hostname}\",\"content\":\"$IP\",\"proxied\":false}" \
+            "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records"
+        else
+          curl -sf -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+            -d "{\"type\":\"A\",\"name\":\"${hostname}\",\"content\":\"$IP\",\"proxied\":false}" \
+            "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID"
+        fi
+      '';
+    };
+
+  mkDyndnsService = hostname: let
+    slug = lib.replaceStrings ["."] ["-"] hostname;
+    app = mkDyndns hostname;
+  in {
+    name = "dyndns-${slug}";
+    value = {
+      description = "Update Cloudflare DNS for ${hostname} (DNS-only, no proxy)";
+      after = ["network-online.target"];
+      wants = ["network-online.target"];
+      startAt = "*:0/5";
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = "${app}/bin/dyndns-${slug}";
+      };
+    };
   };
 in {
   networking.firewall = {
@@ -39,18 +66,11 @@ in {
     };
   };
 
-  systemd.services.immich-dyndns = {
-    description = "Update Cloudflare DNS for ${immich} (DNS-only, no proxy)";
-    after = ["network-online.target"];
-    wants = ["network-online.target"];
-    startAt = "*:0/5";
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = "${immichDyndns}/bin/immich-dyndns";
+  systemd.services =
+    (lib.listToAttrs (map mkDyndnsService dnsOnlyHosts))
+    // {
+      caddy.serviceConfig.EnvironmentFile = "/etc/cloudflare/caddy-env";
     };
-  };
-
-  systemd.services.caddy.serviceConfig.EnvironmentFile = "/etc/cloudflare/caddy-env";
 
   services = {
     cloudflare-dyndns = {
@@ -110,6 +130,10 @@ in {
         reverse_proxy /* localhost:2283
         reverse_proxy / localhost:2283
       '';
+      rootIsCalibre = ''
+        reverse_proxy /* 127.0.0.1:8083
+        reverse_proxy / 127.0.0.1:8083
+      '';
       tlsOriginKey = ''
         tls /etc/cloudflare/origin-cert.pem /etc/cloudflare/origin-key.pem
       '';
@@ -123,6 +147,10 @@ in {
         "${immich}".extraConfig = ''
           ${tlsDnsCloudflare}
           ${rootIsImmich}
+        '';
+        "${calibre}".extraConfig = ''
+          ${tlsDnsCloudflare}
+          ${rootIsCalibre}
         '';
         "${bilbo}".extraConfig = ''
           ${tlsOriginKey}
