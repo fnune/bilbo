@@ -102,9 +102,6 @@ in {
         reverse_proxy /bazarr/* 127.0.0.1:6767
         reverse_proxy /bazarr 127.0.0.1:6767
 
-        redir /lazylibrarian /lazylibrarian/ 308
-        reverse_proxy /lazylibrarian/* localhost:5299
-
         redir /calibre /calibre/ 308
         reverse_proxy /calibre/* 127.0.0.1:8083 {
           header_up X-Script-Name /calibre

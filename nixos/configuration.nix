@@ -96,7 +96,6 @@
     ./homepage.nix
     ./immich.nix
     ./jellyfin.nix
-    ./lazylibrarian.nix
     ./monitoring.nix
     ./nzbget.nix
     ./pincho.nix

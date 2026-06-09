@@ -32,9 +32,6 @@ Now, configure each service:
   - For both:
     - Go to Settings -> Indexers and add NZBGeek
     - Go to Settings -> Download Clients and add NZBGet
-- [LazyLibrarian][lazylibrarian]
-  - Add an indexer (NZBGeek) and NZBGet as the download client
-  - Set the eBook library path to `/books` and downloads path to `/downloads`
 - [Calibre][calibre]
   - On first run, point it at `/mnt/downloads-1t/Books` (initialize a Calibre
     library there with `calibredb` if `metadata.db` does not yet exist)
@@ -49,7 +46,6 @@ Now, configure each service:
 [nzbget]: https://bilbo.fnune.com/nzbget
 [radarr]: https://bilbo.fnune.com/radarr
 [sonarr]: https://bilbo.fnune.com/sonarr
-[lazylibrarian]: https://bilbo.fnune.com/lazylibrarian
 [calibre]: https://bilbo.fnune.com/calibre
 
 ## Running in a VM

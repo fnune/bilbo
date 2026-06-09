@@ -71,13 +71,6 @@
             };
           }
           {
-            "LazyLibrarian" = {
-              icon = "lazylibrarian.svg";
-              description = "Book download automation";
-              href = "/lazylibrarian";
-            };
-          }
-          {
             "Calibre" = {
               icon = "calibre-web.svg";
               description = "Ebook library with OPDS feed for e-readers";
