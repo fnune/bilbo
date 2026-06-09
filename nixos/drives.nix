@@ -4,6 +4,12 @@
   downloads-1t-mount = "/mnt/downloads-1t";
   downloads-2t-mount = "/mnt/downloads-2t";
 in {
+  # mdadm --monitor refuses to start without a destination, which leaves
+  # mdmonitor.service failed. There is no MTA on this host, so this is a
+  # placeholder purely to keep the unit happy; RAID health is observed via
+  # the Prometheus node exporter instead.
+  boot.swraid.mdadmConf = "MAILADDR mdadm@example.com";
+
   systemd.services.adjustMountPoints = {
     description = "Adjust mount point permissions";
     wantedBy = ["multi-user.target"];
