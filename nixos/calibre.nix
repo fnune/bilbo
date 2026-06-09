@@ -1,7 +1,7 @@
 {pkgs, ...}: {
   services.calibre-web = {
     enable = true;
-    package = pkgs.unstable.calibre-web.overridePythonAttrs (prev: {
+    package = pkgs.calibre-web.overridePythonAttrs (prev: {
       dependencies = prev.dependencies ++ prev.optional-dependencies.kobo;
     });
     user = "fausto";

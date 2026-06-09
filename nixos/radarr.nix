@@ -1,4 +1,8 @@
-{config, ...}: let
+{
+  config,
+  lib,
+  ...
+}: let
   dataDir = "${config.users.users.fausto.home}/radarr";
 in {
   services.radarr = {
@@ -6,10 +10,9 @@ in {
     user = "fausto";
     group = "users";
     inherit dataDir;
+    settings.server.urlbase = "/radarr";
   };
-  systemd.services.radarr = {
-    preStart = ''
-      sed -i 's|<UrlBase>.*</UrlBase>|<UrlBase>/radarr</UrlBase>|' ${dataDir}/config.xml
-    '';
-  };
+  # 26.05 hardened the unit with ProtectHome (https://github.com/NixOS/nixpkgs/pull/483483),
+  # which would hide our /home dataDir from the service.
+  systemd.services.radarr.serviceConfig.ProtectHome = lib.mkForce false;
 }

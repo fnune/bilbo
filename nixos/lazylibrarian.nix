@@ -1,22 +1,20 @@
 {...}: {
-  virtualisation.docker.enable = true;
-
   systemd.services.lazylibrarian-init = {
     description = "Pre-seed LazyLibrarian config.ini with HTTP_ROOT before container start";
     wantedBy = ["podman-lazylibrarian.service"];
     before = ["podman-lazylibrarian.service"];
     serviceConfig.Type = "oneshot";
     script = ''
-      install -d -m 755 -o fausto -g users /var/lib/lazylibrarian
-      if [ ! -f /var/lib/lazylibrarian/config.ini ]; then
-        cat >/var/lib/lazylibrarian/config.ini <<'EOF'
-[General]
-HTTP_ROOT = /lazylibrarian
-HTTP_HOST = 0.0.0.0
-HTTP_PORT = 5299
-EOF
-        chown fausto:users /var/lib/lazylibrarian/config.ini
-      fi
+            install -d -m 755 -o fausto -g users /var/lib/lazylibrarian
+            if [ ! -f /var/lib/lazylibrarian/config.ini ]; then
+              cat >/var/lib/lazylibrarian/config.ini <<'EOF'
+      [General]
+      HTTP_ROOT = /lazylibrarian
+      HTTP_HOST = 0.0.0.0
+      HTTP_PORT = 5299
+      EOF
+              chown fausto:users /var/lib/lazylibrarian/config.ini
+            fi
     '';
   };
 
