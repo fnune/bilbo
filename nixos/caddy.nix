@@ -157,6 +157,7 @@ in {
           ${tlsOriginKey}
           ${rootIsHomepage}
           ${proxiesSupportingSubpath}
+          import /etc/caddy.d/*.caddy
         '';
         ":80".extraConfig = ''
           ${proxiesSupportingSubpath}
