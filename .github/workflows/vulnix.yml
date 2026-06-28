@@ -1,0 +1,86 @@
+name: vulnix
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: vulnix
+  cancel-in-progress: false
+
+env:
+  ISSUE_TITLE: "vulnix: known CVEs in the bilbo system closure"
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v30
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/vulnix
+          key: vulnix-nvd-${{ github.run_id }}
+          restore-keys: vulnix-nvd-
+
+      - name: Build the system closure
+        run: nix build .#nixosConfigurations.bilbo.config.system.build.toplevel --out-link result
+
+      - name: Scan the closure
+        id: scan
+        run: |
+          set +e
+          nix run nixpkgs#vulnix -- ./result --json > vulnix.json
+          echo "status=$?" >> "$GITHUB_OUTPUT"
+          set -e
+
+      - name: Build the report
+        if: steps.scan.outputs.status == '2'
+        run: |
+          {
+            echo "vulnix found known CVEs in the deployed system closure."
+            echo
+            echo "Last scan: $(date -u '+%Y-%m-%d %H:%M UTC') (run ${GITHUB_RUN_ID})."
+            echo
+            jq -r '.[] | "- **\(.name)** — \(.affected_by | join(", "))"' vulnix.json
+          } > report.md
+
+      - name: Open or update the issue
+        if: steps.scan.outputs.status == '2'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          number=$(gh issue list --state open --search "${ISSUE_TITLE} in:title" \
+            --json number,title --jq "map(select(.title == env.ISSUE_TITLE)) | first | .number // empty")
+          if [ -n "$number" ]; then
+            gh issue edit "$number" --body-file report.md
+          else
+            gh issue create --title "${ISSUE_TITLE}" --body-file report.md
+          fi
+
+      - name: Close the issue on a clean scan
+        if: steps.scan.outputs.status == '0' || steps.scan.outputs.status == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          number=$(gh issue list --state open --search "${ISSUE_TITLE} in:title" \
+            --json number,title --jq "map(select(.title == env.ISSUE_TITLE)) | first | .number // empty")
+          if [ -n "$number" ]; then
+            gh issue close "$number" --comment "Clean scan on $(date -u '+%Y-%m-%d %H:%M UTC'). No known CVEs remain in the closure."
+          fi
+
+      - name: Fail on scan error
+        if: steps.scan.outputs.status != '0' && steps.scan.outputs.status != '1' && steps.scan.outputs.status != '2'
+        run: |
+          echo "vulnix exited with status ${{ steps.scan.outputs.status }}"
+          exit 1

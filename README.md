@@ -48,6 +48,19 @@ Now, configure each service:
 [sonarr]: https://bilbo.fnune.com/sonarr
 [calibre]: https://bilbo.fnune.com/calibre
 
+## Security notifications
+
+The [`vulnix`][vulnix] workflow runs daily on GitHub Actions. It builds the
+committed system closure and scans it against the NVD CVE database. When CVEs
+are found it opens (or updates) a single GitHub issue listing each affected
+package and version; a later clean scan closes that issue. A scan error fails
+the job, so the scheduled-run failure email surfaces a broken scanner.
+
+It scans the closure built from this repository, which matches the deployed
+system as long as `bilbo` is kept rebuilt from `main`.
+
+[vulnix]: .github/workflows/vulnix.yml
+
 ## Running in a VM
 
 Warning: security measures are waived for the VM in order to facilitate testing.
