@@ -27,6 +27,15 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
+      - uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: closure-${{ hashFiles('flake.lock') }}
+          restore-prefixes-first-match: closure-
+          gc-max-store-size-linux: 8G
+          purge: true
+          purge-prefixes: closure-
+          purge-last-accessed: 1209600
+
       - uses: actions/cache@v4
         with:
           path: ~/.cache/vulnix
