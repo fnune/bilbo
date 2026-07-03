@@ -1,6 +1,18 @@
 name: vulnix
 
 on:
+  push:
+    paths:
+      - flake.nix
+      - flake.lock
+      - nixos/**
+      - .github/workflows/vulnix.yml
+  pull_request:
+    paths:
+      - flake.nix
+      - flake.lock
+      - nixos/**
+      - .github/workflows/vulnix.yml
   schedule:
     - cron: "0 6 * * *"
   workflow_dispatch:
@@ -10,8 +22,8 @@ permissions:
   issues: write
 
 concurrency:
-  group: vulnix
-  cancel-in-progress: false
+  group: vulnix-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   ISSUE_TITLE: "vulnix: known CVEs in the bilbo system closure"
@@ -63,9 +75,10 @@ jobs:
             echo
             jq -r '.[] | "- **\(.name)** — \(.affected_by | join(", "))"' vulnix.json
           } > report.md
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Open or update the issue
-        if: steps.scan.outputs.status == '2'
+        if: steps.scan.outputs.status == '2' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -78,7 +91,7 @@ jobs:
           fi
 
       - name: Close the issue on a clean scan
-        if: steps.scan.outputs.status == '0' || steps.scan.outputs.status == '1'
+        if: (steps.scan.outputs.status == '0' || steps.scan.outputs.status == '1') && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
