@@ -7,8 +7,10 @@
   bilbo = "bilbo.${domain}";
   immich = "immich.${domain}";
   calibre = "calibre.${domain}";
+  frigate = "frigate.${domain}";
+  homeAssistant = "home.${domain}";
 
-  dnsOnlyHosts = [immich calibre];
+  dnsOnlyHosts = [immich calibre frigate homeAssistant];
 
   mkDyndns = hostname: let
     slug = lib.replaceStrings ["."] ["-"] hostname;
@@ -118,10 +120,21 @@ in {
         reverse_proxy /pincho/* localhost:3210
         reverse_proxy /pincho localhost:3210
 
+        reverse_proxy /zigbee2mqtt/* localhost:8085
+        reverse_proxy /zigbee2mqtt localhost:8085
+
       '';
       rootIsHomepage = ''
-        reverse_proxy /* localhost:8082
-        reverse_proxy / localhost:8082
+        reverse_proxy /* localhost:8084
+        reverse_proxy / localhost:8084
+      '';
+      rootIsFrigate = ''
+        reverse_proxy /* localhost:8971
+        reverse_proxy / localhost:8971
+      '';
+      rootIsHomeAssistant = ''
+        reverse_proxy /* localhost:8123
+        reverse_proxy / localhost:8123
       '';
       rootIsImmich = ''
         reverse_proxy /* localhost:2283
@@ -152,6 +165,14 @@ in {
         "${calibre}".extraConfig = ''
           ${tlsDnsCloudflare}
           ${rootIsCalibre}
+        '';
+        "${frigate}".extraConfig = ''
+          ${tlsDnsCloudflare}
+          ${rootIsFrigate}
+        '';
+        "${homeAssistant}".extraConfig = ''
+          ${tlsDnsCloudflare}
+          ${rootIsHomeAssistant}
         '';
         "${bilbo}".extraConfig = ''
           ${tlsOriginKey}

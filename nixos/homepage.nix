@@ -1,6 +1,7 @@
 {...}: {
   services.homepage-dashboard = {
     enable = true;
+    listenPort = 8084;
     allowedHosts = "bilbo.fnune.com";
     settings = {
       title = "Bilbo";
@@ -75,6 +76,31 @@
               icon = "calibre-web.svg";
               description = "Ebook library with OPDS feed for e-readers";
               href = "/calibre";
+            };
+          }
+        ];
+      }
+      {
+        "Home" = [
+          {
+            "Home Assistant" = {
+              icon = "home-assistant.svg";
+              description = "Automations, scenes and bedroom lighting";
+              href = "https://home.fnune.com";
+            };
+          }
+          {
+            "Frigate" = {
+              icon = "frigate.svg";
+              description = "Camera recordings and object detection";
+              href = "https://frigate.fnune.com";
+            };
+          }
+          {
+            "Zigbee2MQTT" = {
+              icon = "zigbee2mqtt.svg";
+              description = "Zigbee coordinator and device pairing";
+              href = "/zigbee2mqtt";
             };
           }
         ];
