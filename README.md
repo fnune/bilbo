@@ -112,15 +112,17 @@ localhost; Frigate reads detect and record from the restream. The NixOS Frigate
 module does not configure go2rtc, only proxies to it, so `nixos/frigate.nix`
 enables `services.go2rtc` and hands the same stream definitions to both.
 
-nixpkgs ships no OpenVINO model, only the TFLite CPU one and the OpenVINO
-labelmap. `frigate-openvino-model` extracts it from the official container image
-with `skopeo` before `frigate.service` starts, and skips once it is on disk. To
-refresh it after a version bump:
+nixpkgs ships no detection model, and the OpenVINO detector has no download
+fallback, so `nixos/frigate.nix` fetches one. It uses YOLOX-tiny at 416x416,
+which Megvii publishes as a pre-exported ONNX in a GitHub release, so it is a
+plain `fetchurl` with a hash rather than a conversion pipeline. OpenVINO reads
+ONNX directly. The COCO-80 labelmap comes from the Frigate repo at the packaged
+version; a nixpkgs bump that moves that file will surface as a hash mismatch.
 
-```sh
-rm -rf /var/lib/frigate/openvino-model
-systemctl restart frigate-openvino-model
-```
+The model is a single binding. To trade accuracy for speed, swap the URL for
+`yolox_nano.onnx`, hash
+`sha256-x4kWHtQ8gmn81OZ8Z+7rToDGItouspaiC8YAe9GKC30=`, also 416x416. Nano is
+roughly a sixth of the compute at a few mAP lower.
 
 Frigate prints a generated admin password on first start:
 
@@ -129,17 +131,20 @@ journalctl -u frigate.service | grep 'Password:'
 ```
 
 Log in at [Frigate][frigate], change it, and check inference speed on the System
-Metrics page. Expect 26-28 ms on the iGPU:
+Metrics page. SSDLite MobileNet v2 at 300x300 ran at 29 ms on this iGPU; YOLOX is
+a heavier model, so watch this number. If it approaches the detect interval,
+frames start being skipped and the fix is `yolox_nano.onnx`.
 
 ```sh
 journalctl -u frigate.service | grep -i openvino
 intel_gpu_top
 ```
 
-If OpenVINO will not start on the iGPU, set `device` to `"CPU"` in
-`nixos/frigate.nix`, which keeps the same model. Failing that, replace the
-`detectors` and `model` blocks with `detectors.cpu.type = "cpu"` to fall back to
-the bundled TFLite model, at roughly 150 ms.
+The UHD 600 is Gen9, so OpenCL comes from `intel-compute-runtime-legacy1` in
+`nixos/hardware-acceleration.nix`. The current `intel-compute-runtime` supports
+Gen12 and newer only, and with it OpenVINO fails with "Context was not
+initialized for 0 device". If the GPU will not work at all, set `device` to
+`"CPU"`, which keeps the same model.
 
 Recordings are event-only, retained 30 days for alerts and detections.
 `/var/lib/frigate/recordings` symlinks to `/mnt/downloads-2t/frigate/recordings`,
