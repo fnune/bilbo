@@ -63,7 +63,7 @@ in {
         input_pixel_format = "bgr";
       };
 
-      ffmpeg.hwaccel_args = "preset-vaapi";
+      ffmpeg.hwaccel_args = [];
 
       go2rtc.streams = restreams;
 

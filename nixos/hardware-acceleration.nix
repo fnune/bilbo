@@ -5,7 +5,7 @@
   hardware.graphics = {
     enable = true;
     extraPackages = with pkgs; [
-      intel-compute-runtime
+      intel-compute-runtime-legacy1
       intel-media-driver
       intel-vaapi-driver
       libva-vdpau-driver
