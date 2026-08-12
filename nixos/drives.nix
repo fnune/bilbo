@@ -1,8 +1,17 @@
-{...}: let
+{lib, ...}: let
   mirrored-storage = "mirrored";
   mirrored-storage-mount = "/mnt/mirrored";
   downloads-1t-mount = "/mnt/downloads-1t";
   downloads-2t-mount = "/mnt/downloads-2t";
+
+  surveillance-storage = "${downloads-2t-mount}/frigate";
+
+  claimForFausto = mount: ''
+    find ${mount} -path ${surveillance-storage} -prune -o -print0 \
+      | xargs --null --no-run-if-empty chown fausto:users
+    find ${mount} -path ${surveillance-storage} -prune -o -print0 \
+      | xargs --null --no-run-if-empty chmod 775
+  '';
 in {
   boot.swraid.mdadmConf = "MAILADDR mdadm@example.com";
 
@@ -10,14 +19,11 @@ in {
     description = "Adjust mount point permissions";
     wantedBy = ["multi-user.target"];
     before = ["multi-user.target"];
-    script = ''
-      chown -R fausto:users /mnt/downloads-1t
-      chown -R fausto:users /mnt/downloads-2t
-      chown -R fausto:users /mnt/mirrored
-      chmod -R 775 /mnt/downloads-1t
-      chmod -R 775 /mnt/downloads-2t
-      chmod -R 775 /mnt/mirrored
-    '';
+    script = lib.concatMapStrings claimForFausto [
+      downloads-1t-mount
+      downloads-2t-mount
+      mirrored-storage-mount
+    ];
   };
   disko.devices = {
     disk = {

@@ -7,8 +7,9 @@
   bilbo = "bilbo.${domain}";
   immich = "immich.${domain}";
   calibre = "calibre.${domain}";
+  frigate = "frigate.${domain}";
 
-  dnsOnlyHosts = [immich calibre];
+  dnsOnlyHosts = [immich calibre frigate];
 
   mkDyndns = hostname: let
     slug = lib.replaceStrings ["."] ["-"] hostname;
@@ -120,8 +121,12 @@ in {
 
       '';
       rootIsHomepage = ''
-        reverse_proxy /* localhost:8082
-        reverse_proxy / localhost:8082
+        reverse_proxy /* localhost:8084
+        reverse_proxy / localhost:8084
+      '';
+      rootIsFrigate = ''
+        reverse_proxy /* localhost:8971
+        reverse_proxy / localhost:8971
       '';
       rootIsImmich = ''
         reverse_proxy /* localhost:2283
@@ -152,6 +157,10 @@ in {
         "${calibre}".extraConfig = ''
           ${tlsDnsCloudflare}
           ${rootIsCalibre}
+        '';
+        "${frigate}".extraConfig = ''
+          ${tlsDnsCloudflare}
+          ${rootIsFrigate}
         '';
         "${bilbo}".extraConfig = ''
           ${tlsOriginKey}

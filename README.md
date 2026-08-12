@@ -47,6 +47,107 @@ Now, configure each service:
 [radarr]: https://bilbo.fnune.com/radarr
 [sonarr]: https://bilbo.fnune.com/sonarr
 [calibre]: https://bilbo.fnune.com/calibre
+[frigate]: https://frigate.fnune.com
+
+### Secrets
+
+`/etc/nixos/secrets/go2rtc.env`, mode 600, holding the camera password:
+
+```sh
+CAMERA_PASSWORD=...
+```
+
+It is a systemd `EnvironmentFile`: one `KEY=value` line, no `export`, no quotes,
+no spaces around the `=`. The password is interpolated into an RTSP URL, so avoid
+`@ : / ? #` or percent-encode them.
+
+### Camera
+
+Anpviz IPC-D3243W-S at `192.168.178.109`, on OEM Hikvision-lineage firmware.
+
+| Path | Stream | Role |
+| --- | --- | --- |
+| `stream0` | 2560x1440 at 25 fps | record |
+| `stream1` | 640x360 at 25 fps | detect |
+| `stream2` | does not exist | |
+
+Both ship as H.265; set them to H.264, since H.265 makes live view and playback
+unreliable outside Safari. `detect.width` and `detect.height` in
+`nixos/frigate.nix` are pinned to `stream1`, so re-measure after changing the
+substream:
+
+```sh
+ffprobe rtsp://admin:PASSWORD@192.168.178.109:554/stream1
+```
+
+In the camera web UI:
+
+- Change the password. It ships as `123456`.
+- Service Ports: disable ONVIF, HIK (8000) and DAHUA (37777). HIK and DAHUA are
+  unauthenticated control protocols, open by default. Only RTSP is used.
+  Control Protocol (8091) serves the vendor discovery tool and can go too.
+- Date & Time: NTP `192.168.178.1`, timezone GMT+01:00, DST on from the last
+  Sunday of March at 02:00 to the last Sunday of October at 03:00. The NTP field
+  looks like a fixed dropdown but takes free text.
+
+In the FritzBox, which has no VLANs:
+
+- Static IPv4 lease, since `nixos/frigate.nix` hardcodes the address. The camera
+  itself stays on DHCP.
+- Internet -> Filters -> Parental Controls: set the access profile to `Blocked`.
+  This stands in for a camera VLAN. It blocks internet only, so RTSP still works.
+
+No port forward to the camera.
+
+### Frigate
+
+Frigate has its own hostname because subpath proxying breaks its websockets and
+service worker. The NixOS module force-enables nginx and builds its own vhost, so
+that vhost is pinned to `127.0.0.1:8971` and Caddy fronts it, keeping Caddy alone
+on 80 and 443. Frigate's jsmpeg upstream is hardcoded to `127.0.0.1:8082`, which
+is why the homepage dashboard moved to 8084.
+
+go2rtc holds the only connection to the camera and restreams both streams on
+localhost; Frigate reads detect and record from the restream. The NixOS Frigate
+module does not configure go2rtc, only proxies to it, so `nixos/frigate.nix`
+enables `services.go2rtc` and hands the same stream definitions to both.
+
+nixpkgs ships no OpenVINO model, only the TFLite CPU one and the OpenVINO
+labelmap. `frigate-openvino-model` extracts it from the official container image
+with `skopeo` before `frigate.service` starts, and skips once it is on disk. To
+refresh it after a version bump:
+
+```sh
+rm -rf /var/lib/frigate/openvino-model
+systemctl restart frigate-openvino-model
+```
+
+Frigate prints a generated admin password on first start:
+
+```sh
+journalctl -u frigate.service | grep 'Password:'
+```
+
+Log in at [Frigate][frigate], change it, and check inference speed on the System
+Metrics page. Expect 26-28 ms on the iGPU:
+
+```sh
+journalctl -u frigate.service | grep -i openvino
+intel_gpu_top
+```
+
+If OpenVINO will not start on the iGPU, set `device` to `"CPU"` in
+`nixos/frigate.nix`, which keeps the same model. Failing that, replace the
+`detectors` and `model` blocks with `detectors.cpu.type = "cpu"` to fall back to
+the bundled TFLite model, at roughly 150 ms.
+
+Recordings are event-only, retained 30 days for alerts and detections.
+`/var/lib/frigate/recordings` symlinks to `/mnt/downloads-2t/frigate/recordings`,
+and `adjustMountPoints` in `nixos/drives.nix` skips that path so it does not
+chown every clip to `fausto` on each boot.
+
+Draw motion masks in the Frigate UI once there is real footage. They matter more
+than compute for detection accuracy.
 
 ## Running in a VM
 

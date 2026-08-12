@@ -1,6 +1,7 @@
 {...}: {
   services.homepage-dashboard = {
     enable = true;
+    listenPort = 8084;
     allowedHosts = "bilbo.fnune.com";
     settings = {
       title = "Bilbo";
@@ -75,6 +76,17 @@
               icon = "calibre-web.svg";
               description = "Ebook library with OPDS feed for e-readers";
               href = "/calibre";
+            };
+          }
+        ];
+      }
+      {
+        "Home" = [
+          {
+            "Frigate" = {
+              icon = "frigate.svg";
+              description = "Camera recordings and object detection";
+              href = "https://frigate.fnune.com";
             };
           }
         ];

@@ -93,6 +93,7 @@
     ./caddy.nix
     ./calibre.nix
     ./filebrowser.nix
+    ./frigate.nix
     ./homepage.nix
     ./immich.nix
     ./jellyfin.nix
