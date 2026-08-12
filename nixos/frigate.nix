@@ -9,7 +9,7 @@
   mqttBroker = builtins.head config.services.mosquitto.listeners;
 
   cameraName = "indoor";
-  cameraAddress = "REPLACE_WITH_CAMERA_IP";
+  cameraAddress = "192.168.178.109";
   cameraUser = "admin";
   cameraStream = path: "rtsp://${cameraUser}:\${CAMERA_PASSWORD}@${cameraAddress}:554/${path}";
 
@@ -30,6 +30,8 @@
   openvinoModelDirectory = "/var/lib/frigate/openvino-model";
   openvinoModel = "${openvinoModelDirectory}/ssdlite_mobilenet_v2.xml";
 
+  mqttPasswordVariable = "FRIGATE_MQTT_PASSWORD";
+
   recordingsDirectory = "/var/lib/frigate/recordings";
   recordingsStore = "/mnt/downloads-2t/frigate/recordings";
   retainedDays = 30;
@@ -48,13 +50,15 @@ in {
     inherit hostname;
     vaapiDriver = "iHD";
 
+    preCheckConfig = "export ${mqttPasswordVariable}=only-to-satisfy-the-sandbox";
+
     settings = {
       mqtt = {
         enabled = true;
         host = mqttBroker.address;
         port = mqttBroker.port;
         user = "frigate";
-        password = "{FRIGATE_MQTT_PASSWORD}";
+        password = "{${mqttPasswordVariable}}";
       };
 
       detectors.openvino = {
@@ -92,8 +96,9 @@ in {
         live.streams."Main" = mainStream;
 
         detect = {
+          enabled = true;
           width = 640;
-          height = 480;
+          height = 360;
           fps = 5;
         };
 

@@ -21,15 +21,15 @@
   uiManagedFiles =
     builtins.listToAttrs
     (map (file: {
-      name = "${configDir}/${file}";
-      value.f = {
-        user = "hass";
-        group = "hass";
-        mode = "0640";
-        argument = "[]";
-      };
-    })
-    (builtins.attrValues uiManagedDomains));
+        name = "${configDir}/${file}";
+        value.f = {
+          user = "hass";
+          group = "hass";
+          mode = "0640";
+          argument = "[]";
+        };
+      })
+      (builtins.attrValues uiManagedDomains));
 in {
   services.home-assistant = {
     enable = true;

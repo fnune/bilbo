@@ -1,17 +1,31 @@
-{config, ...}: let
+{
+  config,
+  lib,
+  ...
+}: let
   mqttBroker = builtins.head config.services.mosquitto.listeners;
   mqttServer = "mqtt://${mqttBroker.address}:${toString mqttBroker.port}";
 
-  coordinatorSerialPort = "/dev/serial/by-id/usb-ITead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_REPLACE_WITH_DONGLE_SERIAL-if00-port0";
+  coordinatorName = "zigbee";
+  coordinatorSerialPort = "/dev/${coordinatorName}";
+  coordinatorUdevRule = lib.concatStringsSep ", " [
+    ''SUBSYSTEM=="tty"''
+    ''ATTRS{idVendor}=="10c4"''
+    ''ATTRS{idProduct}=="ea60"''
+    ''ATTRS{manufacturer}=="ITead"''
+    ''ATTRS{product}=="Sonoff Zigbee 3.0 USB Dongle Plus"''
+    ''SYMLINK+="${coordinatorName}"''
+  ];
 
   frontendPort = 8085;
   frontendSubpath = "/zigbee2mqtt";
 in {
+  services.udev.extraRules = "${coordinatorUdevRule}\n";
+
   services.zigbee2mqtt = {
     enable = true;
     settings = {
       homeassistant.enabled = true;
-      permit_join = false;
       serial = {
         port = coordinatorSerialPort;
         adapter = "zstack";

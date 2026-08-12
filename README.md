@@ -50,81 +50,113 @@ Now, configure each service:
 [frigate]: https://frigate.fnune.com
 [home-assistant]: https://home.fnune.com
 [zigbee2mqtt]: https://bilbo.fnune.com/zigbee2mqtt
+[sops-nix]: https://github.com/Mic92/sops-nix
+[agenix]: https://github.com/ryantm/agenix
 
 ### Secrets
 
-MQTT is shared by Frigate, Zigbee2MQTT and Home Assistant. Mosquitto only
-listens on `127.0.0.1` and every client authenticates, so create these files as
-`root` before the first rebuild. The `mosquitto-*` files hold a plaintext
-password that Mosquitto hashes when the unit starts; the passwords in the `.env`
-files must match them exactly.
+These are hand-placed files under `/etc/nixos/secrets`, following the same
+pattern `nixos/backups.nix` already uses for the Borg passphrase and the rclone
+config. Nothing here is declarative: the files are invisible to this repository
+and to `nixos-rebuild`, so a fresh machine needs them recreated by hand before
+the first build of these services will start. Moving the whole repository to
+[sops-nix][sops-nix] or [agenix][agenix], which keep encrypted secrets in git and
+decrypt them at activation, is the obvious upgrade and would cover the Borg
+secrets too.
+
+Six files are needed. Three of them have to agree with each other, because
+Mosquitto listens only on `127.0.0.1` and every client authenticates:
+
+| File | Contents |
+| --- | --- |
+| `mosquitto-frigate-password` | plaintext password |
+| `mosquitto-zigbee2mqtt-password` | plaintext password |
+| `mosquitto-home-assistant-password` | plaintext password |
+| `frigate.env` | `FRIGATE_MQTT_PASSWORD=` matching the Frigate one |
+| `zigbee2mqtt.env` | `ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=` matching the Zigbee2MQTT one, plus `ZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN=` |
+| `go2rtc.env` | `CAMERA_PASSWORD=` for the camera itself |
+
+The `mosquitto-*` files hold the password on a single line and nothing else;
+Mosquitto hashes it into `/etc/mosquitto/passwd` when the unit starts, and the
+trailing newline is stripped. The `.env` files are systemd `EnvironmentFile`s, so
+each line is `KEY=value` with no `export`, no quotes and no spaces around the
+`=`. None of these paths are optional in the unit definitions, so a missing file
+fails the service rather than starting it unauthenticated.
+
+To generate the five machine-chosen ones consistently, as `root`:
 
 ```sh
-mkdir -p /etc/nixos/secrets
-chmod 700 /etc/nixos/secrets
-
-# One password per client. Any long random string will do:
-openssl rand -base64 24 > /etc/nixos/secrets/mosquitto-frigate-password
-openssl rand -base64 24 > /etc/nixos/secrets/mosquitto-zigbee2mqtt-password
-openssl rand -base64 24 > /etc/nixos/secrets/mosquitto-home-assistant-password
+cd /etc/nixos/secrets
+umask 077
+gen() { tr -dc A-Za-z0-9 </dev/urandom | head -c 32; }
+f=$(gen); z=$(gen); h=$(gen); t=$(gen)
+printf '%s\n' "$f" > mosquitto-frigate-password
+printf '%s\n' "$z" > mosquitto-zigbee2mqtt-password
+printf '%s\n' "$h" > mosquitto-home-assistant-password
+printf 'FRIGATE_MQTT_PASSWORD=%s\n' "$f" > frigate.env
+printf 'ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=%s\nZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN=%s\n' "$z" "$t" > zigbee2mqtt.env
+chmod 600 mosquitto-*-password frigate.env zigbee2mqtt.env
 ```
 
-`/etc/nixos/secrets/frigate.env`, where `FRIGATE_MQTT_PASSWORD` matches
-`mosquitto-frigate-password`:
+`go2rtc.env` is the exception: its value is the password you set in the camera's
+own web UI, so write it by hand and `chmod 600` it. go2rtc is the only service
+that opens the camera, and Frigate reads both streams back from the restream on
+localhost, so the camera credential never reaches Frigate's config or database.
+Because the password is interpolated into an RTSP URL, avoid `@ : / ? #` in it or
+percent-encode them.
 
-```sh
-FRIGATE_MQTT_PASSWORD=...
-```
-
-`/etc/nixos/secrets/go2rtc.env`, holding the camera's own password. go2rtc is
-the only service that connects to the camera — Frigate reads both streams back
-from go2rtc's restream on localhost, so the camera credential never reaches
-Frigate's config or database:
-
-```sh
-CAMERA_PASSWORD=...
-```
-
-`/etc/nixos/secrets/zigbee2mqtt.env`, where the MQTT password matches
-`mosquitto-zigbee2mqtt-password`. The auth token gates the Zigbee2MQTT frontend,
+The `ZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN` gates the Zigbee2MQTT frontend,
 which is reachable from the public `bilbo.fnune.com` origin and can otherwise
-re-pair or factory-reset your devices:
-
-```sh
-ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=...
-ZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN=...
-```
+re-pair or factory-reset your devices.
 
 ### Camera
 
-Do this over the camera's own web UI, on the LAN, before it is wired into
-anything else:
+The Anpviz IPC-D3243W-S runs OEM Hikvision-lineage firmware and sits at
+`192.168.178.109`, hardcoded in `nixos/frigate.nix`. Its streams, as measured
+with `ffprobe`:
 
-- Change the default password. Do this first.
-- Disable every cloud, P2P and UPnP option you can find.
-- Set the main stream to H.264. H.265 works for recording but breaks live view
-  in most browsers.
-- Note the substream's real resolution. Frigate detects on the substream, and
-  Anpviz substreams are sometimes too small to detect on reliably — if it is
-  below roughly 640x480, enable a third stream and use that instead.
-- Confirm the RTSP paths. `nixos/frigate.nix` assumes the Hikvision-style
-  `stream0` (main) and `stream1` (sub). Verify with:
+| Path | Resolution | Role |
+| --- | --- | --- |
+| `stream0` | 2560x1440 at 25 fps | record |
+| `stream1` | 640x360 at 25 fps | detect |
+| `stream2` | does not exist | |
 
-  ```sh
-  ffprobe rtsp://admin:PASSWORD@CAMERA_IP:554/stream0
-  ffprobe rtsp://admin:PASSWORD@CAMERA_IP:554/stream1
-  ```
+Both are H.265 as shipped. Recording is a stream copy so H.265 costs nothing
+there, but it makes live view and playback unreliable outside Safari, so set both
+to H.264 in the camera UI. `detect.width` and `detect.height` in
+`nixos/frigate.nix` are pinned to the measured 640x360; Frigate can probe this
+itself, but pinning it avoids falling back to a wrong default if the probe fails
+at startup. Re-measure with:
 
-Then, in the FritzBox, since it has no VLANs:
+```sh
+ffprobe rtsp://admin:PASSWORD@192.168.178.109:554/stream1
+```
 
-- Give the camera a static IPv4 lease.
-- Create a Zugangsprofil with no internet access and apply it to the camera.
-  This is the substitute for putting the camera on its own VLAN, and it is the
-  only thing stopping the camera from talking to its vendor.
+In the camera's own web UI:
 
-Finally, replace the placeholders in `nixos/frigate.nix`:
-`REPLACE_WITH_CAMERA_IP`, the two stream paths, and the `detect` width and
-height, which must match the substream you picked.
+- Change the default password. It ships as `123456`.
+- Under Service Ports, disable ONVIF, HIK (port 8000) and DAHUA (port 37777).
+  HIK and DAHUA are unauthenticated control protocols and were both reachable on
+  the LAN out of the box. Nothing here uses them: Frigate only needs RTSP, and
+  ONVIF would only matter for a PTZ camera. The Control Protocol on 8091 only
+  serves the vendor's discovery tool and can go too, now the address is fixed.
+- Under Date & Time, set NTP to `192.168.178.1`, the timezone to GMT+01:00, and
+  enable DST with the European rules: last Sunday of March at 02:00 to last
+  Sunday of October at 03:00. The NTP server field looks like a fixed dropdown
+  but accepts free text. This only affects the timestamp burnt into the picture,
+  since Frigate stamps recordings itself.
+
+Then, in the FritzBox, which has no VLANs:
+
+- Give the camera a static IPv4 lease, since the address is hardcoded. Leave the
+  camera itself on DHCP so the address is only configured in one place.
+- Under Internet -> Filters -> Parental Controls, set the camera's access profile
+  to the built-in `Blocked`. This is the substitute for putting the camera on its
+  own VLAN, and it is the only thing stopping it from talking to its vendor. It
+  blocks internet only, so RTSP from bilbo still works. The camera was reaching
+  for `google.cn` before this was applied.
+
+Do not add a port forward to the camera. It is reached through bilbo.
 
 ### Frigate
 
@@ -137,11 +169,11 @@ The camera is opened once, by go2rtc, which restreams both the main and the
 substream on localhost. Frigate pulls detect and record from that restream
 rather than from the camera, which keeps the camera to a single connection and
 gives the live view MSE and WebRTC instead of the much heavier jsmpeg fallback.
-The NixOS Frigate module does not configure go2rtc itself — it only proxies to
-it — so `nixos/frigate.nix` enables `services.go2rtc` and hands the same stream
+The NixOS Frigate module does not configure go2rtc itself; it only proxies to
+it, so `nixos/frigate.nix` enables `services.go2rtc` and hands the same stream
 definitions to both.
 
-nixpkgs ships no OpenVINO model — only the TFLite CPU one and the OpenVINO
+nixpkgs ships no OpenVINO model, only the TFLite CPU one and the OpenVINO
 labelmap. The `frigate-openvino-model` unit therefore pulls the official Frigate
 container image with `skopeo` and extracts `/openvino-model` out of it before
 `frigate.service` starts. It runs once, skips instantly when the model is
@@ -160,7 +192,7 @@ journalctl -u frigate.service | grep 'Password:'
 ```
 
 Log in at [Frigate][frigate] and change it. Then check that the GPU detector is
-actually working — the inference speed is on the System Metrics page, and should
+actually working. The inference speed is on the System Metrics page, and should
 land around 26-28 ms:
 
 ```sh
@@ -168,8 +200,8 @@ journalctl -u frigate.service | grep -i openvino
 intel_gpu_top
 ```
 
-If OpenVINO fails to initialise on the iGPU — the J4125's UHD 600 has been
-reported to need a 5.x kernel, and this machine is on 6.x — change `device` in
+If OpenVINO fails to initialise on the iGPU, and the J4125's UHD 600 has been
+reported to need a 5.x kernel while this machine is on 6.x, change `device` in
 `nixos/frigate.nix` from `"GPU"` to `"CPU"` first. That keeps the same model and
 is usually still faster than the TFLite CPU detector. Only if that also fails,
 replace the whole `detectors` and `model` block with:
@@ -194,18 +226,20 @@ raw compute. Draw them in the Frigate UI under Settings once real footage exists
 
 ### Zigbee and lighting
 
-Plug the ZBDongle-P into a USB 2.0 port using one of the extension cables —
-never directly into the chassis or a USB 3.0 port, whose 2.4 GHz noise will wreck
-the Zigbee mesh. Then find its stable device path and replace
-`REPLACE_WITH_DONGLE_SERIAL` in `nixos/zigbee2mqtt.nix`:
+Plug the ZBDongle-P into a USB 2.0 port using one of the extension cables, never
+directly into the chassis or a USB 3.0 port, whose 2.4 GHz noise will wreck the
+Zigbee mesh.
 
-```sh
-ls -l /dev/serial/by-id/
-```
+`nixos/zigbee2mqtt.nix` ships a udev rule that matches the dongle on its USB
+vendor, product and manufacturer strings and gives it `/dev/zigbee`. That avoids
+publishing the dongle's serial number in this public repository, and sidesteps
+the `/dev/serial/by-id` directory being `0700 root:root`. Swapping in a different
+CC2652P stick means updating the rule; `udevadm info -a -n /dev/ttyUSB0` prints
+the attributes to match on.
 
-Pairing is disabled in the committed config. Enable joining from the
-[Zigbee2MQTT][zigbee2mqtt] frontend only while adding a device, then turn it off
-again. For the Innr bulbs:
+Joining is off by default in Zigbee2MQTT 2.x and is a runtime setting rather than
+a config file one. Enable it from the [Zigbee2MQTT][zigbee2mqtt] frontend only
+while adding a device, then turn it off again. For the Innr bulbs:
 
 - The wall switch has to stay permanently on, or the bulbs are unreachable.
   A Zigbee wall remote or button is worth adding so there is a physical control
@@ -219,7 +253,7 @@ again. For the Innr bulbs:
 declarative, but automations, scenes, scripts and dashboards are deliberately
 left UI-editable so the bedroom schedule can be retuned from the phone without a
 rebuild. Those live in `/var/lib/hass/{automations,scenes,scripts}.yaml` and are
-*not* in this repository — back them up with the rest of `/var/lib`.
+*not* in this repository, so back them up with the rest of `/var/lib`.
 
 On first run, create the owner account, then add the MQTT integration by hand
 under Settings -> Devices & Services -> Add integration -> MQTT, pointing at
