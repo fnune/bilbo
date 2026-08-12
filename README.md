@@ -214,7 +214,9 @@ For the Innr bulbs:
 [Home Assistant][home-assistant] owns the lighting. Its base configuration is
 declarative. Automations, scenes and scripts are
 `!include`d from `/var/lib/hass` so they stay editable from the UI without a
-rebuild. Those files are not in this repository; back them up with `/var/lib`.
+rebuild. Those files are not in this repository, and `nixos/backups.nix` only
+covers `/mnt/mirrored`, so nothing under `/var/lib` is backed up. Losing the disk
+loses the automations.
 
 On first run create the owner account, then add MQTT under Settings -> Devices &
 Services -> Add integration -> MQTT, pointing at `127.0.0.1:1883` as
