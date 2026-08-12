@@ -140,7 +140,7 @@ in {
     before = ["frigate.service"];
     wants = ["network-online.target"];
     after = ["network-online.target"];
-    path = with pkgs; [gnutar skopeo];
+    path = with pkgs; [gnutar gzip skopeo];
     environment.SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
 
     serviceConfig = {
@@ -159,15 +159,21 @@ in {
       skopeo --insecure-policy copy --quiet ${frigateImage} dir:"$unpacked"
 
       install --directory --owner frigate --group frigate --mode 0750 ${openvinoModelDirectory}
-      for blob in "$unpacked"/*; do
-        if tar --list --file "$blob" openvino-model > /dev/null 2>&1; then
-          tar --extract --file "$blob" --directory ${openvinoModelDirectory} --strip-components 1 openvino-model
+      for layer in "$unpacked"/*; do
+        if tar --extract --file "$layer" --directory ${openvinoModelDirectory} \
+             --strip-components 1 openvino-model 2> "$CACHE_DIRECTORY/tar-error"; then
+          break
         fi
       done
       rm -rf "$unpacked"
 
       chown --recursive frigate:frigate ${openvinoModelDirectory}
-      test -e ${openvinoModel}
+
+      if [ ! -e ${openvinoModel} ]; then
+        echo "no layer of ${frigateImage} yielded openvino-model; last tar error:" >&2
+        cat "$CACHE_DIRECTORY/tar-error" >&2
+        exit 1
+      fi
     '';
   };
 }

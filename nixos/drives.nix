@@ -6,10 +6,12 @@
 
   surveillance-storage = "${downloads-2t-mount}/frigate";
 
+  outsideSurveillance = "-path ${surveillance-storage} -prune -o";
+
   claimForFausto = mount: ''
-    find ${mount} -path ${surveillance-storage} -prune -o -print0 \
-      | xargs --null --no-run-if-empty chown fausto:users
-    find ${mount} -path ${surveillance-storage} -prune -o -print0 \
+    find ${mount} ${outsideSurveillance} -print0 \
+      | xargs --null --no-run-if-empty chown --no-dereference fausto:users
+    find ${mount} ${outsideSurveillance} ! -type l -print0 \
       | xargs --null --no-run-if-empty chmod 775
   '';
 in {
