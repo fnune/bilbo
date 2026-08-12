@@ -65,6 +65,12 @@ in {
 
       ffmpeg.hwaccel_args = [];
 
+      notifications = {
+        enabled = true;
+        email = "fausto.nunez@mailbox.org";
+        cooldown = 60;
+      };
+
       go2rtc.streams = restreams;
 
       cameras."${cameraName}" = {
