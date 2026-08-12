@@ -9,7 +9,7 @@
   cameraName = "indoor";
   cameraAddress = "192.168.178.109";
   cameraUser = "admin";
-  cameraStream = path: "rtsp://${cameraUser}:\${CAMERA_PASSWORD}@${cameraAddress}:554/${path}";
+  cameraStream = path: "rtsp://${cameraUser}:\${CAMERA_PASSWORD}@${cameraAddress}:554/${path}#backchannel=0";
 
   mainStream = cameraName;
   detectStream = "${cameraName}_detect";
