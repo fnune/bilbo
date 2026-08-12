@@ -128,9 +128,12 @@ in {
     };
   in {
     "/var/lib/frigate".d = ownedByFrigate;
-    "${recordingsStore}".d = ownedByFrigate;
     "${recordingsDirectory}".L.argument = recordingsStore;
   };
+
+  systemd.services.frigate.serviceConfig.ExecStartPre = [
+    "+${pkgs.coreutils}/bin/install --directory --owner frigate --group frigate --mode 0750 ${recordingsStore}"
+  ];
 
   systemd.services.go2rtc.serviceConfig.EnvironmentFile = ["/etc/nixos/secrets/go2rtc.env"];
 
