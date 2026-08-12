@@ -48,18 +48,50 @@ Now, configure each service:
 [sonarr]: https://bilbo.fnune.com/sonarr
 [calibre]: https://bilbo.fnune.com/calibre
 [frigate]: https://frigate.fnune.com
+[home-assistant]: https://home.fnune.com
+[zigbee2mqtt]: https://bilbo.fnune.com/zigbee2mqtt
 
 ### Secrets
 
-`/etc/nixos/secrets/go2rtc.env`, mode 600, holding the camera password:
+Hand-placed files under `/etc/nixos/secrets`, mode 600. The `mosquitto-*` files
+hold the password on one line and nothing else; Mosquitto hashes them at unit
+start and strips the trailing newline. The `.env` files are systemd
+`EnvironmentFile`s: one `KEY=value` per line, no `export`, no quotes, no spaces
+around the `=`. None are optional, so a missing file fails its unit.
+
+| File | Contents |
+| --- | --- |
+| `mosquitto-frigate-password` | plaintext password |
+| `mosquitto-zigbee2mqtt-password` | plaintext password |
+| `mosquitto-home-assistant-password` | plaintext password |
+| `frigate.env` | `FRIGATE_MQTT_PASSWORD=` matching the Frigate one |
+| `zigbee2mqtt.env` | `ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=` matching the Zigbee2MQTT one, and `ZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN=` |
+| `go2rtc.env` | `CAMERA_PASSWORD=` for the camera |
+
+To generate the five machine-chosen ones consistently, as `root`:
 
 ```sh
-CAMERA_PASSWORD=...
+cd /etc/nixos/secrets
+umask 077
+gen() { tr -dc A-Za-z0-9 </dev/urandom | head -c 32; }
+f=$(gen); z=$(gen); h=$(gen); t=$(gen)
+printf '%s\n' "$f" > mosquitto-frigate-password
+printf '%s\n' "$z" > mosquitto-zigbee2mqtt-password
+printf '%s\n' "$h" > mosquitto-home-assistant-password
+printf 'FRIGATE_MQTT_PASSWORD=%s\n' "$f" > frigate.env
+printf 'ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=%s\nZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN=%s\n' "$z" "$t" > zigbee2mqtt.env
+chmod 600 mosquitto-*-password frigate.env zigbee2mqtt.env
 ```
 
-It is a systemd `EnvironmentFile`: one `KEY=value` line, no `export`, no quotes,
-no spaces around the `=`. The password is interpolated into an RTSP URL, so avoid
-`@ : / ? #` or percent-encode them.
+`go2rtc.env` holds the camera's own password, so write it by hand. go2rtc is the
+only service that opens the camera, and Frigate reads both streams from the
+restream on localhost, so the camera credential never reaches Frigate's config or
+database. It is interpolated into an RTSP URL, so avoid `@ : / ? #` or
+percent-encode them.
+
+The `ZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN` gates the Zigbee2MQTT frontend,
+which is served from the public `bilbo.fnune.com` origin and can otherwise
+re-pair or factory-reset devices.
 
 ### Camera
 
@@ -155,6 +187,46 @@ chown every clip to `fausto` on each boot.
 
 Draw motion masks in the Frigate UI once there is real footage. They matter more
 than compute for detection accuracy.
+
+### Zigbee
+
+Plug the ZBDongle-P into a USB 2.0 port using an extension cable, never directly
+into the chassis or a USB 3.0 port, whose 2.4 GHz noise wrecks the Zigbee mesh.
+
+`nixos/zigbee2mqtt.nix` carries a udev rule matching the dongle on its USB
+vendor, product and manufacturer strings, giving it `/dev/zigbee`. That keeps the
+serial number out of this public repository and sidesteps `/dev/serial/by-id`
+being `0700 root:root`. For a different stick, `udevadm info -a -n /dev/ttyUSB0`
+prints the attributes to match on.
+
+Joining is a runtime setting in Zigbee2MQTT 2.x, not a config file one. Enable it
+from the [Zigbee2MQTT][zigbee2mqtt] frontend only while adding a device.
+
+For the Innr bulbs:
+
+- The wall switch must stay on or the bulbs are unreachable. A Zigbee remote is
+  worth adding so there is a physical control that does not cut power.
+- Set power-on behaviour to `previous`, so an outage does not bring the bedroom
+  back at full-brightness cold white.
+
+### Home Assistant
+
+[Home Assistant][home-assistant] owns the lighting. Its base configuration is
+declarative. Automations, scenes and scripts are
+`!include`d from `/var/lib/hass` so they stay editable from the UI without a
+rebuild. Those files are not in this repository; back them up with `/var/lib`.
+
+On first run create the owner account, then add MQTT under Settings -> Devices &
+Services -> Add integration -> MQTT, pointing at `127.0.0.1:1883` as
+`home-assistant`. It cannot be declared in Nix because MQTT uses a config flow.
+
+Once MQTT is up, the bulbs arrive through Zigbee2MQTT discovery and Frigate
+publishes its cameras and sensors the same way.
+
+`input_boolean.away` exists to gate the deterrent lighting and notifications.
+Frigate's own web push can be switched at runtime by publishing to
+`frigate/notifications/set`, so an automation can silence it while you are home
+rather than duplicating notifications in Home Assistant.
 
 ## Running in a VM
 

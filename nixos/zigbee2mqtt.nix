@@ -1,0 +1,54 @@
+{
+  config,
+  lib,
+  ...
+}: let
+  mqttBroker = builtins.head config.services.mosquitto.listeners;
+  mqttServer = "mqtt://${mqttBroker.address}:${toString mqttBroker.port}";
+
+  coordinatorName = "zigbee";
+  coordinatorSerialPort = "/dev/${coordinatorName}";
+  coordinatorUdevRule = lib.concatStringsSep ", " [
+    ''SUBSYSTEM=="tty"''
+    ''ATTRS{idVendor}=="10c4"''
+    ''ATTRS{idProduct}=="ea60"''
+    ''ATTRS{manufacturer}=="ITead"''
+    ''ATTRS{product}=="Sonoff Zigbee 3.0 USB Dongle Plus"''
+    ''SYMLINK+="${coordinatorName}"''
+  ];
+
+  frontendPort = 8085;
+  frontendSubpath = "/zigbee2mqtt";
+in {
+  services.udev.extraRules = "${coordinatorUdevRule}\n";
+
+  services.zigbee2mqtt = {
+    enable = true;
+    settings = {
+      homeassistant.enabled = true;
+      serial = {
+        port = coordinatorSerialPort;
+        adapter = "zstack";
+      };
+      mqtt = {
+        base_topic = "zigbee2mqtt";
+        server = mqttServer;
+        user = "zigbee2mqtt";
+      };
+      frontend = {
+        enabled = true;
+        host = "127.0.0.1";
+        port = frontendPort;
+        base_url = frontendSubpath;
+      };
+      advanced = {
+        log_level = "warning";
+        network_key = "GENERATE";
+        pan_id = "GENERATE";
+        ext_pan_id = "GENERATE";
+      };
+    };
+  };
+
+  systemd.services.zigbee2mqtt.serviceConfig.EnvironmentFile = "/etc/nixos/secrets/zigbee2mqtt.env";
+}

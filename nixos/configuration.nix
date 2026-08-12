@@ -94,13 +94,16 @@
     ./calibre.nix
     ./filebrowser.nix
     ./frigate.nix
+    ./home-assistant.nix
     ./homepage.nix
     ./immich.nix
     ./jellyfin.nix
     ./monitoring.nix
+    ./mosquitto.nix
     ./nzbget.nix
     ./pincho.nix
     ./radarr.nix
     ./sonarr.nix
+    ./zigbee2mqtt.nix
   ];
 }

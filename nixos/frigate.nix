@@ -6,6 +6,9 @@
   hostname = "frigate.fnune.com";
   nginxPort = 8971;
 
+  mqttBroker = builtins.head config.services.mosquitto.listeners;
+  mqttPasswordVariable = "FRIGATE_MQTT_PASSWORD";
+
   cameraName = "indoor";
   cameraAddress = "192.168.178.109";
   cameraUser = "admin";
@@ -67,8 +70,16 @@ in {
     inherit hostname;
     vaapiDriver = "iHD";
 
+    preCheckConfig = "export ${mqttPasswordVariable}=only-to-satisfy-the-sandbox";
+
     settings = {
-      mqtt.enabled = false;
+      mqtt = {
+        enabled = true;
+        host = mqttBroker.address;
+        port = mqttBroker.port;
+        user = "frigate";
+        password = "{${mqttPasswordVariable}}";
+      };
 
       detectors.openvino = {
         type = "openvino";
@@ -159,10 +170,13 @@ in {
     "${recordingsDirectory}".L.argument = recordingsStore;
   };
 
-  systemd.services.frigate.serviceConfig.ExecStartPre = [
-    "+${pkgs.coreutils}/bin/install --directory --owner frigate --group frigate --mode 0750 ${recordingsStore}"
-    "+${discardStaleSharedMemory}"
-  ];
+  systemd.services.frigate.serviceConfig = {
+    ExecStartPre = [
+      "+${pkgs.coreutils}/bin/install --directory --owner frigate --group frigate --mode 0750 ${recordingsStore}"
+      "+${discardStaleSharedMemory}"
+    ];
+    EnvironmentFile = ["/etc/nixos/secrets/frigate.env"];
+  };
 
   systemd.services.go2rtc.serviceConfig.EnvironmentFile = ["/etc/nixos/secrets/go2rtc.env"];
 }
