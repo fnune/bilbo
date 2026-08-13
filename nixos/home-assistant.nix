@@ -94,6 +94,13 @@
   alwaysOff = "Off";
   followPresence = "Auto";
 
+  bedroomLight = "light.bedroom_light";
+  simulationMode = "input_select.occupancy_simulation";
+
+  neverSimulate = "Disabled";
+  simulateWhenAway = "When away";
+  alwaysSimulate = "Always";
+
   presenceDevices = [
     "device_tracker.merry"
     "device_tracker.estella"
@@ -105,6 +112,33 @@
     else let
       quoted = lib.concatMapStringsSep ", " (device: "'${device}'") presenceDevices;
     in "{{ [${quoted}] | reject('is_state', 'not_home') | list | count == 0 }}";
+
+  simulating = {
+    condition = "or";
+    conditions = [
+      {
+        condition = "state";
+        entity_id = simulationMode;
+        state = alwaysSimulate;
+      }
+      {
+        condition = "and";
+        conditions = [
+          {
+            condition = "state";
+            entity_id = simulationMode;
+            state = simulateWhenAway;
+          }
+          {
+            condition = "template";
+            value_template = nobodyHome;
+          }
+        ];
+      }
+    ];
+  };
+
+  waitMinutes = range: {delay.minutes = "{{ range(${range}) | random }}";};
 
   switchCameraTo = action: [
     {
@@ -212,10 +246,18 @@ in {
           };
         };
 
-        input_select.camera_mode = {
-          name = "Camera";
-          icon = "mdi:cctv";
-          options = [alwaysOn alwaysOff followPresence];
+        input_select = {
+          camera_mode = {
+            name = "Camera";
+            icon = "mdi:cctv";
+            options = [alwaysOn alwaysOff followPresence];
+          };
+
+          occupancy_simulation = {
+            name = "Occupancy simulation";
+            icon = "mdi:home-lightbulb";
+            options = [neverSimulate simulateWhenAway alwaysSimulate];
+          };
         };
 
         command_line = [
@@ -247,6 +289,40 @@ in {
         ];
 
         automation = [
+          {
+            alias = "Bedroom light simulates someone being in";
+            id = "bedroom-light-simulates-someone-being-in";
+            mode = "restart";
+            triggers = [
+              {
+                trigger = "sun";
+                event = "sunset";
+                offset = "-00:20:00";
+              }
+            ];
+            conditions = [simulating];
+            actions = [
+              (waitMinutes "0, 45")
+              {
+                action = "light.turn_on";
+                target.entity_id = bedroomLight;
+                data = {
+                  brightness_pct = 60;
+                  color_temp_kelvin = 2700;
+                };
+              }
+              (waitMinutes "90, 210")
+              {
+                "if" = [simulating];
+                "then" = [
+                  {
+                    action = "light.turn_off";
+                    target.entity_id = bedroomLight;
+                  }
+                ];
+              }
+            ];
+          }
           {
             alias = "Camera follows its mode";
             id = "camera-follows-its-mode";
