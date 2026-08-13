@@ -96,6 +96,7 @@
 
   bedroomLight = "light.bedroom_light";
   simulationMode = "input_select.occupancy_simulation";
+  sunsetSensor = "sensor.sunset";
 
   neverSimulate = "Disabled";
   simulateWhenAway = "When away (${sunsetWindow}, for ${onDuration})";
@@ -241,6 +242,7 @@ in {
       "mobile_app"
       "mqtt"
       "radio_browser"
+      "template"
     ];
 
     config =
@@ -287,6 +289,19 @@ in {
             options = [neverSimulate simulateWhenAway alwaysSimulate];
           };
         };
+
+        template = [
+          {
+            sensor = [
+              {
+                name = "Sunset";
+                unique_id = "sunset_clock";
+                icon = "mdi:weather-sunset-down";
+                state = "{{ as_timestamp(state_attr('sun.sun', 'next_setting')) | timestamp_custom('%H:%M') }}";
+              }
+            ];
+          }
+        ];
 
         command_line = [
           {
@@ -437,6 +452,7 @@ in {
                     [
                       cameraMode
                       simulationMode
+                      sunsetSensor
                       {type = "divider";}
                     ]
                     ++ presenceDevices
