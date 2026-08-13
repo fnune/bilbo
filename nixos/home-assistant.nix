@@ -10,6 +10,8 @@
 
   cameraName = "indoor";
   cameraTopic = suffix: "frigate/${cameraName}/${suffix}";
+  mainStream = cameraName;
+  restreamed = stream: "rtsp://127.0.0.1:8554/${stream}";
   cameraSwitch = "switch.indoor_camera";
 
   cameraMode = "input_select.camera_mode";
@@ -114,6 +116,14 @@ in {
           options = [alwaysOn alwaysOff followPresence];
         };
 
+        camera = [
+          {
+            platform = "ffmpeg";
+            name = "Indoor";
+            input = restreamed mainStream;
+          }
+        ];
+
         mqtt.switch = [
           {
             name = "Indoor camera";
@@ -124,6 +134,7 @@ in {
             payload_off = "OFF";
             retain = true;
             icon = "mdi:cctv";
+            entity_category = "config";
           }
         ];
 
