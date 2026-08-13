@@ -72,11 +72,12 @@
       ${pkgs.curl}/bin/curl -sf -b "$session" "${frigateApi}/$1"
     }
 
-    alerts=$(fetch "review?reviewed=0&severity=alert&limit=${toString alertLimit}")
+    alerts=$(fetch "review?reviewed=0&severity=alert&limit=100")
+    total=$(echo "$alerts" | ${pkgs.jq}/bin/jq 'length')
     scores=$(fetch "events?limit=40&cameras=${cameraName}&labels=person")
 
     items=""
-    for row in $(echo "$alerts" | ${pkgs.jq}/bin/jq -r '.[] | @base64'); do
+    for row in $(echo "$alerts" | ${pkgs.jq}/bin/jq -r '.[:${toString alertLimit}][] | @base64'); do
       alert=$(echo "$row" | ${pkgs.coreutils}/bin/base64 -d)
       detection=$(echo "$alert" | ${pkgs.jq}/bin/jq -r '.data.detections[0] // empty')
 
@@ -94,7 +95,7 @@
         '{id: .id, start: .start_time, objects: (.data.objects // [] | join(", ")), thumbnail: $t, score: $s}')"
     done
 
-    echo "$items" | ${pkgs.jq}/bin/jq -sc '{count: length, items: .}'
+    echo "$items" | ${pkgs.jq}/bin/jq -sc --argjson total "$total" '{count: length, total: $total, items: .}'
   '';
 
   unreviewedAlerts = pkgs.writeShellScript "frigate-unreviewed-alerts" ''
@@ -248,7 +249,7 @@ in {
               unique_id = "frigate_unreviewed_alerts";
               command = "${unreviewedWithThumbnails}";
               value_template = "{{ value_json.count }}";
-              json_attributes = ["items"];
+              json_attributes = ["items" "total"];
               scan_interval = 60;
             };
           }
@@ -366,6 +367,10 @@ in {
                     {% for alert in alerts -%}
                     <a href="${frigateUrl}/review?id={{ alert.id }}">{% if alert.thumbnail %}<img src="{{ alert.thumbnail }}">{% endif %}<span>{{ alert.start | timestamp_custom('%a %-d %b, %H:%M') }} <small>· {{ alert.objects }}</small></span><b>{{ (alert.score ~ '%') if alert.score else '-' }}</b></a>
                     {% endfor -%}
+                    {%- set hidden = (state_attr('sensor.unreviewed_alerts', 'total') or 0) - (alerts | count) %}
+                    {%- if hidden > 0 %}
+                    <p><a href="${frigateUrl}/review">{{ hidden }} more waiting</a></p>
+                    {%- endif %}
                     {% endif %}
                   '';
                   card_mod.style = {
@@ -402,6 +407,13 @@ in {
                         flex: 0 0 auto;
                         font-variant-numeric: tabular-nums;
                         font-weight: 500;
+                      }
+                      p { margin: 12px 4px 0; }
+                      p a {
+                        display: inline;
+                        padding: 0;
+                        border-bottom: none;
+                        color: var(--primary-color);
                       }
                     '';
                   };
