@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }: let
   mqttBroker = builtins.head config.services.mosquitto.listeners;
@@ -21,6 +22,11 @@
   frontendSubpath = "/zigbee2mqtt";
 in {
   services.udev.extraRules = "${coordinatorUdevRule}\n";
+
+  system.activationScripts.applySerialUdevRules.text = ''
+    ${pkgs.systemd}/bin/udevadm control --reload
+    ${pkgs.systemd}/bin/udevadm trigger --subsystem-match=tty --action=change
+  '';
 
   services.zigbee2mqtt = {
     enable = true;
