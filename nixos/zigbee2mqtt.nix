@@ -32,10 +32,7 @@ in {
     enable = true;
     settings = {
       homeassistant.enabled = true;
-      availability = {
-        enabled = true;
-        active.timeout = 1;
-      };
+      availability.enabled = true;
       serial = {
         port = coordinatorSerialPort;
         adapter = "zstack";
