@@ -288,82 +288,107 @@ in {
             })
         ];
 
-        automation = [
-          {
-            alias = "Bedroom light simulates someone being in";
-            id = "bedroom-light-simulates-someone-being-in";
-            mode = "restart";
+        automation =
+          [
+            {
+              alias = "Bedroom light simulates someone being in";
+              id = "bedroom-light-simulates-someone-being-in";
+              mode = "restart";
+              triggers = [
+                {
+                  trigger = "sun";
+                  event = "sunset";
+                  offset = "-00:20:00";
+                }
+              ];
+              conditions = [simulating];
+              actions = [
+                (waitMinutes "0, 45")
+                {
+                  action = "light.turn_on";
+                  target.entity_id = bedroomLight;
+                  data = {
+                    brightness_pct = 60;
+                    color_temp_kelvin = 2700;
+                  };
+                }
+                (waitMinutes "90, 210")
+                {
+                  "if" = [simulating];
+                  "then" = [
+                    {
+                      action = "light.turn_off";
+                      target.entity_id = bedroomLight;
+                    }
+                  ];
+                }
+              ];
+            }
+            {
+              alias = "Camera follows its mode";
+              id = "camera-follows-its-mode";
+              mode = "restart";
+              triggers =
+                [
+                  {
+                    trigger = "state";
+                    entity_id = cameraMode;
+                  }
+                  {
+                    trigger = "homeassistant";
+                    event = "start";
+                  }
+                  {
+                    trigger = "state";
+                    entity_id = cameraSwitch;
+                    to = ["on" "off"];
+                  }
+                ]
+                ++ lib.optional (presenceDevices != []) {
+                  trigger = "state";
+                  entity_id = presenceDevices;
+                };
+              actions = [
+                {
+                  choose = [
+                    (whenModeIs alwaysOn [] "switch.turn_on")
+                    (whenModeIs alwaysOff [] "switch.turn_off")
+                    (whenModeIs followPresence [
+                      {
+                        condition = "template";
+                        value_template = nobodyHome;
+                      }
+                    ] "switch.turn_on")
+                  ];
+                  default = switchCameraTo "switch.turn_off";
+                }
+              ];
+            }
+          ]
+          ++ lib.optional (presenceDevices != []) {
+            alias = "Bedroom light goes out when everyone has left";
+            id = "bedroom-light-goes-out-when-everyone-has-left";
             triggers = [
               {
-                trigger = "sun";
-                event = "sunset";
-                offset = "-00:20:00";
-              }
-            ];
-            conditions = [simulating];
-            actions = [
-              (waitMinutes "0, 45")
-              {
-                action = "light.turn_on";
-                target.entity_id = bedroomLight;
-                data = {
-                  brightness_pct = 60;
-                  color_temp_kelvin = 2700;
-                };
-              }
-              (waitMinutes "90, 210")
-              {
-                "if" = [simulating];
-                "then" = [
-                  {
-                    action = "light.turn_off";
-                    target.entity_id = bedroomLight;
-                  }
-                ];
-              }
-            ];
-          }
-          {
-            alias = "Camera follows its mode";
-            id = "camera-follows-its-mode";
-            mode = "restart";
-            triggers =
-              [
-                {
-                  trigger = "state";
-                  entity_id = cameraMode;
-                }
-                {
-                  trigger = "homeassistant";
-                  event = "start";
-                }
-                {
-                  trigger = "state";
-                  entity_id = cameraSwitch;
-                  to = ["on" "off"];
-                }
-              ]
-              ++ lib.optional (presenceDevices != []) {
                 trigger = "state";
                 entity_id = presenceDevices;
-              };
-            actions = [
-              {
-                choose = [
-                  (whenModeIs alwaysOn [] "switch.turn_on")
-                  (whenModeIs alwaysOff [] "switch.turn_off")
-                  (whenModeIs followPresence [
-                    {
-                      condition = "template";
-                      value_template = nobodyHome;
-                    }
-                  ] "switch.turn_on")
-                ];
-                default = switchCameraTo "switch.turn_off";
+                to = "not_home";
+                for = "00:05:00";
               }
             ];
-          }
-        ];
+            conditions = [
+              {
+                condition = "template";
+                value_template = nobodyHome;
+              }
+            ];
+            actions = [
+              {
+                action = "light.turn_off";
+                target.entity_id = bedroomLight;
+              }
+            ];
+          };
       }
       // uiManagedIncludes;
 
