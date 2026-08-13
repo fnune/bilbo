@@ -110,17 +110,6 @@
         }'
   '';
 
-  personScores = pkgs.writeShellScript "frigate-person-scores" ''
-    ${asFrigateUser "events?limit=20&cameras=indoor&labels=person"} \
-      | ${pkgs.jq}/bin/jq -c '{
-          count: length,
-          items: [ .[] | {
-            id: .id,
-            score: ((.data.top_score // .data.score // 0) * 100 | round)
-          } ]
-        }'
-  '';
-
   cameraCard = view: {
     type = "custom:advanced-camera-card";
     cameras = [{camera_entity = cameraEntity;}];
@@ -263,16 +252,6 @@ in {
               scan_interval = 60;
             };
           }
-          {
-            sensor = {
-              name = "Person detections";
-              unique_id = "frigate_person_detections";
-              command = "${personScores}";
-              value_template = "{{ value_json.count }}";
-              json_attributes = ["items"];
-              scan_interval = 60;
-            };
-          }
         ];
 
         mqtt.switch = [
@@ -381,13 +360,11 @@ in {
                   title = "Unreviewed alerts";
                   content = ''
                     {% set alerts = state_attr('sensor.unreviewed_alerts', 'items') or [] %}
-                    {% set scores = state_attr('sensor.person_detections', 'items') or [] %}
                     {% if alerts | count == 0 %}
                     Nothing to review.
                     {% else %}
                     {% for alert in alerts -%}
-                    {%- set match = scores | selectattr('id', 'eq', alert.detection) | first | default(none) -%}
-                    <a href="${frigateUrl}/review?id={{ alert.id }}"><img src="/api/frigate/frigate/thumbnail/{{ alert.detection }}"><span>{{ alert.start | timestamp_custom('%a %-d %b, %H:%M') }} <small>· {{ alert.objects }}</small></span><b>{{ (match.score ~ '%') if match else '-' }}</b></a>
+                    <a href="${frigateUrl}/review?id={{ alert.id }}">{% if alert.thumbnail %}<img src="{{ alert.thumbnail }}">{% endif %}<span>{{ alert.start | timestamp_custom('%a %-d %b, %H:%M') }} <small>· {{ alert.objects }}</small></span><b>{{ (alert.score ~ '%') if alert.score else '-' }}</b></a>
                     {% endfor -%}
                     {% endif %}
                   '';
