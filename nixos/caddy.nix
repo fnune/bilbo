@@ -181,8 +181,7 @@ in {
           import /etc/caddy.d/*.caddy
         '';
         ":80".extraConfig = ''
-          ${proxiesSupportingSubpath}
-          ${rootIsImmich}
+          redir https://{host}{uri} permanent
         '';
       };
     };

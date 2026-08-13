@@ -31,7 +31,7 @@
         substituteInPlace custom_components/frigate/views.py \
           --replace-fail \
             'config_entry.options.get(CONF_NOTIFICATION_PROXY_ENABLE, True)' \
-            'config_entry.options.get(CONF_NOTIFICATION_PROXY_ENABLE, False)'
+            'False'
       '';
   });
   frigateUrl = "https://frigate.fnune.com";
