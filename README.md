@@ -112,15 +112,22 @@ localhost; Frigate reads detect and record from the restream. The NixOS Frigate
 module does not configure go2rtc, only proxies to it, so `nixos/frigate.nix`
 enables `services.go2rtc` and hands the same stream definitions to both.
 
-nixpkgs ships no OpenVINO model, only the TFLite CPU one and the OpenVINO
-labelmap. `frigate-openvino-model` extracts it from the official container image
-with `skopeo` before `frigate.service` starts, and skips once it is on disk. To
-refresh it after a version bump:
+nixpkgs ships no detection model, and the OpenVINO detector has no download
+fallback, so `nixos/frigate.nix` builds one. It fetches the YOLO11n weights from
+the Ultralytics release and exports them to ONNX at 320x320 in a derivation,
+using `python3Packages.ultralytics`. The export runs offline in the build
+sandbox, so the model is reproducible from this repository with no manual step.
+OpenVINO reads ONNX directly, and needs the `.onnx` extension to detect the
+format, which is why the derivation produces a directory rather than a bare file.
 
-```sh
-rm -rf /var/lib/frigate/openvino-model
-systemctl restart frigate-openvino-model
-```
+Two model notes, both learned the hard way:
+
+- `model_type = "yolox"` does not work on OpenVINO in Frigate 0.17.1. Its decode
+  function assigns six values into a seven-column row, so it raises as soon as
+  anything passes the confidence mask. It silently detects nothing.
+- YOLO26 does not work either. Its NMS-free head emits `[1, 300, 6]`, while the
+  `yolo-generic` parser expects the classic `[1, 84, N]` layout that YOLO11
+  produces.
 
 Frigate prints a generated admin password on first start:
 
@@ -129,7 +136,7 @@ journalctl -u frigate.service | grep 'Password:'
 ```
 
 Log in at [Frigate][frigate], change it, and check inference speed on the System
-Metrics page. Expect 26-28 ms on the iGPU:
+Metrics page:
 
 ```sh
 journalctl -u frigate.service | grep -i openvino

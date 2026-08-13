@@ -23,10 +23,27 @@
   restreamRtsp = "127.0.0.1:8554";
   restreamed = stream: "rtsp://${restreamRtsp}/${stream}";
 
-  frigatePackage = config.services.frigate.package;
-  frigateImage = "docker://ghcr.io/blakeblackshear/frigate:${frigatePackage.version}";
-  openvinoModelDirectory = "/var/lib/frigate/openvino-model";
-  openvinoModel = "${openvinoModelDirectory}/ssdlite_mobilenet_v2.xml";
+  detectionResolution = 320;
+
+  detectionWeights = pkgs.fetchurl {
+    url = "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolo11n.pt";
+    hash = "sha256-DrvIDUp2gNFJh6V3zSE0K2Xs/ZRjK9mo2mOuZBdkTuE=";
+  };
+
+  detectionModel =
+    pkgs.runCommand "yolo11n-onnx" {
+      nativeBuildInputs = [(pkgs.python3.withPackages (ps: [ps.ultralytics ps.onnx]))];
+    } ''
+      export HOME="$PWD" YOLO_OFFLINE=1
+      cp ${detectionWeights} yolo11n.pt
+      python -c "from ultralytics import YOLO; YOLO('yolo11n.pt').export(format='onnx', imgsz=${toString detectionResolution}, simplify=False)"
+      install -D yolo11n.onnx $out/yolo11n.onnx
+    '';
+
+  detectionLabels = pkgs.fetchurl {
+    url = "https://raw.githubusercontent.com/blakeblackshear/frigate/v${config.services.frigate.package.version}/docker/main/rootfs/labelmap/coco-80.txt";
+    hash = "sha256-Srob93QvNk8vLKcApH6ukjeAc4TBo0SNj4/MSIRmc8A=";
+  };
 
   recordingsDirectory = "/var/lib/frigate/recordings";
   recordingsStore = "/mnt/downloads-2t/frigate/recordings";
@@ -55,12 +72,13 @@ in {
       };
 
       model = {
-        path = openvinoModel;
-        labelmap_path = "${frigatePackage}/share/frigate/coco_91cl_bkgr.txt";
-        width = 300;
-        height = 300;
-        input_tensor = "nhwc";
-        input_pixel_format = "bgr";
+        path = "${detectionModel}/yolo11n.onnx";
+        labelmap_path = detectionLabels;
+        model_type = "yolo-generic";
+        width = detectionResolution;
+        height = detectionResolution;
+        input_tensor = "nchw";
+        input_dtype = "float";
       };
 
       ffmpeg.hwaccel_args = [];
@@ -142,47 +160,4 @@ in {
   ];
 
   systemd.services.go2rtc.serviceConfig.EnvironmentFile = ["/etc/nixos/secrets/go2rtc.env"];
-
-  systemd.services.frigate-openvino-model = {
-    description = "Extract the OpenVINO detection model from the Frigate container image";
-    requiredBy = ["frigate.service"];
-    before = ["frigate.service"];
-    wants = ["network-online.target"];
-    after = ["network-online.target"];
-    path = with pkgs; [gnutar gzip skopeo];
-    environment.SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
-
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      CacheDirectory = "frigate-openvino-model";
-    };
-
-    script = ''
-      if [ -e ${openvinoModel} ]; then
-        exit 0
-      fi
-
-      unpacked="$CACHE_DIRECTORY/image"
-      rm -rf "$unpacked"
-      skopeo --insecure-policy copy --quiet ${frigateImage} dir:"$unpacked"
-
-      install --directory --owner frigate --group frigate --mode 0750 ${openvinoModelDirectory}
-      for layer in "$unpacked"/*; do
-        if tar --extract --file "$layer" --directory ${openvinoModelDirectory} \
-             --strip-components 1 openvino-model 2> "$CACHE_DIRECTORY/tar-error"; then
-          break
-        fi
-      done
-      rm -rf "$unpacked"
-
-      chown --recursive frigate:frigate ${openvinoModelDirectory}
-
-      if [ ! -e ${openvinoModel} ]; then
-        echo "no layer of ${frigateImage} yielded openvino-model; last tar error:" >&2
-        cat "$CACHE_DIRECTORY/tar-error" >&2
-        exit 1
-      fi
-    '';
-  };
 }
