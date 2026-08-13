@@ -380,15 +380,21 @@ in {
               (fullWidth
                 // {
                   type = "entities";
-                  entities = [
-                    cameraMode
-                    {
-                      type = "weblink";
-                      url = frigateUrl;
-                      name = "Open Frigate";
-                      icon = "mdi:open-in-new";
-                    }
-                  ];
+                  entities =
+                    [
+                      cameraMode
+                      simulationMode
+                      {type = "divider";}
+                    ]
+                    ++ presenceDevices
+                    ++ [
+                      {
+                        type = "weblink";
+                        url = frigateUrl;
+                        name = "Open Frigate";
+                        icon = "mdi:open-in-new";
+                      }
+                    ];
                 })
               (cameraCard "live")
               (cameraCard "timeline")
@@ -435,11 +441,6 @@ in {
                   type = "tile";
                   entity = bedroomLight;
                   features = [{type = "light-brightness";}];
-                })
-              (fullWidth
-                // {
-                  type = "entities";
-                  entities = [simulationMode];
                 })
               (fullWidth
                 // {
