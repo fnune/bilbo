@@ -210,6 +210,9 @@ prints the attributes to match on.
 Joining is a runtime setting in Zigbee2MQTT 2.x, not a config file one. Enable it
 from the [Zigbee2MQTT][zigbee2mqtt] frontend only while adding a device.
 
+If devices report in but every command fails with `NWK_NO_ROUTE`, the dongle's
+radio has wedged on transmit: unplug it and plug it back in.
+
 Pin the network parameters, never `GENERATE` them: the module rewrites
 `configuration.yaml` from the store on every start, so a generated network only
 survives until the next rebuild. Starting a fresh one means deleting
