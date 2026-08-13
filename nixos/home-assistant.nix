@@ -189,10 +189,7 @@ in {
     enable = true;
 
     customComponents = [frigateComponent];
-    customLovelaceModules = with pkgs.home-assistant-custom-lovelace-modules; [
-      advanced-camera-card
-      card-mod
-    ];
+    customLovelaceModules = [pkgs.home-assistant-custom-lovelace-modules.advanced-camera-card];
 
     extraComponents = [
       "default_config"
@@ -364,59 +361,22 @@ in {
                     {% if alerts | count == 0 %}
                     Nothing to review.
                     {% else %}
+                    <table width="100%">
                     {% for alert in alerts -%}
-                    <a href="${frigateUrl}/review?id={{ alert.id }}">{% if alert.thumbnail %}<img src="{{ alert.thumbnail }}">{% endif %}<span>{{ alert.start | timestamp_custom('%a %-d %b, %H:%M') }} <small>· {{ alert.objects }}</small></span><b>{{ (alert.score ~ '%') if alert.score else '-' }}</b></a>
+                    <tr>
+                    <td width="118">{% if alert.thumbnail %}<a href="${frigateUrl}/review?id={{ alert.id }}"><img src="{{ alert.thumbnail }}" width="110"></a>{% endif %}</td>
+                    <td><a href="${frigateUrl}/review?id={{ alert.id }}">{{ alert.start | timestamp_custom('%a %-d %b, %H:%M') }}</a><br>{{ alert.objects }}</td>
+                    <td align="right" width="60"><b>{{ (alert.score ~ '%') if alert.score else '-' }}</b></td>
+                    </tr>
                     {% endfor -%}
+                    </table>
                     {%- set hidden = (state_attr('sensor.unreviewed_alerts', 'total') or 0) - (alerts | count) %}
                     {%- if hidden > 0 %}
-                    <p><a href="${frigateUrl}/review">{{ hidden }} more waiting</a></p>
+
+                    [{{ hidden }} more waiting](${frigateUrl}/review)
                     {%- endif %}
                     {% endif %}
                   '';
-                  card_mod.style = {
-                    "." = ''
-                      ha-card .card-header {
-                        font-size: 16px;
-                        font-weight: 500;
-                        line-height: 1.2;
-                        padding: 12px 16px 0;
-                      }
-                    '';
-                    "ha-markdown$" = ''
-                      a {
-                        display: flex;
-                        align-items: center;
-                        gap: 14px;
-                        padding: 10px 4px;
-                        border-bottom: 1px solid var(--divider-color);
-                        color: var(--primary-text-color);
-                        text-decoration: none;
-                      }
-                      a:last-of-type { border-bottom: none; }
-                      br { display: none; }
-                      a img {
-                        width: 104px;
-                        height: 58px;
-                        object-fit: cover;
-                        border-radius: 8px;
-                        flex: 0 0 auto;
-                      }
-                      a span { flex: 1 1 auto; line-height: 1.35; }
-                      a small { opacity: 0.6; }
-                      a b {
-                        flex: 0 0 auto;
-                        font-variant-numeric: tabular-nums;
-                        font-weight: 500;
-                      }
-                      p { margin: 12px 4px 0; }
-                      p a {
-                        display: inline;
-                        padding: 0;
-                        border-bottom: none;
-                        color: var(--primary-color);
-                      }
-                    '';
-                  };
                   grid_options.columns = "full";
                 }
               ];
