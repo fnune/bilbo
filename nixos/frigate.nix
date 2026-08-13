@@ -60,6 +60,9 @@
   recordingsDirectory = "/var/lib/frigate/recordings";
   recordingsStore = "/mnt/downloads-2t/frigate/recordings";
 
+  decodeInSoftware = [];
+  keepNoContinuousFootage = 0;
+
   retainMotionFor = days: {
     inherit days;
     mode = "motion";
@@ -107,7 +110,7 @@ in {
         input_dtype = "float";
       };
 
-      ffmpeg.hwaccel_args = [];
+      ffmpeg.hwaccel_args = decodeInSoftware;
 
       notifications = {
         enabled = true;
@@ -136,7 +139,7 @@ in {
 
         record = {
           enabled = true;
-          retain.days = 0;
+          retain.days = keepNoContinuousFootage;
           alerts.retain = retainMotionFor retainedDays;
           detections.retain = retainMotionFor retainedDays;
         };
