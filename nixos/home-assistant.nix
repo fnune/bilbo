@@ -315,36 +315,46 @@ in {
                     {% for alert in alerts -%}
                     {%- set match = scores | selectattr('id', 'eq', alert.detection) | first | default(none) -%}
                     {%- set link = '${frigateUrl}/review?id=' ~ alert.id -%}
-                    <a href="{{ link }}"><img src="{{ '${frigateUrl}/api/events/' ~ alert.detection ~ '/thumbnail.jpg' }}"><span>{{ alert.start | timestamp_custom('%a %-d %b') }}<br><small>{{ alert.start | timestamp_custom('%H:%M') }} · {{ alert.objects }}</small></span><b>{{ (match.score ~ '%') if match else '-' }}</b></a>
+                    <a href="{{ link }}"><img src="{{ '${frigateUrl}/api/events/' ~ alert.detection ~ '/thumbnail.jpg' }}"><span>{{ alert.start | timestamp_custom('%a %-d %b, %H:%M') }} <small>· {{ alert.objects }}</small></span><b>{{ (match.score ~ '%') if match else '-' }}</b></a>
                     {% endfor -%}
                     {% endif %}
                   '';
-                  card_mod.style."ha-markdown$" = ''
-                    a {
-                      display: flex;
-                      align-items: center;
-                      gap: 14px;
-                      padding: 10px 4px;
-                      border-bottom: 1px solid var(--divider-color);
-                      color: var(--primary-text-color);
-                      text-decoration: none;
-                    }
-                    a:last-of-type { border-bottom: none; }
-                    a img {
-                      width: 104px;
-                      height: 58px;
-                      object-fit: cover;
-                      border-radius: 8px;
-                      flex: 0 0 auto;
-                    }
-                    a span { flex: 1 1 auto; line-height: 1.35; }
-                    a small { opacity: 0.6; }
-                    a b {
-                      flex: 0 0 auto;
-                      font-variant-numeric: tabular-nums;
-                      font-weight: 500;
-                    }
-                  '';
+                  card_mod.style = {
+                    "." = ''
+                      ha-card .card-header {
+                        font-size: 16px;
+                        font-weight: 500;
+                        line-height: 1.2;
+                        padding: 12px 16px 0;
+                      }
+                    '';
+                    "ha-markdown$" = ''
+                      a {
+                        display: flex;
+                        align-items: center;
+                        gap: 14px;
+                        padding: 10px 4px;
+                        border-bottom: 1px solid var(--divider-color);
+                        color: var(--primary-text-color);
+                        text-decoration: none;
+                      }
+                      a:last-of-type { border-bottom: none; }
+                      a img {
+                        width: 104px;
+                        height: 58px;
+                        object-fit: cover;
+                        border-radius: 8px;
+                        flex: 0 0 auto;
+                      }
+                      a span { flex: 1 1 auto; line-height: 1.35; }
+                      a small { opacity: 0.6; }
+                      a b {
+                        flex: 0 0 auto;
+                        font-variant-numeric: tabular-nums;
+                        font-weight: 500;
+                      }
+                    '';
+                  };
                   grid_options.columns = "full";
                 }
               ];
