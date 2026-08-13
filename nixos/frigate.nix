@@ -197,28 +197,51 @@ in {
     };
 
     script = ''
+      request() {
+        local method="$1" url="$2" body="''${3-}"
+        local response status
+        response=$(mktemp)
+
+        if [ -n "$body" ]; then
+          status=$(curl -s -o "$response" -w '%{http_code}' -X "$method" "$url" \
+            --header 'Content-Type: application/json' --data "$body")
+        else
+          status=$(curl -s -o "$response" -w '%{http_code}' -X "$method" "$url")
+        fi
+
+        if [ "$status" -ge 400 ]; then
+          echo "$method $url returned $status: $(cat "$response")" >&2
+          rm -f "$response"
+          return 1
+        fi
+
+        cat "$response"
+        rm -f "$response"
+      }
+
       until curl -sf --max-time 2 ${internalApi}/version > /dev/null; do
         sleep 2
       done
 
       password=$(cat ${homeAssistantPasswordFile})
+      echo "password is ''${#password} characters"
 
-      exists=$(curl -sf ${internalApi}/users | jq -r --arg u ${homeAssistantUser} \
-        'map(select(.username == $u)) | length')
+      exists=$(request GET ${internalApi}/users \
+        | jq -r --arg u ${homeAssistantUser} 'map(select(.username == $u)) | length')
 
       if [ "$exists" = "0" ]; then
-        curl -sf -X POST ${internalApi}/users \
-          --header 'Content-Type: application/json' \
-          --data "$(jq -nc --arg u ${homeAssistantUser} --arg p "$password" \
+        echo "creating ${homeAssistantUser}"
+        request POST ${internalApi}/users \
+          "$(jq -nc --arg u ${homeAssistantUser} --arg p "$password" \
             '{username: $u, password: $p, role: "viewer"}')" > /dev/null
       else
-        curl -sf -X PUT ${internalApi}/users/${homeAssistantUser}/password \
-          --header 'Content-Type: application/json' \
-          --data "$(jq -nc --arg p "$password" '{password: $p}')" > /dev/null
+        echo "resetting the password for ${homeAssistantUser}"
+        request PUT ${internalApi}/users/${homeAssistantUser}/password \
+          "$(jq -nc --arg p "$password" '{password: $p}')" > /dev/null
       fi
 
-      curl -sf ${internalApi}/users | jq -e --arg u ${homeAssistantUser} \
-        'map(select(.username == $u)) | length == 1' > /dev/null
+      request GET ${internalApi}/users \
+        | jq -e --arg u ${homeAssistantUser} 'map(select(.username == $u)) | length == 1' > /dev/null
     '';
   };
 }
