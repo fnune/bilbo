@@ -181,7 +181,14 @@ in {
           import /etc/caddy.d/*.caddy
         '';
         ":80".extraConfig = ''
-          redir https://{host}{uri} permanent
+          @lan remote_ip private_ranges
+          handle @lan {
+            ${proxiesSupportingSubpath}
+            ${rootIsImmich}
+          }
+          handle {
+            redir https://{host}{uri} permanent
+          }
         '';
       };
     };
