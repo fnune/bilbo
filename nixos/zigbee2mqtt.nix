@@ -47,7 +47,11 @@ in {
         port = frontendPort;
         base_url = frontendSubpath;
       };
-      advanced.log_level = "warning";
+      advanced = {
+        log_level = "warning";
+        pan_id = 60197;
+        ext_pan_id = [30 37 140 153 119 11 242 160];
+      };
     };
   };
 

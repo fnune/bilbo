@@ -65,7 +65,7 @@ around the `=`. None are optional, so a missing file fails its unit.
 | `mosquitto-zigbee2mqtt-password` | plaintext password |
 | `mosquitto-home-assistant-password` | plaintext password |
 | `frigate.env` | `FRIGATE_MQTT_PASSWORD=` matching the Frigate one |
-| `zigbee2mqtt.env` | `ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=` matching the Zigbee2MQTT one, `ZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN=`, and `ZIGBEE2MQTT_CONFIG_ADVANCED_{PAN_ID,EXT_PAN_ID,NETWORK_KEY}=` |
+| `zigbee2mqtt.env` | `ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=` matching the Zigbee2MQTT one, `ZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN=`, and `ZIGBEE2MQTT_CONFIG_ADVANCED_NETWORK_KEY=` |
 | `go2rtc.env` | `CAMERA_PASSWORD=` for the camera |
 
 To generate the five machine-chosen ones consistently, as `root`:
@@ -210,12 +210,10 @@ prints the attributes to match on.
 Joining is a runtime setting in Zigbee2MQTT 2.x, not a config file one. Enable it
 from the [Zigbee2MQTT][zigbee2mqtt] frontend only while adding a device.
 
-The network parameters must be pinned in `zigbee2mqtt.env`. The module rewrites
-`configuration.yaml` from the store on every start, so `GENERATE` commissions a
-new network on each rebuild and Zigbee2MQTT then refuses to start against the
-coordinator's old one. To start over, delete
-`/var/lib/zigbee2mqtt/coordinator_backup.json`, unset the three variables for one
-start, pin whatever it generates, and re-pair every device.
+Pin the network parameters, never `GENERATE` them: the module rewrites
+`configuration.yaml` from the store on every start, so a generated network only
+survives until the next rebuild. Starting a fresh one means deleting
+`/var/lib/zigbee2mqtt/coordinator_backup.json` and re-pairing every device.
 
 For the Innr bulbs:
 
