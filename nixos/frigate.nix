@@ -24,7 +24,12 @@
 
   restreamApi = "127.0.0.1:1984";
   restreamRtsp = "127.0.0.1:8554";
-  restreamed = stream: "rtsp://${restreamRtsp}/${stream}";
+
+  readRestream = role: stream: {
+    path = "rtsp://${restreamRtsp}/${stream}";
+    roles = [role];
+    input_args = "preset-rtsp-restream";
+  };
 
   detectionResolution = 320;
 
@@ -54,6 +59,12 @@
 
   recordingsDirectory = "/var/lib/frigate/recordings";
   recordingsStore = "/mnt/downloads-2t/frigate/recordings";
+
+  retainMotionFor = days: {
+    inherit days;
+    mode = "motion";
+  };
+
   retainedDays = 30;
 in {
   services.go2rtc = {
@@ -108,16 +119,8 @@ in {
 
       cameras."${cameraName}" = {
         ffmpeg.inputs = [
-          {
-            path = restreamed detectStream;
-            roles = ["detect"];
-            input_args = "preset-rtsp-restream";
-          }
-          {
-            path = restreamed mainStream;
-            roles = ["record"];
-            input_args = "preset-rtsp-restream";
-          }
+          (readRestream "detect" detectStream)
+          (readRestream "record" mainStream)
         ];
 
         live.streams."Main" = mainStream;
@@ -134,14 +137,8 @@ in {
         record = {
           enabled = true;
           retain.days = 0;
-          alerts.retain = {
-            days = retainedDays;
-            mode = "motion";
-          };
-          detections.retain = {
-            days = retainedDays;
-            mode = "motion";
-          };
+          alerts.retain = retainMotionFor retainedDays;
+          detections.retain = retainMotionFor retainedDays;
         };
 
         snapshots = {

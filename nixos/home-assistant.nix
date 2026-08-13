@@ -9,7 +9,12 @@
 
   inherit (config.services.home-assistant) configDir;
 
-  cameraName = "indoor";
+  curl = lib.getExe pkgs.curl;
+  jq = lib.getExe pkgs.jq;
+  base64 = "${pkgs.coreutils}/bin/base64";
+
+  frigateUrl = "https://${config.services.frigate.hostname}";
+  cameraName = builtins.head (builtins.attrNames config.services.frigate.settings.cameras);
   cameraTopic = suffix: "frigate/${cameraName}/${suffix}";
 
   frigateAvailability = {
@@ -17,9 +22,6 @@
     payload_available = "online";
     payload_not_available = "offline";
   };
-
-  cameraSwitch = "switch.indoor_camera";
-  cameraEntity = "camera.indoor";
 
   frigateComponent = pkgs.home-assistant-custom-components.frigate.overrideAttrs (previous: {
     doCheck = false;
@@ -34,95 +36,60 @@
             'False'
       '';
   });
-  frigateUrl = "https://frigate.fnune.com";
 
   frigateApi = "http://127.0.0.1:8971/api";
   frigateUser = "admin";
-  alertLimit = 5;
   frigatePasswordFile = "/etc/nixos/secrets/frigate-admin-password";
   frigatePasswordCredential = "frigate-password";
 
-  asFrigateUser = query:
-    pkgs.writeShellScript "frigate-query" ''
-      set -e
-
-      session=$(mktemp)
-      trap 'rm -f "$session"' EXIT
-
-      ${pkgs.curl}/bin/curl -sf -c "$session" -X POST ${frigateApi}/login \
-        --header 'Content-Type: application/json' \
-        --data "$(${pkgs.jq}/bin/jq -nc --arg u ${frigateUser} \
-          --arg p "$(cat "$CREDENTIALS_DIRECTORY/${frigatePasswordCredential}")" '{user: $u, password: $p}')" > /dev/null
-
-      ${pkgs.curl}/bin/curl -sf -b "$session" "${frigateApi}/${query}"
-    '';
-
-  unreviewedWithThumbnails = pkgs.writeShellScript "frigate-unreviewed-alerts" ''
-    set -e
-
+  openFrigateSession = ''
     session=$(mktemp)
     trap 'rm -f "$session"' EXIT
 
-    ${pkgs.curl}/bin/curl -sf -c "$session" -X POST ${frigateApi}/login \
+    ${curl} -sf -c "$session" -X POST ${frigateApi}/login \
       --header 'Content-Type: application/json' \
-      --data "$(${pkgs.jq}/bin/jq -nc --arg u ${frigateUser} \
-        --arg p "$(cat "$CREDENTIALS_DIRECTORY/${frigatePasswordCredential}")" '{user: $u, password: $p}')" > /dev/null
+      --data "$(${jq} -nc --arg u ${frigateUser} \
+        --arg p "$(cat "$CREDENTIALS_DIRECTORY/${frigatePasswordCredential}")" \
+        '{user: $u, password: $p}')" > /dev/null
 
-    fetch() {
-      ${pkgs.curl}/bin/curl -sf -b "$session" "${frigateApi}/$1"
-    }
+    fetch() { ${curl} -sf -b "$session" "${frigateApi}/$1"; }
+  '';
+
+  shownAlerts = 5;
+
+  unreviewedAlerts = pkgs.writeShellScript "frigate-unreviewed-alerts" ''
+    set -e
+    ${openFrigateSession}
 
     alerts=$(fetch "review?reviewed=0&severity=alert&limit=100")
-    total=$(echo "$alerts" | ${pkgs.jq}/bin/jq 'length')
     scores=$(fetch "events?limit=40&cameras=${cameraName}&labels=person")
+    total=$(echo "$alerts" | ${jq} 'length')
 
     items=""
-    for row in $(echo "$alerts" | ${pkgs.jq}/bin/jq -r '.[:${toString alertLimit}][] | @base64'); do
-      alert=$(echo "$row" | ${pkgs.coreutils}/bin/base64 -d)
-      detection=$(echo "$alert" | ${pkgs.jq}/bin/jq -r '.data.detections[0] // empty')
+    for row in $(echo "$alerts" | ${jq} -r '.[:${toString shownAlerts}][] | @base64'); do
+      alert=$(echo "$row" | ${base64} -d)
+      detection=$(echo "$alert" | ${jq} -r '.data.detections[0] // empty')
 
       thumbnail=""
       if [ -n "$detection" ]; then
-        encoded=$(fetch "events/$detection/thumbnail.jpg" | ${pkgs.coreutils}/bin/base64 -w0 || true)
+        encoded=$(fetch "events/$detection/thumbnail.jpg" | ${base64} -w0 || true)
         [ -n "$encoded" ] && thumbnail="data:image/jpeg;base64,$encoded"
       fi
 
-      score=$(echo "$scores" | ${pkgs.jq}/bin/jq -r --arg d "$detection" \
+      score=$(echo "$scores" | ${jq} -r --arg d "$detection" \
         'map(select(.id == $d)) | first | ((.data.top_score // .data.score // 0) * 100 | round) // empty')
 
-      items="$items$(echo "$alert" | ${pkgs.jq}/bin/jq -c \
-        --arg t "$thumbnail" --arg s "$score" \
-        '{id: .id, start: .start_time, objects: (.data.objects // [] | join(", ")), thumbnail: $t, score: $s}')"
+      items="$items$(echo "$alert" | ${jq} -c --arg t "$thumbnail" --arg s "$score" \
+        '{id, start: .start_time, objects: (.data.objects // [] | join(", ")), thumbnail: $t, score: $s}')"
     done
 
-    echo "$items" | ${pkgs.jq}/bin/jq -sc --argjson total "$total" '{count: length, total: $total, items: .}'
+    echo "$items" | ${jq} -sc --argjson total "$total" '{count: length, total: $total, items: .}'
   '';
 
-  unreviewedAlerts = pkgs.writeShellScript "frigate-unreviewed-alerts" ''
-    ${asFrigateUser "review?reviewed=0&severity=alert&limit=10"} \
-      | ${pkgs.jq}/bin/jq -c '{
-          count: length,
-          items: [ .[] | {
-            id: .id,
-            start: .start_time,
-            objects: (.data.objects // [] | join(", ")),
-            detection: (.data.detections // [] | first)
-          } ]
-        }'
-  '';
-
-  cameraCard = view: {
-    type = "custom:advanced-camera-card";
-    cameras = [{camera_entity = cameraEntity;}];
-    view.default = view;
-    dimensions = {
-      aspect_ratio_mode = "static";
-      aspect_ratio = "16:9";
-    };
-    grid_options.columns = "full";
-  };
-
+  cameraEntity = "camera.indoor";
+  cameraSwitch = "switch.indoor_camera";
   cameraMode = "input_select.camera_mode";
+
   alwaysOn = "On";
   alwaysOff = "Off";
   followPresence = "Auto";
@@ -146,7 +113,7 @@
     }
   ];
 
-  whenModeIs = mode: extraConditions: {
+  whenModeIs = mode: conditions: action: {
     conditions =
       [
         {
@@ -155,8 +122,23 @@
           state = mode;
         }
       ]
-      ++ extraConditions;
+      ++ conditions;
+    sequence = switchCameraTo action;
   };
+
+  fullWidth.grid_options.columns = "full";
+
+  cameraCard = view:
+    fullWidth
+    // {
+      type = "custom:advanced-camera-card";
+      cameras = [{camera_entity = cameraEntity;}];
+      view.default = view;
+      dimensions = {
+        aspect_ratio_mode = "static";
+        aspect_ratio = "16:9";
+      };
+    };
 
   uiManagedDomains = {
     automation = "automations.yaml";
@@ -165,25 +147,22 @@
   };
 
   uiManagedIncludes =
-    builtins.listToAttrs
-    (builtins.attrValues (builtins.mapAttrs (domain: file: {
-        name = "${domain} ui";
-        value = "!include ${file}";
-      })
-      uiManagedDomains));
+    lib.mapAttrs'
+    (domain: file: lib.nameValuePair "${domain} ui" "!include ${file}")
+    uiManagedDomains;
 
   uiManagedFiles =
-    builtins.listToAttrs
-    (map (file: {
-        name = "${configDir}/${file}";
-        value.f = {
+    lib.mapAttrs'
+    (_: file:
+      lib.nameValuePair "${configDir}/${file}" {
+        f = {
           user = "hass";
           group = "hass";
           mode = "0640";
           argument = "[]";
         };
       })
-      (builtins.attrValues uiManagedDomains));
+    uiManagedDomains;
 in {
   services.home-assistant = {
     enable = true;
@@ -192,12 +171,12 @@ in {
     customLovelaceModules = [pkgs.home-assistant-custom-lovelace-modules.advanced-camera-card];
 
     extraComponents = [
+      "command_line"
       "default_config"
       "fritz"
       "input_select"
       "met"
       "mobile_app"
-      "command_line"
       "mqtt"
       "radio_browser"
     ];
@@ -244,7 +223,7 @@ in {
             sensor = {
               name = "Unreviewed alerts";
               unique_id = "frigate_unreviewed_alerts";
-              command = "${unreviewedWithThumbnails}";
+              command = "${unreviewedAlerts}";
               value_template = "{{ value_json.count }}";
               json_attributes = ["items" "total"];
               scan_interval = 60;
@@ -253,7 +232,8 @@ in {
         ];
 
         mqtt.switch = [
-          ({
+          (frigateAvailability
+            // {
               name = "Indoor camera";
               unique_id = "frigate_${cameraName}_enabled";
               state_topic = cameraTopic "enabled/state";
@@ -263,8 +243,7 @@ in {
               retain = true;
               icon = "mdi:cctv";
               entity_category = "config";
-            }
-            // frigateAvailability)
+            })
         ];
 
         automation = [
@@ -295,17 +274,14 @@ in {
             actions = [
               {
                 choose = [
-                  (whenModeIs alwaysOn []
-                    // {sequence = switchCameraTo "switch.turn_on";})
-                  (whenModeIs alwaysOff []
-                    // {sequence = switchCameraTo "switch.turn_off";})
+                  (whenModeIs alwaysOn [] "switch.turn_on")
+                  (whenModeIs alwaysOff [] "switch.turn_off")
                   (whenModeIs followPresence [
-                      {
-                        condition = "template";
-                        value_template = nobodyHome;
-                      }
-                    ]
-                    // {sequence = switchCameraTo "switch.turn_on";})
+                    {
+                      condition = "template";
+                      value_template = nobodyHome;
+                    }
+                  ] "switch.turn_on")
                 ];
                 default = switchCameraTo "switch.turn_off";
               }
@@ -315,18 +291,18 @@ in {
       }
       // uiManagedIncludes;
 
-    lovelaceConfig = {
-      views = [
-        {
-          title = "Watchtower";
-          path = "home";
-          type = "sections";
-          max_columns = 2;
-          sections = [
-            {
-              type = "grid";
-              cards = [
-                {
+    lovelaceConfig.views = [
+      {
+        title = "Watchtower";
+        path = "home";
+        type = "sections";
+        max_columns = 2;
+        sections = [
+          {
+            type = "grid";
+            cards = [
+              (fullWidth
+                // {
                   type = "entities";
                   entities = [
                     cameraMode
@@ -337,23 +313,23 @@ in {
                       icon = "mdi:open-in-new";
                     }
                   ];
-                  grid_options.columns = "full";
-                }
-                (cameraCard "live")
-                (cameraCard "timeline")
-                {
+                })
+              (cameraCard "live")
+              (cameraCard "timeline")
+              (fullWidth
+                // {
                   type = "history-graph";
                   title = "Camera";
                   hours_to_show = 48;
                   entities = [cameraSwitch];
-                  grid_options.columns = "full";
-                }
-              ];
-            }
-            {
-              type = "grid";
-              cards = [
-                {
+                })
+            ];
+          }
+          {
+            type = "grid";
+            cards = [
+              (fullWidth
+                // {
                   type = "markdown";
                   title = "Unreviewed alerts";
                   content = ''
@@ -377,14 +353,12 @@ in {
                     {%- endif %}
                     {% endif %}
                   '';
-                  grid_options.columns = "full";
-                }
-              ];
-            }
-          ];
-        }
-      ];
-    };
+                })
+            ];
+          }
+        ];
+      }
+    ];
   };
 
   systemd.services.home-assistant.serviceConfig.LoadCredential = [
