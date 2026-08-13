@@ -430,6 +430,24 @@ in {
                     {% endif %}
                   '';
                 })
+              (fullWidth
+                // {
+                  type = "tile";
+                  entity = bedroomLight;
+                  features = [{type = "light-brightness";}];
+                })
+              (fullWidth
+                // {
+                  type = "entities";
+                  entities = [simulationMode];
+                })
+              (fullWidth
+                // {
+                  type = "history-graph";
+                  title = "Bedroom light";
+                  hours_to_show = 48;
+                  entities = [bedroomLight];
+                })
             ];
           }
         ];
