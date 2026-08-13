@@ -13,6 +13,7 @@
   mainStream = cameraName;
   restreamed = stream: "rtsp://127.0.0.1:8554/${stream}";
   cameraSwitch = "switch.indoor_camera";
+  cameraEntity = "camera.indoor";
 
   cameraMode = "input_select.camera_mode";
   alwaysOn = "On";
@@ -185,6 +186,29 @@ in {
         ];
       }
       // uiManagedIncludes;
+
+    lovelaceConfig = {
+      views = [
+        {
+          title = "Home";
+          path = "home";
+          cards = [
+            {
+              type = "picture-entity";
+              entity = cameraEntity;
+              camera_view = "live";
+              show_name = false;
+              show_state = false;
+            }
+            {
+              type = "entities";
+              title = "Camera";
+              entities = [cameraMode];
+            }
+          ];
+        }
+      ];
+    };
   };
 
   systemd.tmpfiles.settings."10-home-assistant" = uiManagedFiles;
