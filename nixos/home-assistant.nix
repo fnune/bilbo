@@ -463,12 +463,6 @@ in {
                 })
               (fullWidth
                 // {
-                  type = "tile";
-                  entity = bedroomLight;
-                  features = [{type = "light-brightness";}];
-                })
-              (fullWidth
-                // {
                   type = "history-graph";
                   title = "Bedroom light";
                   hours_to_show = 48;
