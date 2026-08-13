@@ -288,6 +288,13 @@ in {
                 }
                 (cameraCard "live")
                 (cameraCard "timeline")
+                {
+                  type = "history-graph";
+                  title = "Camera";
+                  hours_to_show = 48;
+                  entities = [cameraSwitch];
+                  grid_options.columns = "full";
+                }
               ];
             }
             {
@@ -302,22 +309,17 @@ in {
                     {% if alerts | count == 0 %}
                     Nothing to review.
                     {% else %}
-                    | | When | Seen | Score |
-                    |---|---|---|---|
                     {% for alert in alerts -%}
                     {%- set match = scores | selectattr('id', 'eq', alert.detection) | first | default(none) -%}
                     {%- set link = '${frigateUrl}/review?id=' ~ alert.id -%}
-                    | <a href="{{ link }}"><img src="{{ '${frigateUrl}/api/events/' ~ alert.detection ~ '/thumbnail.jpg' }}" width="110"></a> | [{{ alert.start | timestamp_custom('%a %-d %b, %H:%M') }}]({{ link }}) | {{ alert.objects }} | {{ (match.score ~ '%') if match else '-' }} |
+                    <a href="{{ link }}" style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--divider-color);color:var(--primary-text-color);text-decoration:none">
+                    <img src="{{ '${frigateUrl}/api/events/' ~ alert.detection ~ '/thumbnail.jpg' }}" style="width:104px;height:58px;object-fit:cover;border-radius:8px;flex:0 0 auto">
+                    <span style="flex:1 1 auto">{{ alert.start | timestamp_custom('%a %-d %b') }}<br><span style="opacity:0.6">{{ alert.start | timestamp_custom('%H:%M') }} · {{ alert.objects }}</span></span>
+                    <span style="flex:0 0 auto;font-variant-numeric:tabular-nums">{{ (match.score ~ '%') if match else '-' }}</span>
+                    </a>
                     {% endfor -%}
                     {% endif %}
                   '';
-                  grid_options.columns = "full";
-                }
-                {
-                  type = "history-graph";
-                  title = "Camera";
-                  hours_to_show = 48;
-                  entities = [cameraSwitch];
                   grid_options.columns = "full";
                 }
               ];
