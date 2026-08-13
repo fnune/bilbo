@@ -21,6 +21,32 @@
   cameraSwitch = "switch.indoor_camera";
   cameraEntity = "camera.indoor";
   frigateUrl = "https://frigate.fnune.com";
+  frigateApi = "http://127.0.0.1:5000/api";
+
+  unreviewedAlerts = pkgs.writeShellScript "frigate-unreviewed-alerts" ''
+    ${pkgs.curl}/bin/curl -sf "${frigateApi}/review?reviewed=0&severity=alert&limit=10" \
+      | ${pkgs.jq}/bin/jq -c '{
+          count: length,
+          items: [ .[] | {
+            id: .id,
+            start: .start_time,
+            objects: (.data.objects // [] | join(", ")),
+            detection: (.data.detections // [] | first)
+          } ]
+        }'
+  '';
+
+  personScores = pkgs.writeShellScript "frigate-person-scores" ''
+    ${pkgs.curl}/bin/curl -sf "${frigateApi}/events?limit=20&cameras=indoor&labels=person" \
+      | ${pkgs.jq}/bin/jq -c '{
+          count: length,
+          items: [ .[] | {
+            id: .id,
+            start: .start_time,
+            score: ((.data.top_score // .data.score // 0) * 100 | round)
+          } ]
+        }'
+  '';
 
   cameraCard = view: {
     type = "custom:advanced-camera-card";
@@ -108,6 +134,7 @@ in {
       "input_select"
       "met"
       "mobile_app"
+      "command_line"
       "mqtt"
       "radio_browser"
     ];
@@ -148,6 +175,29 @@ in {
           icon = "mdi:cctv";
           options = [alwaysOn alwaysOff followPresence];
         };
+
+        command_line = [
+          {
+            sensor = {
+              name = "Unreviewed alerts";
+              unique_id = "frigate_unreviewed_alerts";
+              command = "${unreviewedAlerts}";
+              value_template = "{{ value_json.count }}";
+              json_attributes = ["items"];
+              scan_interval = 60;
+            };
+          }
+          {
+            sensor = {
+              name = "Person detections";
+              unique_id = "frigate_person_detections";
+              command = "${personScores}";
+              value_template = "{{ value_json.count }}";
+              json_attributes = ["items"];
+              scan_interval = 60;
+            };
+          }
+        ];
 
         mqtt.switch = [
           ({
@@ -237,7 +287,27 @@ in {
                     action = "url";
                     url_path = frigateUrl;
                   };
-                  grid_options.columns = 3;
+                  grid_options = {
+                    columns = 3;
+                    rows = 1;
+                  };
+                }
+                {
+                  type = "markdown";
+                  title = "Unreviewed alerts";
+                  content = ''
+                    {% set alerts = state_attr('sensor.unreviewed_alerts', 'items') or [] %}
+                    {% set scores = state_attr('sensor.person_detections', 'items') or [] %}
+                    {% if alerts | count == 0 %}
+                    Nothing to review.
+                    {% else %}
+                    {% for alert in alerts %}
+                    {%- set match = scores | selectattr('id', 'eq', alert.detection) | first | default(none) %}
+                    - [{{ alert.start | timestamp_custom('%a %H:%M') }} · {{ alert.objects }}{% if match %} · {{ match.score }}%{% endif %}](${frigateUrl}/review?id={{ alert.id }})
+                    {% endfor %}
+                    {% endif %}
+                  '';
+                  grid_options.columns = "full";
                 }
                 (cameraCard "live")
                 (cameraCard "timeline")
