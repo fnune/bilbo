@@ -339,6 +339,7 @@ in {
                         text-decoration: none;
                       }
                       a:last-of-type { border-bottom: none; }
+                      br { display: none; }
                       a img {
                         width: 104px;
                         height: 58px;
