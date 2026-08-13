@@ -119,6 +119,7 @@ in {
             command_topic = cameraTopic "enabled/set";
             payload_on = "ON";
             payload_off = "OFF";
+            retain = true;
             icon = "mdi:cctv";
           }
         ];
