@@ -478,6 +478,11 @@ in {
                 })
               (cameraCard "live")
               (cameraCard "timeline")
+            ];
+          }
+          {
+            type = "grid";
+            cards = [
               (fullWidth
                 // {
                   type = "history-graph";
@@ -492,11 +497,6 @@ in {
                   hours_to_show = 48;
                   entities = [bedroomLight];
                 })
-            ];
-          }
-          {
-            type = "grid";
-            cards = [
               (fullWidth
                 // {
                   type = "markdown";
