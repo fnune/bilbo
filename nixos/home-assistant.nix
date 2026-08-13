@@ -17,14 +17,17 @@
   alwaysOff = "Off";
   followPresence = "Auto";
 
-  presenceDevices = [];
+  presenceDevices = [
+    "device_tracker.merry"
+    "device_tracker.estella"
+  ];
 
   nobodyHome =
     if presenceDevices == []
     then "false"
     else let
       quoted = lib.concatMapStringsSep ", " (device: "'${device}'") presenceDevices;
-    in "{{ [${quoted}] | select('is_state', 'home') | list | count == 0 }}";
+    in "{{ [${quoted}] | reject('is_state', 'not_home') | list | count == 0 }}";
 
   switchCameraTo = action: [
     {
