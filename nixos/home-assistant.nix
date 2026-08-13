@@ -126,7 +126,10 @@ in {
     enable = true;
 
     customComponents = [pkgs.home-assistant-custom-components.frigate];
-    customLovelaceModules = [pkgs.home-assistant-custom-lovelace-modules.advanced-camera-card];
+    customLovelaceModules = with pkgs.home-assistant-custom-lovelace-modules; [
+      advanced-camera-card
+      card-mod
+    ];
 
     extraComponents = [
       "default_config"
@@ -312,13 +315,35 @@ in {
                     {% for alert in alerts -%}
                     {%- set match = scores | selectattr('id', 'eq', alert.detection) | first | default(none) -%}
                     {%- set link = '${frigateUrl}/review?id=' ~ alert.id -%}
-                    <a href="{{ link }}" style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--divider-color);color:var(--primary-text-color);text-decoration:none">
-                    <img src="{{ '${frigateUrl}/api/events/' ~ alert.detection ~ '/thumbnail.jpg' }}" style="width:104px;height:58px;object-fit:cover;border-radius:8px;flex:0 0 auto">
-                    <span style="flex:1 1 auto">{{ alert.start | timestamp_custom('%a %-d %b') }}<br><span style="opacity:0.6">{{ alert.start | timestamp_custom('%H:%M') }} · {{ alert.objects }}</span></span>
-                    <span style="flex:0 0 auto;font-variant-numeric:tabular-nums">{{ (match.score ~ '%') if match else '-' }}</span>
-                    </a>
+                    <a href="{{ link }}"><img src="{{ '${frigateUrl}/api/events/' ~ alert.detection ~ '/thumbnail.jpg' }}"><span>{{ alert.start | timestamp_custom('%a %-d %b') }}<br><small>{{ alert.start | timestamp_custom('%H:%M') }} · {{ alert.objects }}</small></span><b>{{ (match.score ~ '%') if match else '-' }}</b></a>
                     {% endfor -%}
                     {% endif %}
+                  '';
+                  card_mod.style."ha-markdown$" = ''
+                    a {
+                      display: flex;
+                      align-items: center;
+                      gap: 14px;
+                      padding: 10px 4px;
+                      border-bottom: 1px solid var(--divider-color);
+                      color: var(--primary-text-color);
+                      text-decoration: none;
+                    }
+                    a:last-of-type { border-bottom: none; }
+                    a img {
+                      width: 104px;
+                      height: 58px;
+                      object-fit: cover;
+                      border-radius: 8px;
+                      flex: 0 0 auto;
+                    }
+                    a span { flex: 1 1 auto; line-height: 1.35; }
+                    a small { opacity: 0.6; }
+                    a b {
+                      flex: 0 0 auto;
+                      font-variant-numeric: tabular-nums;
+                      font-weight: 500;
+                    }
                   '';
                   grid_options.columns = "full";
                 }
