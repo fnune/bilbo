@@ -65,7 +65,7 @@ around the `=`. None are optional, so a missing file fails its unit.
 | `mosquitto-zigbee2mqtt-password` | plaintext password |
 | `mosquitto-home-assistant-password` | plaintext password |
 | `frigate.env` | `FRIGATE_MQTT_PASSWORD=` matching the Frigate one |
-| `zigbee2mqtt.env` | `ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=` matching the Zigbee2MQTT one, `ZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN=`, and the three network parameters below |
+| `zigbee2mqtt.env` | `ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=` matching the Zigbee2MQTT one, `ZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN=`, and `ZIGBEE2MQTT_CONFIG_ADVANCED_{PAN_ID,EXT_PAN_ID,NETWORK_KEY}=` |
 | `go2rtc.env` | `CAMERA_PASSWORD=` for the camera |
 
 To generate the five machine-chosen ones consistently, as `root`:
@@ -210,26 +210,12 @@ prints the attributes to match on.
 Joining is a runtime setting in Zigbee2MQTT 2.x, not a config file one. Enable it
 from the [Zigbee2MQTT][zigbee2mqtt] frontend only while adding a device.
 
-The Zigbee network identity lives in `zigbee2mqtt.env`, not in the Nix config:
-
-```
-ZIGBEE2MQTT_CONFIG_ADVANCED_PAN_ID=60197
-ZIGBEE2MQTT_CONFIG_ADVANCED_EXT_PAN_ID=[30,37,140,153,119,11,242,160]
-ZIGBEE2MQTT_CONFIG_ADVANCED_NETWORK_KEY=[13,196,252,133,13,122,251,41,48,249,145,132,32,120,251,173]
-```
-
-The NixOS module copies `configuration.yaml` out of the store on every start, so
-anything Zigbee2MQTT writes back is lost on the next rebuild. Leaving these
-unset, or setting them to `GENERATE`, therefore commissions a fresh network on
-each rebuild while the coordinator keeps the old one, and Zigbee2MQTT refuses to
-start with a configuration-adapter mismatch. Env overrides survive because they
-are applied after that copy. The network key is a secret, which is why it is here
-and not in the repository.
-
-Starting a network from scratch means re-pairing every device: delete
+The network parameters must be pinned in `zigbee2mqtt.env`. The module rewrites
+`configuration.yaml` from the store on every start, so `GENERATE` commissions a
+new network on each rebuild and Zigbee2MQTT then refuses to start against the
+coordinator's old one. To start over, delete
 `/var/lib/zigbee2mqtt/coordinator_backup.json`, unset the three variables for one
-start, then read the generated values out of
-`/var/lib/zigbee2mqtt/configuration.yaml` and pin them back.
+start, pin whatever it generates, and re-pair every device.
 
 For the Innr bulbs:
 
