@@ -90,9 +90,9 @@
   cameraSwitch = "switch.indoor_camera";
   cameraMode = "input_select.camera_mode";
 
-  alwaysOn = "On";
-  alwaysOff = "Off";
-  followPresence = "Auto";
+  neverWatch = "Disabled";
+  watchWhenAway = "When away";
+  alwaysWatch = "Always";
 
   bedroomLight = "light.bedroom_light";
   simulationMode = "input_select.occupancy_simulation";
@@ -280,7 +280,7 @@ in {
           camera_mode = {
             name = "Camera";
             icon = "mdi:cctv";
-            options = [alwaysOn alwaysOff followPresence];
+            options = [neverWatch watchWhenAway alwaysWatch];
           };
 
           occupancy_simulation = {
@@ -394,9 +394,9 @@ in {
               actions = [
                 {
                   choose = [
-                    (whenModeIs alwaysOn [] "switch.turn_on")
-                    (whenModeIs alwaysOff [] "switch.turn_off")
-                    (whenModeIs followPresence [
+                    (whenModeIs neverWatch [] "switch.turn_off")
+                    (whenModeIs alwaysWatch [] "switch.turn_on")
+                    (whenModeIs watchWhenAway [
                       {
                         condition = "template";
                         value_template = nobodyHome;
