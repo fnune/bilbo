@@ -97,6 +97,7 @@
   bedroomLight = "light.bedroom_light";
   simulationMode = "input_select.occupancy_simulation";
   sunsetSensor = "sensor.sunset";
+  lightPowerSensor = "binary_sensor.bedroom_light_power";
 
   neverSimulate = "Disabled";
   simulateWhenAway = "When away (${sunsetWindow}, for ${onDuration})";
@@ -300,6 +301,15 @@ in {
                 state = "{{ as_timestamp(state_attr('sun.sun', 'next_setting')) | timestamp_custom('%H:%M') }}";
               }
             ];
+
+            binary_sensor = [
+              {
+                name = "Bedroom light power";
+                unique_id = "bedroom_light_power";
+                device_class = "connectivity";
+                state = "{{ not is_state('${bedroomLight}', 'unavailable') }}";
+              }
+            ];
           }
         ];
 
@@ -453,6 +463,7 @@ in {
                       cameraMode
                       simulationMode
                       sunsetSensor
+                      lightPowerSensor
                       {type = "divider";}
                     ]
                     ++ presenceDevices

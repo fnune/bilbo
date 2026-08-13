@@ -32,6 +32,7 @@ in {
     enable = true;
     settings = {
       homeassistant.enabled = true;
+      availability.enabled = true;
       serial = {
         port = coordinatorSerialPort;
         adapter = "zstack";
