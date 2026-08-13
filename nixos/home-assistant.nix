@@ -139,6 +139,11 @@ in {
                   trigger = "homeassistant";
                   event = "start";
                 }
+                {
+                  trigger = "state";
+                  entity_id = cameraSwitch;
+                  to = ["on" "off"];
+                }
               ]
               ++ lib.optional (presenceDevices != []) {
                 trigger = "state";
