@@ -98,7 +98,7 @@
   simulationMode = "input_select.occupancy_simulation";
 
   neverSimulate = "Disabled";
-  simulateWhenAway = "When away";
+  simulateWhenAway = "When away (${sunsetWindow}, for ${onDuration})";
   alwaysSimulate = "Always";
 
   presenceDevices = [
@@ -106,20 +106,12 @@
     "device_tracker.estella"
   ];
 
-  nobodyHomeExpression =
+  nobodyHome =
     if presenceDevices == []
     then "false"
     else let
       quoted = lib.concatMapStringsSep ", " (device: "'${device}'") presenceDevices;
-    in "[${quoted}] | reject('is_state', 'not_home') | list | count == 0";
-
-  nobodyHome = "{{ ${nobodyHomeExpression} }}";
-
-  simulatingExpression = lib.concatStrings [
-    "is_state('${simulationMode}', '${alwaysSimulate}')"
-    " or (is_state('${simulationMode}', '${simulateWhenAway}')"
-    " and (${nobodyHomeExpression}))"
-  ];
+    in "{{ [${quoted}] | reject('is_state', 'not_home') | list | count == 0 }}";
 
   simulating = {
     condition = "or";
@@ -168,8 +160,13 @@
     pad = lib.fixedWidthNumber 2;
   in "${lib.optionalString (minutes < 0) "-"}${pad (absolute / 60)}:${pad (lib.mod absolute 60)}:00";
 
-  sunsetSeconds = minutes: toString ((sunsetOffsetMinutes + minutes) * 60);
-  clockAfterSunset = minutes: "{{ (sunset + (${sunsetSeconds minutes})) | timestamp_custom('%H:%M') }}";
+  signedMinutes = minutes:
+    if minutes < 0
+    then "-${toString (-minutes)}"
+    else "+${toString minutes}";
+
+  sunsetWindow = "sunset ${signedMinutes (sunsetOffsetMinutes + lightsOnWithin.from)} to ${signedMinutes (sunsetOffsetMinutes + lightsOnWithin.to)}";
+  onDuration = "${toString lightsStayOnFor.from}-${toString lightsStayOnFor.to} min";
 
   switchCameraTo = action: [
     {
@@ -460,23 +457,6 @@ in {
                   title = "Camera";
                   hours_to_show = 48;
                   entities = [cameraSwitch];
-                })
-              (fullWidth
-                // {
-                  type = "markdown";
-                  title = "Occupancy simulation";
-                  content = ''
-                    {% if is_state('${simulationMode}', '${neverSimulate}') %}
-                    Disabled. The bedroom light is yours alone.
-                    {% else %}
-                    {%- set sunset = as_timestamp(state_attr('sun.sun', 'next_setting')) %}
-                    The bedroom light comes on between **${clockAfterSunset lightsOnWithin.from}** and **${clockAfterSunset lightsOnWithin.to}**, then goes off ${toString lightsStayOnFor.from} to ${toString lightsStayOnFor.to} minutes later.
-                    {%- if not (${simulatingExpression}) %}
-
-                    Holding off until the house is empty.
-                    {%- endif %}
-                    {% endif %}
-                  '';
                 })
               (fullWidth
                 // {
