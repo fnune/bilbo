@@ -20,6 +20,18 @@
 
   cameraSwitch = "switch.indoor_camera";
   cameraEntity = "camera.indoor";
+  frigateUrl = "https://frigate.fnune.com";
+
+  cameraCard = view: {
+    type = "custom:advanced-camera-card";
+    cameras = [{camera_entity = cameraEntity;}];
+    view.default = view;
+    dimensions = {
+      aspect_ratio_mode = "static";
+      aspect_ratio = "16:9";
+    };
+    grid_options.columns = "full";
+  };
 
   cameraMode = "input_select.camera_mode";
   alwaysOn = "On";
@@ -214,18 +226,21 @@ in {
                 {
                   type = "entities";
                   entities = [cameraMode];
-                  grid_options.columns = "full";
+                  grid_options.columns = 9;
                 }
                 {
-                  type = "custom:advanced-camera-card";
-                  cameras = [{camera_entity = cameraEntity;}];
-                  view.default = "live";
-                  dimensions = {
-                    aspect_ratio_mode = "static";
-                    aspect_ratio = "16:9";
+                  type = "button";
+                  name = "Frigate";
+                  icon = "mdi:open-in-new";
+                  show_state = false;
+                  tap_action = {
+                    action = "url";
+                    url_path = frigateUrl;
                   };
-                  grid_options.columns = "full";
+                  grid_options.columns = 3;
                 }
+                (cameraCard "live")
+                (cameraCard "timeline")
                 {
                   type = "history-graph";
                   title = "Camera";
