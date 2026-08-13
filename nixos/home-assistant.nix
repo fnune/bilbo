@@ -268,7 +268,7 @@ in {
           title = "Watchtower";
           path = "home";
           type = "sections";
-          max_columns = 1;
+          max_columns = 2;
           sections = [
             {
               type = "grid";
@@ -286,6 +286,13 @@ in {
                   ];
                   grid_options.columns = "full";
                 }
+                (cameraCard "live")
+                (cameraCard "timeline")
+              ];
+            }
+            {
+              type = "grid";
+              cards = [
                 {
                   type = "markdown";
                   title = "Unreviewed alerts";
@@ -300,14 +307,12 @@ in {
                     {% for alert in alerts -%}
                     {%- set match = scores | selectattr('id', 'eq', alert.detection) | first | default(none) -%}
                     {%- set link = '${frigateUrl}/review?id=' ~ alert.id -%}
-                    | [![]({{ '${frigateUrl}/api/events/' ~ alert.detection ~ '/thumbnail.jpg' }})]({{ link }}) | [{{ alert.start | timestamp_custom('%a %-d %b') }}<br>{{ alert.start | timestamp_custom('%H:%M') }}]({{ link }}) | {{ alert.objects }} | {{ (match.score ~ '%') if match else '-' }} |
+                    | <a href="{{ link }}"><img src="{{ '${frigateUrl}/api/events/' ~ alert.detection ~ '/thumbnail.jpg' }}" width="110"></a> | [{{ alert.start | timestamp_custom('%a %-d %b, %H:%M') }}]({{ link }}) | {{ alert.objects }} | {{ (match.score ~ '%') if match else '-' }} |
                     {% endfor -%}
                     {% endif %}
                   '';
                   grid_options.columns = "full";
                 }
-                (cameraCard "live")
-                (cameraCard "timeline")
                 {
                   type = "history-graph";
                   title = "Camera";
