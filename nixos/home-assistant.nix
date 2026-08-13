@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }: let
   listenAddress = "127.0.0.1";
@@ -17,14 +18,8 @@
     payload_not_available = "offline";
   };
 
-  frigateReview = "https://frigate.fnune.com/review";
-  mainStream = cameraName;
-  restreamed = stream: "rtsp://127.0.0.1:8554/${stream}";
   cameraSwitch = "switch.indoor_camera";
   cameraEntity = "camera.indoor";
-  motionEntity = "binary_sensor.indoor_motion";
-  snapshotEntity = "camera.indoor_last_person";
-  reviewEntity = "sensor.indoor_last_review";
 
   cameraMode = "input_select.camera_mode";
   alwaysOn = "On";
@@ -92,6 +87,9 @@ in {
   services.home-assistant = {
     enable = true;
 
+    customComponents = [pkgs.home-assistant-custom-components.frigate];
+    customLovelaceModules = [pkgs.home-assistant-custom-lovelace-modules.advanced-camera-card];
+
     extraComponents = [
       "default_config"
       "fritz"
@@ -138,48 +136,6 @@ in {
           icon = "mdi:cctv";
           options = [alwaysOn alwaysOff followPresence];
         };
-
-        camera = [
-          {
-            platform = "ffmpeg";
-            name = "Indoor";
-            input = restreamed mainStream;
-          }
-        ];
-
-        mqtt.binary_sensor = [
-          ({
-              name = "Indoor motion";
-              unique_id = "frigate_${cameraName}_motion";
-              state_topic = cameraTopic "motion";
-              payload_on = "ON";
-              payload_off = "OFF";
-              device_class = "motion";
-            }
-            // frigateAvailability)
-        ];
-
-        mqtt.camera = [
-          ({
-              name = "Indoor last person";
-              unique_id = "frigate_${cameraName}_person_snapshot";
-              topic = cameraTopic "person/snapshot";
-            }
-            // frigateAvailability)
-        ];
-
-        mqtt.sensor = [
-          ({
-              name = "Indoor last review";
-              unique_id = "frigate_${cameraName}_last_review";
-              state_topic = "frigate/reviews";
-              value_template = "{{ value_json.after.severity }}";
-              json_attributes_topic = "frigate/reviews";
-              json_attributes_template = "{{ value_json.after | tojson }}";
-              icon = "mdi:alert-decagram";
-            }
-            // frigateAvailability)
-        ];
 
         mqtt.switch = [
           ({
@@ -256,25 +212,16 @@ in {
               type = "grid";
               cards = [
                 {
-                  type = "picture-entity";
-                  entity = cameraEntity;
-                  camera_view = "live";
-                  show_name = false;
-                  show_state = false;
+                  type = "custom:advanced-camera-card";
+                  cameras = [
+                    {camera_entity = cameraEntity;}
+                  ];
+                  live.preload = false;
+                  view.default = "live";
                 }
                 {
                   type = "entities";
-                  entities = [cameraMode reviewEntity motionEntity];
-                }
-                {
-                  type = "button";
-                  name = "Review in Frigate";
-                  icon = "mdi:open-in-new";
-                  show_state = false;
-                  tap_action = {
-                    action = "url";
-                    url_path = frigateReview;
-                  };
+                  entities = [cameraMode];
                 }
               ];
             }
@@ -283,26 +230,9 @@ in {
               cards = [
                 {
                   type = "history-graph";
-                  title = "Camera and motion";
+                  title = "Camera";
                   hours_to_show = 48;
-                  entities = [cameraSwitch motionEntity];
-                }
-                {
-                  type = "picture-entity";
-                  title = "Last person seen";
-                  entity = snapshotEntity;
-                  show_name = false;
-                  show_state = false;
-                  tap_action = {
-                    action = "url";
-                    url_path = frigateReview;
-                  };
-                }
-                {
-                  type = "logbook";
-                  title = "Mode changes";
-                  hours_to_show = 48;
-                  target.entity_id = [cameraMode];
+                  entities = [cameraSwitch];
                 }
               ];
             }
