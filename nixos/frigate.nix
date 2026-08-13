@@ -45,6 +45,10 @@
     hash = "sha256-Srob93QvNk8vLKcApH6ukjeAc4TBo0SNj4/MSIRmc8A=";
   };
 
+  discardStaleSharedMemory = pkgs.writeShellScript "frigate-discard-stale-shm" ''
+    rm -f /dev/shm/${cameraName} /dev/shm/out-${cameraName} /dev/shm/${cameraName}_frame*
+  '';
+
   recordingsDirectory = "/var/lib/frigate/recordings";
   recordingsStore = "/mnt/downloads-2t/frigate/recordings";
   retainedDays = 30;
@@ -157,6 +161,7 @@ in {
 
   systemd.services.frigate.serviceConfig.ExecStartPre = [
     "+${pkgs.coreutils}/bin/install --directory --owner frigate --group frigate --mode 0750 ${recordingsStore}"
+    "+${discardStaleSharedMemory}"
   ];
 
   systemd.services.go2rtc.serviceConfig.EnvironmentFile = ["/etc/nixos/secrets/go2rtc.env"];
