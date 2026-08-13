@@ -315,7 +315,7 @@ in {
                     {% for alert in alerts -%}
                     {%- set match = scores | selectattr('id', 'eq', alert.detection) | first | default(none) -%}
                     {%- set link = '${frigateUrl}/review?id=' ~ alert.id -%}
-                    <a href="{{ link }}"><img src="/api/frigate/notifications/{{ alert.detection }}/thumbnail.jpg"><span>{{ alert.start | timestamp_custom('%a %-d %b, %H:%M') }} <small>· {{ alert.objects }}</small></span><b>{{ (match.score ~ '%') if match else '-' }}</b></a>
+                    <a href="{{ link }}"><img src="/api/frigate/frigate/thumbnail/{{ alert.detection }}"><span>{{ alert.start | timestamp_custom('%a %-d %b, %H:%M') }} <small>· {{ alert.objects }}</small></span><b>{{ (match.score ~ '%') if match else '-' }}</b></a>
                     {% endfor -%}
                     {% endif %}
                   '';
