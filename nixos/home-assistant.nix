@@ -275,22 +275,16 @@ in {
               cards = [
                 {
                   type = "entities";
-                  entities = [cameraMode];
-                  grid_options.columns = 9;
-                }
-                {
-                  type = "button";
-                  name = "Frigate";
-                  icon = "mdi:open-in-new";
-                  show_state = false;
-                  tap_action = {
-                    action = "url";
-                    url_path = frigateUrl;
-                  };
-                  grid_options = {
-                    columns = 3;
-                    rows = 1;
-                  };
+                  entities = [
+                    cameraMode
+                    {
+                      type = "weblink";
+                      url = frigateUrl;
+                      name = "Open Frigate";
+                      icon = "mdi:open-in-new";
+                    }
+                  ];
+                  grid_options.columns = "full";
                 }
                 {
                   type = "markdown";
@@ -301,10 +295,13 @@ in {
                     {% if alerts | count == 0 %}
                     Nothing to review.
                     {% else %}
-                    {% for alert in alerts %}
-                    {%- set match = scores | selectattr('id', 'eq', alert.detection) | first | default(none) %}
-                    - [{{ alert.start | timestamp_custom('%a %H:%M') }} · {{ alert.objects }}{% if match %} · {{ match.score }}%{% endif %}](${frigateUrl}/review?id={{ alert.id }})
-                    {% endfor %}
+                    | | When | Seen | Score |
+                    |---|---|---|---|
+                    {% for alert in alerts -%}
+                    {%- set match = scores | selectattr('id', 'eq', alert.detection) | first | default(none) -%}
+                    {%- set link = '${frigateUrl}/review?id=' ~ alert.id -%}
+                    | [![]({{ '${frigateUrl}/api/events/' ~ alert.detection ~ '/thumbnail.jpg' }})]({{ link }}) | [{{ alert.start | timestamp_custom('%a %-d %b') }}<br>{{ alert.start | timestamp_custom('%H:%M') }}]({{ link }}) | {{ alert.objects }} | {{ (match.score ~ '%') if match else '-' }} |
+                    {% endfor -%}
                     {% endif %}
                   '';
                   grid_options.columns = "full";
