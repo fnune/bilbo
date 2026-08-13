@@ -35,33 +35,6 @@
       '';
   });
   frigateUrl = "https://frigate.fnune.com";
-  frigateApi = "http://127.0.0.1:5000/api";
-  frigateAsAdmin = "--header 'remote-user: admin' --header 'remote-role: admin'";
-
-  unreviewedAlerts = pkgs.writeShellScript "frigate-unreviewed-alerts" ''
-    ${pkgs.curl}/bin/curl -sf ${frigateAsAdmin} "${frigateApi}/review?reviewed=0&severity=alert&limit=10" \
-      | ${pkgs.jq}/bin/jq -c '{
-          count: length,
-          items: [ .[] | {
-            id: .id,
-            start: .start_time,
-            objects: (.data.objects // [] | join(", ")),
-            detection: (.data.detections // [] | first)
-          } ]
-        }'
-  '';
-
-  personScores = pkgs.writeShellScript "frigate-person-scores" ''
-    ${pkgs.curl}/bin/curl -sf ${frigateAsAdmin} "${frigateApi}/events?limit=20&cameras=indoor&labels=person" \
-      | ${pkgs.jq}/bin/jq -c '{
-          count: length,
-          items: [ .[] | {
-            id: .id,
-            start: .start_time,
-            score: ((.data.top_score // .data.score // 0) * 100 | round)
-          } ]
-        }'
-  '';
 
   cameraCard = view: {
     type = "custom:advanced-camera-card";
@@ -152,7 +125,6 @@ in {
       "input_select"
       "met"
       "mobile_app"
-      "command_line"
       "mqtt"
       "radio_browser"
     ];
@@ -193,29 +165,6 @@ in {
           icon = "mdi:cctv";
           options = [alwaysOn alwaysOff followPresence];
         };
-
-        command_line = [
-          {
-            sensor = {
-              name = "Unreviewed alerts";
-              unique_id = "frigate_unreviewed_alerts";
-              command = "${unreviewedAlerts}";
-              value_template = "{{ value_json.count }}";
-              json_attributes = ["items"];
-              scan_interval = 60;
-            };
-          }
-          {
-            sensor = {
-              name = "Person detections";
-              unique_id = "frigate_person_detections";
-              command = "${personScores}";
-              value_template = "{{ value_json.count }}";
-              json_attributes = ["items"];
-              scan_interval = 60;
-            };
-          }
-        ];
 
         mqtt.switch = [
           ({
@@ -318,61 +267,7 @@ in {
             {
               type = "grid";
               cards = [
-                {
-                  type = "markdown";
-                  title = "Unreviewed alerts";
-                  content = ''
-                    {% set alerts = state_attr('sensor.unreviewed_alerts', 'items') or [] %}
-                    {% set scores = state_attr('sensor.person_detections', 'items') or [] %}
-                    {% if alerts | count == 0 %}
-                    Nothing to review.
-                    {% else %}
-                    {% for alert in alerts -%}
-                    {%- set match = scores | selectattr('id', 'eq', alert.detection) | first | default(none) -%}
-                    {%- set link = '${frigateUrl}/review?id=' ~ alert.id -%}
-                    <a href="{{ link }}"><img src="/api/frigate/frigate/thumbnail/{{ alert.detection }}"><span>{{ alert.start | timestamp_custom('%a %-d %b, %H:%M') }} <small>· {{ alert.objects }}</small></span><b>{{ (match.score ~ '%') if match else '-' }}</b></a>
-                    {% endfor -%}
-                    {% endif %}
-                  '';
-                  card_mod.style = {
-                    "." = ''
-                      ha-card .card-header {
-                        font-size: 16px;
-                        font-weight: 500;
-                        line-height: 1.2;
-                        padding: 12px 16px 0;
-                      }
-                    '';
-                    "ha-markdown$" = ''
-                      a {
-                        display: flex;
-                        align-items: center;
-                        gap: 14px;
-                        padding: 10px 4px;
-                        border-bottom: 1px solid var(--divider-color);
-                        color: var(--primary-text-color);
-                        text-decoration: none;
-                      }
-                      a:last-of-type { border-bottom: none; }
-                      br { display: none; }
-                      a img {
-                        width: 104px;
-                        height: 58px;
-                        object-fit: cover;
-                        border-radius: 8px;
-                        flex: 0 0 auto;
-                      }
-                      a span { flex: 1 1 auto; line-height: 1.35; }
-                      a small { opacity: 0.6; }
-                      a b {
-                        flex: 0 0 auto;
-                        font-variant-numeric: tabular-nums;
-                        font-weight: 500;
-                      }
-                    '';
-                  };
-                  grid_options.columns = "full";
-                }
+                (cameraCard "clips")
               ];
             }
           ];
