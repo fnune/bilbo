@@ -499,6 +499,16 @@ in {
                 })
               (fullWidth
                 // {
+                  type = "tile";
+                  entity = bedroomLight;
+                  features_position = "bottom";
+                  features = [
+                    {type = "light-brightness";}
+                    {type = "light-color-temp";}
+                  ];
+                })
+              (fullWidth
+                // {
                   type = "markdown";
                   title = "Unreviewed alerts";
                   content = ''
