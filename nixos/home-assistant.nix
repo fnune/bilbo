@@ -206,33 +206,32 @@ in {
           title = "Watchtower";
           path = "home";
           type = "sections";
-          max_columns = 2;
+          max_columns = 1;
           sections = [
             {
               type = "grid";
               cards = [
                 {
-                  type = "custom:advanced-camera-card";
-                  cameras = [
-                    {camera_entity = cameraEntity;}
-                  ];
-                  live.preload = false;
-                  view.default = "live";
-                }
-                {
                   type = "entities";
                   entities = [cameraMode];
+                  grid_options.columns = "full";
                 }
-              ];
-            }
-            {
-              type = "grid";
-              cards = [
+                {
+                  type = "custom:advanced-camera-card";
+                  cameras = [{camera_entity = cameraEntity;}];
+                  view.default = "live";
+                  dimensions = {
+                    aspect_ratio_mode = "static";
+                    aspect_ratio = "16:9";
+                  };
+                  grid_options.columns = "full";
+                }
                 {
                   type = "history-graph";
                   title = "Camera";
                   hours_to_show = 48;
                   entities = [cameraSwitch];
+                  grid_options.columns = "full";
                 }
               ];
             }
