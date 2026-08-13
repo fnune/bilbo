@@ -113,11 +113,11 @@ in {
 
         lovelace.dashboards = {
           nixos-lovelace = null;
-          bilbo-home = {
+          overview-security = {
             mode = "yaml";
             filename = "ui-lovelace.yaml";
-            title = "Bilbo";
-            icon = "mdi:home";
+            title = "Security";
+            icon = "mdi:shield-home";
             show_in_sidebar = true;
           };
         };
