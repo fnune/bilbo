@@ -37,8 +37,9 @@
   frigateUrl = "https://frigate.fnune.com";
 
   frigateApi = "http://127.0.0.1:8971/api";
-  frigateUser = "home_assistant";
-  frigatePasswordFile = "/etc/nixos/secrets/frigate-home-assistant-password";
+  frigateUser = "admin";
+  alertLimit = 5;
+  frigatePasswordFile = "/etc/nixos/secrets/frigate-admin-password";
   frigatePasswordCredential = "frigate-password";
 
   asFrigateUser = query:
@@ -55,6 +56,46 @@
 
       ${pkgs.curl}/bin/curl -sf -b "$session" "${frigateApi}/${query}"
     '';
+
+  unreviewedWithThumbnails = pkgs.writeShellScript "frigate-unreviewed-alerts" ''
+    set -e
+
+    session=$(mktemp)
+    trap 'rm -f "$session"' EXIT
+
+    ${pkgs.curl}/bin/curl -sf -c "$session" -X POST ${frigateApi}/login \
+      --header 'Content-Type: application/json' \
+      --data "$(${pkgs.jq}/bin/jq -nc --arg u ${frigateUser} \
+        --arg p "$(cat "$CREDENTIALS_DIRECTORY/${frigatePasswordCredential}")" '{user: $u, password: $p}')" > /dev/null
+
+    fetch() {
+      ${pkgs.curl}/bin/curl -sf -b "$session" "${frigateApi}/$1"
+    }
+
+    alerts=$(fetch "review?reviewed=0&severity=alert&limit=${toString alertLimit}")
+    scores=$(fetch "events?limit=40&cameras=${cameraName}&labels=person")
+
+    items=""
+    for row in $(echo "$alerts" | ${pkgs.jq}/bin/jq -r '.[] | @base64'); do
+      alert=$(echo "$row" | ${pkgs.coreutils}/bin/base64 -d)
+      detection=$(echo "$alert" | ${pkgs.jq}/bin/jq -r '.data.detections[0] // empty')
+
+      thumbnail=""
+      if [ -n "$detection" ]; then
+        encoded=$(fetch "events/$detection/thumbnail.jpg" | ${pkgs.coreutils}/bin/base64 -w0 || true)
+        [ -n "$encoded" ] && thumbnail="data:image/jpeg;base64,$encoded"
+      fi
+
+      score=$(echo "$scores" | ${pkgs.jq}/bin/jq -r --arg d "$detection" \
+        'map(select(.id == $d)) | first | ((.data.top_score // .data.score // 0) * 100 | round) // empty')
+
+      items="$items$(echo "$alert" | ${pkgs.jq}/bin/jq -c \
+        --arg t "$thumbnail" --arg s "$score" \
+        '{id: .id, start: .start_time, objects: (.data.objects // [] | join(", ")), thumbnail: $t, score: $s}')"
+    done
+
+    echo "$items" | ${pkgs.jq}/bin/jq -sc '{count: length, items: .}'
+  '';
 
   unreviewedAlerts = pkgs.writeShellScript "frigate-unreviewed-alerts" ''
     ${asFrigateUser "review?reviewed=0&severity=alert&limit=10"} \
@@ -216,7 +257,7 @@ in {
             sensor = {
               name = "Unreviewed alerts";
               unique_id = "frigate_unreviewed_alerts";
-              command = "${unreviewedAlerts}";
+              command = "${unreviewedWithThumbnails}";
               value_template = "{{ value_json.count }}";
               json_attributes = ["items"];
               scan_interval = 60;

@@ -93,23 +93,13 @@ The `ZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN` gates the Zigbee2MQTT frontend,
 which is served from the public `bilbo.fnune.com` origin and can otherwise
 re-pair or factory-reset devices.
 
-`/etc/nixos/secrets/frigate-home-assistant-password`, mode 600, holding the
-password for the Frigate account Home Assistant logs in with. Frigate requires
-at least twelve characters:
+`/etc/nixos/secrets/frigate-admin-password`, mode 600, holding the password of
+Frigate's `admin` account, the one you log into Frigate's web UI with.
 
-```sh
-tr -dc A-Za-z0-9 </dev/urandom | head -c 32 > /etc/nixos/secrets/frigate-home-assistant-password
-```
-
-`frigate-home-assistant-user` creates that account on each start and resets its
-password to match the file. It posts to Frigate's API on `127.0.0.1:5000`, which
-Frigate treats as an anonymous admin, so no credentials are needed to create it.
-The account is a viewer, which is enough to read cameras and review state.
-
-Home Assistant is then pointed at it by hand: reconfigure the Frigate
-integration to `http://127.0.0.1:8971` with `home_assistant` and that password.
-Without it the integration talks to port 5000 as `anonymous`, and since Frigate
-keeps review state per user, everything looks permanently unreviewed.
+Frigate keeps review state per user, so the unreviewed list only agrees with what
+you see in Frigate if Home Assistant asks as the same account. A dedicated
+service account would report everything as unreviewed forever, because it never
+reviews anything itself.
 
 ### Camera
 
