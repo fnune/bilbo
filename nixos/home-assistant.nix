@@ -131,7 +131,7 @@ in {
           {
             alias = "Camera follows its mode";
             id = "camera-follows-its-mode";
-            mode = "single";
+            mode = "restart";
             triggers =
               [
                 {
