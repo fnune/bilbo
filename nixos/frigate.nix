@@ -52,10 +52,6 @@
     rm -f /dev/shm/${cameraName} /dev/shm/out-${cameraName} /dev/shm/${cameraName}_frame*
   '';
 
-  internalApi = "http://127.0.0.1:5000/api";
-  homeAssistantUser = "home_assistant";
-  homeAssistantPasswordFile = "/etc/nixos/secrets/frigate-home-assistant-password";
-
   recordingsDirectory = "/var/lib/frigate/recordings";
   recordingsStore = "/mnt/downloads-2t/frigate/recordings";
   retainedDays = 30;
@@ -183,65 +179,4 @@ in {
   };
 
   systemd.services.go2rtc.serviceConfig.EnvironmentFile = ["/etc/nixos/secrets/go2rtc.env"];
-
-  systemd.services.frigate-home-assistant-user = {
-    description = "Ensure Frigate has a user for Home Assistant";
-    wantedBy = ["multi-user.target"];
-    after = ["frigate.service"];
-    requires = ["frigate.service"];
-    path = with pkgs; [curl jq];
-
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-    };
-
-    script = ''
-      request() {
-        local method="$1" url="$2" body="''${3-}"
-        local response status
-        response=$(mktemp)
-
-        if [ -n "$body" ]; then
-          status=$(curl -s -o "$response" -w '%{http_code}' -X "$method" "$url" \
-            --header 'Content-Type: application/json' --data "$body")
-        else
-          status=$(curl -s -o "$response" -w '%{http_code}' -X "$method" "$url")
-        fi
-
-        if [ "$status" -ge 400 ]; then
-          echo "$method $url returned $status: $(cat "$response")" >&2
-          rm -f "$response"
-          return 1
-        fi
-
-        cat "$response"
-        rm -f "$response"
-      }
-
-      until curl -sf --max-time 2 ${internalApi}/version > /dev/null; do
-        sleep 2
-      done
-
-      password=$(cat ${homeAssistantPasswordFile})
-      echo "password is ''${#password} characters"
-
-      exists=$(request GET ${internalApi}/users \
-        | jq -r --arg u ${homeAssistantUser} 'map(select(.username == $u)) | length')
-
-      if [ "$exists" = "0" ]; then
-        echo "creating ${homeAssistantUser}"
-        request POST ${internalApi}/users \
-          "$(jq -nc --arg u ${homeAssistantUser} --arg p "$password" \
-            '{username: $u, password: $p, role: "viewer"}')" > /dev/null
-      else
-        echo "resetting the password for ${homeAssistantUser}"
-        request PUT ${internalApi}/users/${homeAssistantUser}/password \
-          "$(jq -nc --arg p "$password" '{password: $p}')" > /dev/null
-      fi
-
-      request GET ${internalApi}/users \
-        | jq -e --arg u ${homeAssistantUser} 'map(select(.username == $u)) | length == 1' > /dev/null
-    '';
-  };
 }
