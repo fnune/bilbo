@@ -14,6 +14,9 @@
   restreamed = stream: "rtsp://127.0.0.1:8554/${stream}";
   cameraSwitch = "switch.indoor_camera";
   cameraEntity = "camera.indoor";
+  motionEntity = "binary_sensor.indoor_motion";
+  snapshotEntity = "camera.indoor_last_person";
+  reviewEntity = "sensor.indoor_last_review";
 
   cameraMode = "input_select.camera_mode";
   alwaysOn = "On";
@@ -136,6 +139,37 @@ in {
           }
         ];
 
+        mqtt.binary_sensor = [
+          {
+            name = "Indoor motion";
+            unique_id = "frigate_${cameraName}_motion";
+            state_topic = cameraTopic "motion";
+            payload_on = "ON";
+            payload_off = "OFF";
+            device_class = "motion";
+          }
+        ];
+
+        mqtt.camera = [
+          {
+            name = "Indoor last person";
+            unique_id = "frigate_${cameraName}_person_snapshot";
+            topic = cameraTopic "person/snapshot";
+          }
+        ];
+
+        mqtt.sensor = [
+          {
+            name = "Indoor last review";
+            unique_id = "frigate_${cameraName}_last_review";
+            state_topic = "frigate/reviews";
+            value_template = "{{ value_json.after.severity }}";
+            json_attributes_topic = "frigate/reviews";
+            json_attributes_template = "{{ value_json.after | tojson }}";
+            icon = "mdi:alert-decagram";
+          }
+        ];
+
         mqtt.switch = [
           {
             name = "Indoor camera";
@@ -214,7 +248,26 @@ in {
             {
               type = "entities";
               title = "Camera";
-              entities = [cameraMode];
+              entities = [cameraMode reviewEntity];
+            }
+            {
+              type = "history-graph";
+              title = "Camera and motion";
+              hours_to_show = 48;
+              entities = [cameraSwitch motionEntity];
+            }
+            {
+              type = "picture-entity";
+              title = "Last person seen";
+              entity = snapshotEntity;
+              show_name = false;
+              show_state = false;
+            }
+            {
+              type = "logbook";
+              title = "Recent activity";
+              hours_to_show = 48;
+              target.entity_id = [cameraSwitch cameraMode motionEntity];
             }
           ];
         }
