@@ -47,12 +47,7 @@ in {
         port = frontendPort;
         base_url = frontendSubpath;
       };
-      advanced = {
-        log_level = "warning";
-        network_key = "GENERATE";
-        pan_id = "GENERATE";
-        ext_pan_id = "GENERATE";
-      };
+      advanced.log_level = "warning";
     };
   };
 
