@@ -106,12 +106,20 @@
     "device_tracker.estella"
   ];
 
-  nobodyHome =
+  nobodyHomeExpression =
     if presenceDevices == []
     then "false"
     else let
       quoted = lib.concatMapStringsSep ", " (device: "'${device}'") presenceDevices;
-    in "{{ [${quoted}] | reject('is_state', 'not_home') | list | count == 0 }}";
+    in "[${quoted}] | reject('is_state', 'not_home') | list | count == 0";
+
+  nobodyHome = "{{ ${nobodyHomeExpression} }}";
+
+  simulatingExpression = lib.concatStrings [
+    "is_state('${simulationMode}', '${alwaysSimulate}')"
+    " or (is_state('${simulationMode}', '${simulateWhenAway}')"
+    " and (${nobodyHomeExpression}))"
+  ];
 
   simulating = {
     condition = "or";
@@ -138,7 +146,30 @@
     ];
   };
 
-  waitMinutes = range: {delay.minutes = "{{ range(${range}) | random }}";};
+  sunsetOffsetMinutes = -20;
+  lightsOnWithin = {
+    from = 0;
+    to = 45;
+  };
+  lightsStayOnFor = {
+    from = 90;
+    to = 210;
+  };
+
+  waitMinutes = range: {
+    delay.minutes = "{{ range(${toString range.from}, ${toString range.to}) | random }}";
+  };
+
+  clockOffset = minutes: let
+    absolute =
+      if minutes < 0
+      then -minutes
+      else minutes;
+    pad = lib.fixedWidthNumber 2;
+  in "${lib.optionalString (minutes < 0) "-"}${pad (absolute / 60)}:${pad (lib.mod absolute 60)}:00";
+
+  sunsetSeconds = minutes: toString ((sunsetOffsetMinutes + minutes) * 60);
+  clockAfterSunset = minutes: "{{ (sunset + (${sunsetSeconds minutes})) | timestamp_custom('%H:%M') }}";
 
   switchCameraTo = action: [
     {
@@ -298,12 +329,12 @@ in {
                 {
                   trigger = "sun";
                   event = "sunset";
-                  offset = "-00:20:00";
+                  offset = clockOffset sunsetOffsetMinutes;
                 }
               ];
               conditions = [simulating];
               actions = [
-                (waitMinutes "0, 45")
+                (waitMinutes lightsOnWithin)
                 {
                   action = "light.turn_on";
                   target.entity_id = bedroomLight;
@@ -312,7 +343,7 @@ in {
                     color_temp_kelvin = 2700;
                   };
                 }
-                (waitMinutes "90, 210")
+                (waitMinutes lightsStayOnFor)
                 {
                   "if" = [simulating];
                   "then" = [
@@ -430,6 +461,30 @@ in {
                   hours_to_show = 48;
                   entities = [cameraSwitch];
                 })
+              (fullWidth
+                // {
+                  type = "markdown";
+                  title = "Occupancy simulation";
+                  content = ''
+                    {% if is_state('${simulationMode}', '${neverSimulate}') %}
+                    Disabled. The bedroom light is yours alone.
+                    {% else %}
+                    {%- set sunset = as_timestamp(state_attr('sun.sun', 'next_setting')) %}
+                    The bedroom light comes on between **${clockAfterSunset lightsOnWithin.from}** and **${clockAfterSunset lightsOnWithin.to}**, then goes off ${toString lightsStayOnFor.from} to ${toString lightsStayOnFor.to} minutes later.
+                    {%- if not (${simulatingExpression}) %}
+
+                    Holding off until the house is empty.
+                    {%- endif %}
+                    {% endif %}
+                  '';
+                })
+              (fullWidth
+                // {
+                  type = "history-graph";
+                  title = "Bedroom light";
+                  hours_to_show = 48;
+                  entities = [bedroomLight];
+                })
             ];
           }
           {
@@ -460,13 +515,6 @@ in {
                     {%- endif %}
                     {% endif %}
                   '';
-                })
-              (fullWidth
-                // {
-                  type = "history-graph";
-                  title = "Bedroom light";
-                  hours_to_show = 48;
-                  entities = [bedroomLight];
                 })
             ];
           }
