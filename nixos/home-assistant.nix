@@ -20,11 +20,26 @@
 
   cameraSwitch = "switch.indoor_camera";
   cameraEntity = "camera.indoor";
+
+  frigateComponent = pkgs.home-assistant-custom-components.frigate.overrideAttrs (previous: {
+    doCheck = false;
+    doInstallCheck = false;
+
+    postPatch =
+      (previous.postPatch or "")
+      + ''
+        substituteInPlace custom_components/frigate/views.py \
+          --replace-fail \
+            'config_entry.options.get(CONF_NOTIFICATION_PROXY_ENABLE, True)' \
+            'config_entry.options.get(CONF_NOTIFICATION_PROXY_ENABLE, False)'
+      '';
+  });
   frigateUrl = "https://frigate.fnune.com";
   frigateApi = "http://127.0.0.1:5000/api";
+  frigateAsAdmin = "--header 'remote-user: admin' --header 'remote-role: admin'";
 
   unreviewedAlerts = pkgs.writeShellScript "frigate-unreviewed-alerts" ''
-    ${pkgs.curl}/bin/curl -sf "${frigateApi}/review?reviewed=0&severity=alert&limit=10" \
+    ${pkgs.curl}/bin/curl -sf ${frigateAsAdmin} "${frigateApi}/review?reviewed=0&severity=alert&limit=10" \
       | ${pkgs.jq}/bin/jq -c '{
           count: length,
           items: [ .[] | {
@@ -37,7 +52,7 @@
   '';
 
   personScores = pkgs.writeShellScript "frigate-person-scores" ''
-    ${pkgs.curl}/bin/curl -sf "${frigateApi}/events?limit=20&cameras=indoor&labels=person" \
+    ${pkgs.curl}/bin/curl -sf ${frigateAsAdmin} "${frigateApi}/events?limit=20&cameras=indoor&labels=person" \
       | ${pkgs.jq}/bin/jq -c '{
           count: length,
           items: [ .[] | {
@@ -125,7 +140,7 @@ in {
   services.home-assistant = {
     enable = true;
 
-    customComponents = [pkgs.home-assistant-custom-components.frigate];
+    customComponents = [frigateComponent];
     customLovelaceModules = with pkgs.home-assistant-custom-lovelace-modules; [
       advanced-camera-card
       card-mod
