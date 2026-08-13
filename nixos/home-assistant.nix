@@ -39,16 +39,19 @@
   frigateApi = "http://127.0.0.1:8971/api";
   frigateUser = "home_assistant";
   frigatePasswordFile = "/etc/nixos/secrets/frigate-home-assistant-password";
+  frigatePasswordCredential = "frigate-password";
 
   asFrigateUser = query:
     pkgs.writeShellScript "frigate-query" ''
+      set -e
+
       session=$(mktemp)
       trap 'rm -f "$session"' EXIT
 
       ${pkgs.curl}/bin/curl -sf -c "$session" -X POST ${frigateApi}/login \
         --header 'Content-Type: application/json' \
         --data "$(${pkgs.jq}/bin/jq -nc --arg u ${frigateUser} \
-          --arg p "$(cat ${frigatePasswordFile})" '{user: $u, password: $p}')" > /dev/null
+          --arg p "$(cat "$CREDENTIALS_DIRECTORY/${frigatePasswordCredential}")" '{user: $u, password: $p}')" > /dev/null
 
       ${pkgs.curl}/bin/curl -sf -b "$session" "${frigateApi}/${query}"
     '';
@@ -393,6 +396,10 @@ in {
       ];
     };
   };
+
+  systemd.services.home-assistant.serviceConfig.LoadCredential = [
+    "${frigatePasswordCredential}:${frigatePasswordFile}"
+  ];
 
   systemd.tmpfiles.settings."10-home-assistant" = uiManagedFiles;
 }
