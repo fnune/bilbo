@@ -52,6 +52,10 @@
     rm -f /dev/shm/${cameraName} /dev/shm/out-${cameraName} /dev/shm/${cameraName}_frame*
   '';
 
+  internalApi = "http://127.0.0.1:5000/api";
+  homeAssistantUser = "home_assistant";
+  homeAssistantPasswordFile = "/etc/nixos/secrets/frigate-home-assistant-password";
+
   recordingsDirectory = "/var/lib/frigate/recordings";
   recordingsStore = "/mnt/downloads-2t/frigate/recordings";
   retainedDays = 30;
@@ -179,4 +183,42 @@ in {
   };
 
   systemd.services.go2rtc.serviceConfig.EnvironmentFile = ["/etc/nixos/secrets/go2rtc.env"];
+
+  systemd.services.frigate-home-assistant-user = {
+    description = "Ensure Frigate has a user for Home Assistant";
+    wantedBy = ["multi-user.target"];
+    after = ["frigate.service"];
+    requires = ["frigate.service"];
+    path = with pkgs; [curl jq];
+
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+
+    script = ''
+      until curl -sf --max-time 2 ${internalApi}/version > /dev/null; do
+        sleep 2
+      done
+
+      password=$(cat ${homeAssistantPasswordFile})
+
+      exists=$(curl -sf ${internalApi}/users | jq -r --arg u ${homeAssistantUser} \
+        'map(select(.username == $u)) | length')
+
+      if [ "$exists" = "0" ]; then
+        curl -sf -X POST ${internalApi}/users \
+          --header 'Content-Type: application/json' \
+          --data "$(jq -nc --arg u ${homeAssistantUser} --arg p "$password" \
+            '{username: $u, password: $p, role: "viewer"}')" > /dev/null
+      else
+        curl -sf -X PUT ${internalApi}/users/${homeAssistantUser}/password \
+          --header 'Content-Type: application/json' \
+          --data "$(jq -nc --arg p "$password" '{password: $p}')" > /dev/null
+      fi
+
+      curl -sf ${internalApi}/users | jq -e --arg u ${homeAssistantUser} \
+        'map(select(.username == $u)) | length == 1' > /dev/null
+    '';
+  };
 }
