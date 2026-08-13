@@ -107,6 +107,8 @@ in {
       go2rtc.streams = restreams;
 
       cameras."${cameraName}" = {
+        enabled = false;
+
         ffmpeg.inputs = [
           {
             path = restreamed detectStream;
