@@ -111,6 +111,17 @@ in {
           trusted_proxies = ["127.0.0.1" "::1"];
         };
 
+        lovelace.dashboards = {
+          nixos-lovelace = null;
+          bilbo-home = {
+            mode = "yaml";
+            filename = "ui-lovelace.yaml";
+            title = "Bilbo";
+            icon = "mdi:home";
+            show_in_sidebar = true;
+          };
+        };
+
         input_select.camera_mode = {
           name = "Camera";
           icon = "mdi:cctv";
