@@ -85,7 +85,7 @@
           {
             "Home Assistant" = {
               icon = "home-assistant.svg";
-              description = "Automations, scenes and bedroom lighting";
+              description = "Automations, scenes and lighting";
               href = "https://home.fnune.com";
             };
           }

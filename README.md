@@ -222,7 +222,7 @@ For the Innr bulbs:
 
 - The wall switch must stay on or the bulbs are unreachable. A Zigbee remote is
   worth adding so there is a physical control that does not cut power.
-- Set power-on behaviour to `previous`, so an outage does not bring the bedroom
+- Set power-on behaviour to `previous`, so an outage does not bring the bulbs
   back at full-brightness cold white.
 
 ### Home Assistant

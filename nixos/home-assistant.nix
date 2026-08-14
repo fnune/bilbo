@@ -94,10 +94,24 @@
   watchWhenAway = "When away";
   alwaysWatch = "Always";
 
-  bedroomLight = "light.bedroom_light";
+  bedroomLight = {
+    id = "bedroom_light";
+    name = "Bedroom light";
+  };
+
+  livingRoomLamp = {
+    id = "living_room_lamp";
+    name = "Living room lamp";
+  };
+
+  lights = [bedroomLight livingRoomLamp];
+
+  lightEntity = light: "light.${light.id}";
+  lightPowerSensor = light: "binary_sensor.${light.id}_power";
+
+  simulatedLight = lightEntity livingRoomLamp;
   simulationMode = "input_select.occupancy_simulation";
   sunsetSensor = "sensor.sunset";
-  lightPowerSensor = "binary_sensor.bedroom_light_power";
 
   neverSimulate = "Disabled";
   simulateWhenAway = "When away (${sunsetWindow}, for ${onDuration})";
@@ -302,14 +316,14 @@ in {
               }
             ];
 
-            binary_sensor = [
-              {
-                name = "Bedroom light power";
-                unique_id = "bedroom_light_power";
+            binary_sensor =
+              map (light: {
+                name = "${light.name} power";
+                unique_id = "${light.id}_power";
                 device_class = "connectivity";
-                state = "{{ not is_state('${bedroomLight}', 'unavailable') }}";
-              }
-            ];
+                state = "{{ not is_state('${lightEntity light}', 'unavailable') }}";
+              })
+              lights;
           }
         ];
 
@@ -344,8 +358,8 @@ in {
         automation =
           [
             {
-              alias = "Bedroom light simulates someone being in";
-              id = "bedroom-light-simulates-someone-being-in";
+              alias = "Living room lamp simulates someone being in";
+              id = "living-room-lamp-simulates-someone-being-in";
               mode = "restart";
               triggers = [
                 {
@@ -359,7 +373,7 @@ in {
                 (waitMinutes lightsOnWithin)
                 {
                   action = "light.turn_on";
-                  target.entity_id = bedroomLight;
+                  target.entity_id = simulatedLight;
                   data = {
                     brightness_pct = 60;
                     color_temp_kelvin = 2700;
@@ -371,7 +385,7 @@ in {
                   "then" = [
                     {
                       action = "light.turn_off";
-                      target.entity_id = bedroomLight;
+                      target.entity_id = simulatedLight;
                     }
                   ];
                 }
@@ -419,8 +433,8 @@ in {
             }
           ]
           ++ lib.optional (presenceDevices != []) {
-            alias = "Bedroom light goes out when everyone has left";
-            id = "bedroom-light-goes-out-when-everyone-has-left";
+            alias = "Lights go out when everyone has left";
+            id = "lights-go-out-when-everyone-has-left";
             triggers = [
               {
                 trigger = "state";
@@ -438,7 +452,7 @@ in {
             actions = [
               {
                 action = "light.turn_off";
-                target.entity_id = bedroomLight;
+                target.entity_id = map lightEntity lights;
               }
             ];
           };
@@ -463,7 +477,9 @@ in {
                       cameraMode
                       simulationMode
                       sunsetSensor
-                      lightPowerSensor
+                    ]
+                    ++ map lightPowerSensor lights
+                    ++ [
                       {type = "divider";}
                     ]
                     ++ presenceDevices
@@ -482,58 +498,64 @@ in {
           }
           {
             type = "grid";
-            cards = [
-              (fullWidth
-                // {
-                  type = "history-graph";
-                  title = "Camera";
-                  hours_to_show = 48;
-                  entities = [cameraSwitch];
-                })
-              (fullWidth
-                // {
-                  type = "history-graph";
-                  title = "Bedroom light";
-                  hours_to_show = 48;
-                  entities = [bedroomLight];
-                })
-              (fullWidth
-                // {
-                  type = "tile";
-                  entity = bedroomLight;
-                  features_position = "bottom";
-                  features = [
-                    {type = "light-brightness";}
-                    {type = "light-color-temp";}
-                  ];
-                })
-              (fullWidth
-                // {
-                  type = "markdown";
-                  title = "Unreviewed alerts";
-                  content = ''
-                    {% set alerts = state_attr('sensor.unreviewed_alerts', 'items') or [] %}
-                    {% if alerts | count == 0 %}
-                    Nothing to review.
-                    {% else %}
-                    <table width="100%">
-                    {% for alert in alerts -%}
-                    <tr>
-                    <td width="118">{% if alert.thumbnail %}<a href="${frigateUrl}/review?id={{ alert.id }}"><img src="{{ alert.thumbnail }}" width="110"></a>{% endif %}</td>
-                    <td><a href="${frigateUrl}/review?id={{ alert.id }}">{{ alert.start | timestamp_custom('%a %-d %b, %H:%M') }}</a><br>{{ alert.objects }}</td>
-                    <td align="right" width="60"><b>{{ (alert.score ~ '%') if alert.score else '-' }}</b></td>
-                    </tr>
-                    {% endfor -%}
-                    </table>
-                    {%- set hidden = (state_attr('sensor.unreviewed_alerts', 'total') or 0) - (alerts | count) %}
-                    {%- if hidden > 0 %}
+            cards =
+              [
+                (fullWidth
+                  // {
+                    type = "history-graph";
+                    title = "Camera";
+                    hours_to_show = 48;
+                    entities = [cameraSwitch];
+                  })
+              ]
+              ++ lib.concatMap (light: [
+                (fullWidth
+                  // {
+                    type = "history-graph";
+                    title = light.name;
+                    hours_to_show = 48;
+                    entities = [(lightEntity light)];
+                  })
+                (fullWidth
+                  // {
+                    type = "tile";
+                    entity = lightEntity light;
+                    features_position = "bottom";
+                    features = [
+                      {type = "light-brightness";}
+                      {type = "light-color-temp";}
+                    ];
+                  })
+              ])
+              lights
+              ++ [
+                (fullWidth
+                  // {
+                    type = "markdown";
+                    title = "Unreviewed alerts";
+                    content = ''
+                      {% set alerts = state_attr('sensor.unreviewed_alerts', 'items') or [] %}
+                      {% if alerts | count == 0 %}
+                      Nothing to review.
+                      {% else %}
+                      <table width="100%">
+                      {% for alert in alerts -%}
+                      <tr>
+                      <td width="118">{% if alert.thumbnail %}<a href="${frigateUrl}/review?id={{ alert.id }}"><img src="{{ alert.thumbnail }}" width="110"></a>{% endif %}</td>
+                      <td><a href="${frigateUrl}/review?id={{ alert.id }}">{{ alert.start | timestamp_custom('%a %-d %b, %H:%M') }}</a><br>{{ alert.objects }}</td>
+                      <td align="right" width="60"><b>{{ (alert.score ~ '%') if alert.score else '-' }}</b></td>
+                      </tr>
+                      {% endfor -%}
+                      </table>
+                      {%- set hidden = (state_attr('sensor.unreviewed_alerts', 'total') or 0) - (alerts | count) %}
+                      {%- if hidden > 0 %}
 
-                    [{{ hidden }} more waiting](${frigateUrl}/review)
-                    {%- endif %}
-                    {% endif %}
-                  '';
-                })
-            ];
+                      [{{ hidden }} more waiting](${frigateUrl}/review)
+                      {%- endif %}
+                      {% endif %}
+                    '';
+                  })
+              ];
           }
         ];
       }
