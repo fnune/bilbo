@@ -64,23 +64,27 @@ around the `=`. None are optional, so a missing file fails its unit.
 | `mosquitto-frigate-password` | plaintext password |
 | `mosquitto-zigbee2mqtt-password` | plaintext password |
 | `mosquitto-home-assistant-password` | plaintext password |
+| `mosquitto-bilbo-alerts-password` | plaintext password |
+| `ntfy-password` | plaintext password, also typed into the phone |
 | `frigate.env` | `FRIGATE_MQTT_PASSWORD=` matching the Frigate one |
 | `zigbee2mqtt.env` | `ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=` matching the Zigbee2MQTT one, `ZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN=`, and `ZIGBEE2MQTT_CONFIG_ADVANCED_NETWORK_KEY=` |
 | `go2rtc.env` | `CAMERA_PASSWORD=` for the camera |
 
-To generate the five machine-chosen ones consistently, as `root`:
+To generate the machine-chosen ones consistently, as `root`:
 
 ```sh
 cd /etc/nixos/secrets
 umask 077
 gen() { tr -dc A-Za-z0-9 </dev/urandom | head -c 32; }
-f=$(gen); z=$(gen); h=$(gen); t=$(gen)
+f=$(gen); z=$(gen); h=$(gen); t=$(gen); a=$(gen); n=$(gen)
 printf '%s\n' "$f" > mosquitto-frigate-password
 printf '%s\n' "$z" > mosquitto-zigbee2mqtt-password
 printf '%s\n' "$h" > mosquitto-home-assistant-password
+printf '%s\n' "$a" > mosquitto-bilbo-alerts-password
+printf '%s\n' "$n" > ntfy-password
 printf 'FRIGATE_MQTT_PASSWORD=%s\n' "$f" > frigate.env
 printf 'ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=%s\nZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN=%s\n' "$z" "$t" > zigbee2mqtt.env
-chmod 600 mosquitto-*-password frigate.env zigbee2mqtt.env
+chmod 600 mosquitto-*-password ntfy-password frigate.env zigbee2mqtt.env
 ```
 
 `go2rtc.env` holds the camera's own password, so write it by hand. go2rtc is the
@@ -245,6 +249,105 @@ publishes its cameras and sensors the same way.
 Frigate's own web push can be switched at runtime by publishing to
 `frigate/notifications/set`, so an automation can silence it while you are home
 rather than duplicating notifications in Home Assistant.
+
+### Notifications
+
+Frigate keeps sending its own web push for camera events. Everything here is
+about the machine: disks, backups, services, and the case where the camera is
+armed but not actually recording.
+
+Delivery is [ntfy][ntfy], self-hosted. It has its own hostname because it does
+not run under a subpath. On Android, turn on instant delivery in the app and it
+holds a websocket open to Bilbo, so notifications never touch Google's push
+service.
+
+There are four topics, and each one becomes its own notification channel on the
+phone, so the quiet ones can be muted without touching the loud ones:
+
+| Topic | Holds | How loud |
+| --- | --- | --- |
+| `bilbo-hardware` | A dying or dropped disk | Always urgent |
+| `bilbo-surveillance` | The camera is armed but nothing is recording | Urgent |
+| `bilbo-infra` | Backups, disk space, failed services, restarts | Normal, and only after the problem has lasted a while |
+| `bilbo-digest` | The weekly summary | Silent |
+
+Only the first two suggest what to do. The rest just say what happened.
+
+On the phone: install ntfy, set `https://ntfy.fnune.com` as the default server,
+sign in as `fausto` with the contents of `/etc/nixos/secrets/ntfy-password`, and
+subscribe to the four topics. `ntfy-provision-account.service` owns that account.
+After changing the password file, rerun it so the server catches up:
+
+```sh
+systemctl restart ntfy-provision-account.service
+```
+
+Four things publish:
+
+- `bilbo-alerts.service` runs every two minutes and checks the mirror, the
+  camera, Home Assistant, the watched units, the backup, disk space and Zigbee
+- `smartd` reports disks that are failing but have not dropped out yet, which is
+  the warning that arrives while there is still redundancy
+- `bilbo-digest.service` sends the weekly summary on Monday morning
+- Home Assistant publishes to `bilbo/notify` over MQTT, and
+  `bilbo-notify-bridge.service` forwards it, so Home Assistant never holds the
+  ntfy password
+
+Nothing pages on first sight except a dying disk. Every other alert carries a
+delay before it notifies and a longer one before it escalates, which is what
+keeps a service that restarts itself from ever reaching the phone. The timers
+live in `nixos/alerts.nix` as `minutes:priority` pairs.
+
+State sits in `/var/lib/bilbo-alerts`, one file per alert holding when the
+problem started and how far it has escalated. Deleting a file makes that alert
+announce itself again. To check the path end to end:
+
+```sh
+bilbo-notify --topic infra --priority default --title "Test" --body "Ignore me"
+```
+
+Nothing outside the house can see whether Bilbo is alive, so a dead machine is
+still silent. That needs a watcher somewhere else and does not exist yet.
+
+[ntfy]: https://ntfy.sh
+
+### Replacing a mirror disk
+
+`/mnt/mirrored` is a RAID-1 pair, and it holds Immich plus everything Borg backs
+up. When one disk goes, `/proc/mdstat` shows `[U_]` instead of `[UU]`. Nothing
+stops working, because the surviving disk serves everything, but there is no
+second copy until this is done.
+
+`nixos-rebuild switch` does not repartition anything, so rebuilds stay safe while
+the array is degraded. Disko only describes the layout at that point. Its
+formatting script is a separate thing you would have to run by hand, and it wipes
+both disks, so it is not part of this.
+
+Find the disk that dropped out, and detach it if the array still lists it:
+
+```sh
+cat /proc/mdstat
+mdadm --detail /dev/md/mirrored
+mdadm --manage /dev/md/mirrored --remove /dev/sdb1
+```
+
+Power off, swap the disk, and boot again. Copy the partition layout from the
+surviving disk onto the new one, then give it its own identifiers:
+
+```sh
+sgdisk --replicate=/dev/sdb /dev/sda
+sgdisk --randomize-guids /dev/sdb
+```
+
+Add it back and wait. Resync runs in the background and the array is usable
+throughout:
+
+```sh
+mdadm --manage /dev/md/mirrored --add /dev/sdb1
+watch cat /proc/mdstat
+```
+
+The notification clears itself once `/proc/mdstat` reads `[UU]` again.
 
 ## Running in a VM
 

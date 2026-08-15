@@ -1,4 +1,5 @@
 {
+  config,
   pkgs,
   lib,
   ...
@@ -9,8 +10,9 @@
   calibre = "calibre.${domain}";
   frigate = "frigate.${domain}";
   homeAssistant = "home.${domain}";
+  ntfy = "ntfy.${domain}";
 
-  dnsOnlyHosts = [immich calibre frigate homeAssistant];
+  dnsOnlyHosts = [immich calibre frigate homeAssistant ntfy];
 
   mkDyndns = hostname: let
     slug = lib.replaceStrings ["."] ["-"] hostname;
@@ -140,6 +142,15 @@ in {
         reverse_proxy /* localhost:2283
         reverse_proxy / localhost:2283
       '';
+      rootIsNtfy = ''
+        handle /icon.png {
+          root * ${config.bilbo.notifyIcon}
+          file_server
+        }
+        handle {
+          reverse_proxy ${config.bilbo.notifyUpstream}
+        }
+      '';
       rootIsCalibre = ''
         reverse_proxy /* 127.0.0.1:8083 {
           header_up X-Scheme {scheme}
@@ -173,6 +184,10 @@ in {
         "${homeAssistant}".extraConfig = ''
           ${tlsDnsCloudflare}
           ${rootIsHomeAssistant}
+        '';
+        "${ntfy}".extraConfig = ''
+          ${tlsDnsCloudflare}
+          ${rootIsNtfy}
         '';
         "${bilbo}".extraConfig = ''
           ${tlsOriginKey}

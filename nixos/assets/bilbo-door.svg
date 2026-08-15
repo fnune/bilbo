@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <clipPath id="door">
+      <circle cx="96" cy="96" r="66" />
+    </clipPath>
+  </defs>
+  <rect width="192" height="192" rx="40" fill="#1f2b1c" />
+  <circle cx="96" cy="96" r="70" fill="#3f5a33" />
+  <circle cx="96" cy="96" r="66" fill="#6f9a5b" />
+  <g clip-path="url(#door)" stroke="#5c8049" stroke-width="4" stroke-linecap="round">
+    <path d="M63 26 V166" />
+    <path d="M96 26 V166" />
+    <path d="M129 26 V166" />
+  </g>
+  <circle cx="96" cy="102" r="11" fill="#e8bf51" />
+  <circle cx="96" cy="102" r="11" fill="none" stroke="#9c7a26" stroke-width="3" />
+</svg>

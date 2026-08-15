@@ -88,6 +88,7 @@
   system.stateVersion = "23.05";
 
   imports = [
+    ./alerts.nix
     ./backups.nix
     ./bazarr.nix
     ./caddy.nix
@@ -100,6 +101,7 @@
     ./jellyfin.nix
     ./monitoring.nix
     ./mosquitto.nix
+    ./ntfy.nix
     ./nzbget.nix
     ./pincho.nix
     ./radarr.nix

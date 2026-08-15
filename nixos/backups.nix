@@ -5,6 +5,7 @@
   mirroredBucketNamePath = "/etc/nixos/secrets/borg-s3-bucket-name";
   mirroredBorgPassphrasePath = "/etc/nixos/secrets/borg-passphrase";
   mirroredRcloneConfPath = "/etc/nixos/secrets/rclone.conf";
+  offsiteFailureMarker = "/var/lib/bilbo-alerts/offsite-failed";
 in {
   services.borgbackup = {
     jobs = {
@@ -28,11 +29,15 @@ in {
         };
         postHook = ''
           BUCKET_NAME=$(cat ${mirroredBucketNamePath})
-          ${pkgs.rclone}/bin/rclone sync ${mirroredRepoPath} aws-glacier:$BUCKET_NAME/mirrored \
+          if ${pkgs.rclone}/bin/rclone sync ${mirroredRepoPath} aws-glacier:$BUCKET_NAME/mirrored \
             --config ${mirroredRcloneConfPath} \
             --progress \
-            --stats 1m \
-            || echo "Warning: S3 upload failed, but local backup completed successfully"
+            --stats 1m; then
+            rm -f ${offsiteFailureMarker} || true
+          else
+            echo "Warning: S3 upload failed, but local backup completed successfully"
+            touch ${offsiteFailureMarker} || true
+          fi
         '';
       };
     };

@@ -25,7 +25,14 @@ in {
           home-assistant = mkClient "home-assistant" [
             "readwrite frigate/#"
             "readwrite zigbee2mqtt/#"
+            "write bilbo/#"
             discoveryTopic
+          ];
+
+          bilbo-alerts = mkClient "bilbo-alerts" [
+            "read frigate/#"
+            "read zigbee2mqtt/#"
+            "read bilbo/#"
           ];
         };
       }

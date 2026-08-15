@@ -90,6 +90,8 @@
   cameraSwitch = "switch.indoor_camera";
   cameraMode = "input_select.camera_mode";
 
+  notificationTopic = "bilbo/notify";
+
   neverWatch = "Disabled";
   watchWhenAway = "When away";
   alwaysWatch = "Always";
@@ -432,6 +434,42 @@ in {
               ];
             }
           ]
+          ++ lib.optional (presenceDevices != []) {
+            alias = "Say so when nobody is home and the camera is off";
+            id = "say-so-when-nobody-is-home-and-the-camera-is-off";
+            triggers = [
+              {
+                trigger = "state";
+                entity_id = presenceDevices;
+                to = "not_home";
+                for = "00:15:00";
+              }
+            ];
+            conditions = [
+              {
+                condition = "template";
+                value_template = nobodyHome;
+              }
+              {
+                condition = "state";
+                entity_id = cameraMode;
+                state = neverWatch;
+              }
+            ];
+            actions = [
+              {
+                action = "mqtt.publish";
+                data = {
+                  topic = notificationTopic;
+                  payload = builtins.toJSON {
+                    topic = "infra";
+                    title = "Home · nobody in, camera off";
+                    body = "The camera mode is Disabled, so nothing is being recorded while you are out.";
+                  };
+                };
+              }
+            ];
+          }
           ++ lib.optional (presenceDevices != []) {
             alias = "Lights go out when everyone has left";
             id = "lights-go-out-when-everyone-has-left";
