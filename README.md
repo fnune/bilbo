@@ -246,6 +246,40 @@ Frigate's own web push can be switched at runtime by publishing to
 `frigate/notifications/set`, so an automation can silence it while you are home
 rather than duplicating notifications in Home Assistant.
 
+## Updating packages
+
+Run `./update.sh` instead of `nix flake update`. It updates the inputs, then
+evaluates the config twice, once against the old lock and once against the new
+one, and prints every package that changed version. Nothing is built and nothing
+is switched, so it costs a nixpkgs source fetch and about half a minute.
+
+```sh
+./update.sh                          # update, report, commit
+./update.sh --no-commit              # leave flake.lock in the working tree
+./update.sh --diff-only              # report an update that is already committed
+./update.sh --diff-only --since HEAD~3
+```
+
+The commit takes `flake.lock` alone, under the subject `Upgrade packages` with
+the report as its body, so `git log` says which versions moved. Anything else in
+the tree, staged or not, is left where it is. A failed evaluation commits
+nothing and leaves the updated lock in the working tree.
+
+The report has three sections: `Services` for anything with an enabled
+`services.<name>.package`, `Platform` for the kernel and the media and hardware
+packages under it, and `System packages` for `environment.systemPackages`.
+
+`lib/versions.nix` decides what is tracked. The services pass only visits option
+names that own a systemd unit, because touching a removed or renamed module
+calls `abort`, which `tryEval` cannot catch. Packages that skip that pass, either
+behind a hand-written unit like `filebrowser` or under a unit whose name differs
+from its option like `immich`, are listed by hand in `extraServices` and
+`platform`. Add to those lists when a new unit takes its package from `pkgs`.
+
+Comparing names means a package rebuilt at the same version, after a patch or a
+dependency change, does not show up. Catching that needs real store paths, which
+means building.
+
 ## Running in a VM
 
 Warning: security measures are waived for the VM in order to facilitate testing.
