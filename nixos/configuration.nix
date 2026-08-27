@@ -78,12 +78,14 @@
       PermitRootLogin = "no";
       PasswordAuthentication = false;
       KbdInteractiveAuthentication = false;
+      AllowUsers = ["fausto"];
     };
   };
   networking.firewall.allowedTCPPorts = [22 22100];
   networking.firewall.allowedUDPPorts = [22100 21127];
 
   security.sudo.extraConfig = "Defaults pwfeedback";
+  security.sudo.execWheelOnly = true;
 
   system.stateVersion = "23.05";
 
@@ -92,6 +94,7 @@
     ./bazarr.nix
     ./caddy.nix
     ./calibre.nix
+    ./fail2ban.nix
     ./filebrowser.nix
     ./frigate.nix
     ./home-assistant.nix
