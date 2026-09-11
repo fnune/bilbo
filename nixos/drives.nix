@@ -1,4 +1,8 @@
-{lib, ...}: let
+{
+  config,
+  lib,
+  ...
+}: let
   mirrored-storage = "mirrored";
   mirrored-storage-mount = "/mnt/mirrored";
   downloads-1t-mount = "/mnt/downloads-1t";
@@ -6,12 +10,14 @@
 
   surveillance-storage = "${downloads-2t-mount}/frigate";
 
-  outsideSurveillance = "-path ${surveillance-storage} -prune -o";
+  ownedByServices = [surveillance-storage config.services.immich.mediaLocation];
+
+  outsideServiceOwned = "\\( ${lib.concatMapStringsSep " -o " (path: "-path ${path}") ownedByServices} \\) -prune -o";
 
   claimForFausto = mount: ''
-    find ${mount} ${outsideSurveillance} -print0 \
+    find ${mount} ${outsideServiceOwned} -print0 \
       | xargs --null --no-run-if-empty chown --no-dereference fausto:users
-    find ${mount} ${outsideSurveillance} ! -type l -print0 \
+    find ${mount} ${outsideServiceOwned} ! -type l -print0 \
       | xargs --null --no-run-if-empty chmod 775
   '';
 in {
