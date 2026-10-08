@@ -48,6 +48,9 @@ in {
         port = frontendPort;
         base_url = frontendSubpath;
       };
+      devices =
+        lib.mapAttrs' (_: device: lib.nameValuePair device.ieeeAddress {friendly_name = device.friendlyName;})
+        (import ./zigbee-devices.nix);
       advanced = {
         log_level = "warning";
         pan_id = 60197;

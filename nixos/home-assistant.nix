@@ -98,20 +98,50 @@
   watchWhenAway = "When away";
   alwaysWatch = "Always";
 
-  bedroomLight = {
-    id = "bedroom_light";
-    name = "Bedroom light";
-  };
+  zigbeeDevices = import ./zigbee-devices.nix;
 
   livingRoomLamp = {
-    id = "living_room_lamp";
+    id = zigbeeDevices.livingRoomLamp.entityId;
     name = "Living room lamp";
   };
 
-  lights = [bedroomLight livingRoomLamp];
+  lights = [livingRoomLamp];
 
   lightEntity = light: "light.${light.id}";
   lightPowerSensor = light: "binary_sensor.${light.id}_power";
+
+  climateSensors = [
+    {
+      inherit (zigbeeDevices.livingRoomClimate) entityId;
+      name = "Living room";
+    }
+    {
+      inherit (zigbeeDevices.bedroomClimate) entityId;
+      name = "Bedroom";
+    }
+  ];
+
+  climateEntity = measurement: sensor: "sensor.${sensor.entityId}_${measurement}";
+
+  climateTile = measurement: sensor: {
+    type = "tile";
+    entity = climateEntity measurement sensor;
+    name = sensor.name;
+  };
+
+  climateHistory = measurement: title:
+    fullWidth
+    // {
+      type = "history-graph";
+      inherit title;
+      hours_to_show = 48;
+      entities =
+        map (sensor: {
+          entity = climateEntity measurement sensor;
+          name = sensor.name;
+        })
+        climateSensors;
+    };
 
   simulatedLight = lightEntity livingRoomLamp;
   simulationMode = "input_select.occupancy_simulation";
@@ -474,33 +504,41 @@ in {
         sections = [
           {
             type = "grid";
-            cards = [
-              (fullWidth
-                // {
-                  type = "entities";
-                  entities =
-                    [
-                      cameraMode
-                      simulationMode
-                      sunsetSensor
-                    ]
-                    ++ map lightPowerSensor lights
-                    ++ [
-                      {type = "divider";}
-                    ]
-                    ++ presenceDevices
-                    ++ [
-                      {
-                        type = "weblink";
-                        url = frigateUrl;
-                        name = "Open Frigate";
-                        icon = "mdi:open-in-new";
-                      }
-                    ];
-                })
-              (cameraCard "live")
-              (cameraCard "timeline")
-            ];
+            cards =
+              [
+                (fullWidth
+                  // {
+                    type = "entities";
+                    entities =
+                      [
+                        cameraMode
+                        simulationMode
+                        sunsetSensor
+                      ]
+                      ++ map lightPowerSensor lights
+                      ++ [
+                        {type = "divider";}
+                      ]
+                      ++ presenceDevices
+                      ++ [
+                        {
+                          type = "weblink";
+                          url = frigateUrl;
+                          name = "Open Frigate";
+                          icon = "mdi:open-in-new";
+                        }
+                      ];
+                  })
+              ]
+              ++ lib.concatMap (sensor: [
+                (climateTile "temperature" sensor)
+                (climateTile "humidity" sensor)
+              ])
+              climateSensors
+              ++ [
+                (cameraCard "live")
+                (cameraCard "timeline")
+              ];
           }
           {
             type = "grid";
@@ -513,6 +551,8 @@ in {
                     hours_to_show = 48;
                     entities = [cameraSwitch];
                   })
+                (climateHistory "temperature" "Temperature")
+                (climateHistory "humidity" "Humidity")
               ]
               ++ lib.concatMap (light: [
                 (fullWidth
