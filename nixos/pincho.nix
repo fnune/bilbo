@@ -7,7 +7,7 @@ in {
   users.users.fausto.linger = true;
 
   systemd.user.services.pincho = {
-    description = "Pincho - T1D insulin dose calculator";
+    description = "Musa - T1D insulin dose calculator";
     after = ["network.target"];
     wantedBy = ["default.target"];
     serviceConfig = {

@@ -9,6 +9,7 @@
   calibre = "calibre.${domain}";
   frigate = "frigate.${domain}";
   homeAssistant = "home.${domain}";
+  musa = "musa.${domain}";
 
   dnsOnlyHosts = [immich calibre frigate homeAssistant];
 
@@ -78,7 +79,7 @@ in {
     cloudflare-dyndns = {
       enable = true;
       proxied = true;
-      domains = [bilbo];
+      domains = [bilbo musa];
       apiTokenFile = "/etc/cloudflare/token";
     };
     caddy = let
@@ -173,6 +174,15 @@ in {
         "${homeAssistant}".extraConfig = ''
           ${tlsDnsCloudflare}
           ${rootIsHomeAssistant}
+        '';
+        "${musa}".extraConfig = ''
+          ${tlsDnsCloudflare}
+          handle /pincho/api/* {
+            reverse_proxy localhost:3210
+          }
+          handle {
+            respond 404
+          }
         '';
         "${bilbo}".extraConfig = ''
           ${tlsOriginKey}
