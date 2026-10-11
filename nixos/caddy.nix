@@ -7,13 +7,14 @@
   domain = "fnune.com";
   bilbo = "bilbo.${domain}";
   immich = "immich.${domain}";
+  photos = "photos.${domain}";
   calibre = "calibre.${domain}";
   frigate = "frigate.${domain}";
   homeAssistant = "home.${domain}";
   papra = "docs.${domain}";
   wireguard = "wireguard.${domain}";
 
-  dnsOnlyHosts = [immich calibre frigate homeAssistant wireguard];
+  dnsOnlyHosts = [immich photos calibre frigate homeAssistant wireguard];
 
   dnsToken = config.sops.secrets.cloudflare-dns-token.path;
 
@@ -146,6 +147,10 @@ in {
         reverse_proxy /* localhost:2283
         reverse_proxy / localhost:2283
       '';
+      rootIsSharedPhotos = ''
+        reverse_proxy /* localhost:${toString config.services.immich-public-proxy.port}
+        reverse_proxy / localhost:${toString config.services.immich-public-proxy.port}
+      '';
       rootIsPapra = ''
         reverse_proxy /* 127.0.0.1:1221
         reverse_proxy / 127.0.0.1:1221
@@ -171,6 +176,10 @@ in {
         "${immich}".extraConfig = ''
           ${tlsDnsCloudflare}
           ${rootIsImmich}
+        '';
+        "${photos}".extraConfig = ''
+          ${tlsDnsCloudflare}
+          ${rootIsSharedPhotos}
         '';
         "${calibre}".extraConfig = ''
           ${tlsDnsCloudflare}

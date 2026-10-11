@@ -98,6 +98,7 @@
     ./frigate.nix
     ./home-assistant.nix
     ./immich.nix
+    ./immich-public-proxy.nix
     ./jellyfin.nix
     ./mosquitto.nix
     ./nzbget.nix
