@@ -346,7 +346,7 @@ Both are served under `bilbo.fnune.com` and have no login of their own; the tunn
 
 ### Backups
 
-The Borg job in `nixos/backups.nix` runs weekly over `/mnt/mirrored`, Home Assistant's, Zigbee2MQTT's and Seerr's state and Pincho's data, then mirrors the repository to S3 Deep Archive with `rclone sync`. The bucket keeps deleted and overwritten objects as noncurrent versions for 180 days (`remote/aws/backups.ts`), so a damaged local repository does not destroy the off-site copy on the next run. Restoring is documented in `remote/README.md`.
+The Borg job in `nixos/backups.nix` runs weekly over `/mnt/mirrored`, Home Assistant's and Zigbee2MQTT's state and Pincho's data, then mirrors the repository to S3 Deep Archive with `rclone sync`. The bucket keeps deleted and overwritten objects as noncurrent versions for 180 days (`remote/aws/backups.ts`), so a damaged local repository does not destroy the off-site copy on the next run. Restoring is documented in `remote/README.md`.
 
 A run that fails, including a failed S3 upload, notifies like any other failed unit. `backup-freshness` checks daily that the last successful run is less than 8 days old, which catches a timer that stopped firing. It also fails until the first successful run after deploying, so start one with `systemctl start borgbackup-job-mirrored`.
 
