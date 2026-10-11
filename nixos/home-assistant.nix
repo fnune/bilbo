@@ -125,16 +125,43 @@
     name = sensor.name;
   };
 
-  climateHistory = measurement: title:
+  softAxisBound = value: "~${toString value}";
+
+  climateHistory = measurement: title: {
+    comfortable,
+    margin,
+  }:
     fullWidth
     // {
-      type = "history-graph";
-      inherit title;
-      hours_to_show = 48;
-      entities =
+      type = "custom:apexcharts-card";
+      header = {
+        show = true;
+        inherit title;
+        show_states = true;
+        colorize_states = true;
+      };
+      graph_span = "48h";
+      yaxis = [
+        {
+          min = softAxisBound (comfortable.low - margin);
+          max = softAxisBound (comfortable.high + margin);
+          decimals = 1;
+        }
+      ];
+      apex_config.annotations.yaxis = [
+        {
+          y = comfortable.low;
+          y2 = comfortable.high;
+          fillColor = "#4caf50";
+          opacity = 0.15;
+          borderColor = "transparent";
+        }
+      ];
+      series =
         map (sensor: {
           entity = climateEntity measurement sensor;
           name = sensor.name;
+          curve = "stepline";
         })
         climateSensors;
     };
@@ -276,7 +303,10 @@ in {
     enable = true;
 
     customComponents = [frigateComponent];
-    customLovelaceModules = [pkgs.home-assistant-custom-lovelace-modules.advanced-camera-card];
+    customLovelaceModules = with pkgs.home-assistant-custom-lovelace-modules; [
+      advanced-camera-card
+      apexcharts-card
+    ];
 
     extraComponents = [
       "command_line"
@@ -547,8 +577,20 @@ in {
                     hours_to_show = 48;
                     entities = [cameraSwitch];
                   })
-                (climateHistory "temperature" "Temperature")
-                (climateHistory "humidity" "Humidity")
+                (climateHistory "temperature" "Temperature" {
+                  comfortable = {
+                    low = 19;
+                    high = 22;
+                  };
+                  margin = 1;
+                })
+                (climateHistory "humidity" "Humidity" {
+                  comfortable = {
+                    low = 40;
+                    high = 60;
+                  };
+                  margin = 5;
+                })
               ]
               ++ lib.concatMap (light: [
                 (fullWidth
