@@ -356,8 +356,7 @@ What notifies on its own (`nixos/monitoring.nix`):
 
 [Beszel][beszel] shows disks, SMART, the mirror, temperatures, the iGPU, network and systemd services over time. Its alerts live in its database, so set them up once by hand:
 
-- Visit [Beszel][beszel] and create the admin user
-- Add a system with host `127.0.0.1` and port `45876`. The agent already trusts the hub's key.
+- Visit [Beszel][beszel] and create the admin user. Only the first user can sign up. The hub then lists bilbo on its next restart.
 - In Settings -> Notifications, add `ntfy://127.0.0.1:2586/bilbo?scheme=http`
 - In the systems table, turn on alerts: status, disk usage at 85%, temperature, and bandwidth for traffic spikes
 

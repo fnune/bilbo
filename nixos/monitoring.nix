@@ -9,8 +9,19 @@
   topic = "bilbo";
 
   beszelHostname = "health.fnune.com";
-  beszelAgentListen = "127.0.0.1:45876";
-  hubKey = "${config.services.beszel.hub.dataDir}/beszel_data/id_ed25519";
+  beszelAgentHost = "127.0.0.1";
+  beszelAgentPort = 45876;
+  beszelData = "${config.services.beszel.hub.dataDir}/beszel_data";
+  hubKey = "${beszelData}/id_ed25519";
+  systemsSyncedOnHubStart = (pkgs.formats.yaml {}).generate "beszel-config.yml" {
+    systems = [
+      {
+        name = config.networking.hostName;
+        host = beszelAgentHost;
+        port = beszelAgentPort;
+      }
+    ];
+  };
 
   notify = pkgs.writeShellApplication {
     name = "notify";
@@ -101,7 +112,7 @@ in {
       smartmon.enable = true;
       extraPath = [pkgs.intel-gpu-tools];
       environment = {
-        LISTEN = beszelAgentListen;
+        LISTEN = "${beszelAgentHost}:${toString beszelAgentPort}";
         KEY_FILE = "/run/beszel-agent/hub.pub";
         EXTRA_FILESYSTEMS = lib.concatStringsSep "," [
           "/mnt/downloads-1t__Movies & Books"
@@ -111,6 +122,11 @@ in {
       };
     };
   };
+
+  systemd.services.beszel-hub.preStart = ''
+    mkdir -p ${beszelData}
+    ln -sf ${systemsSyncedOnHubStart} ${beszelData}/config.yml
+  '';
 
   systemd.services.beszel-agent = {
     after = ["beszel-hub.service"];
