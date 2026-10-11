@@ -39,7 +39,7 @@ records (two SPF TXT, the `protonmail-verification` TXT, two MX, three
 
 ```sh
 ssh -t bilbo 'sudo bash -s' < delete-stale-mail-records.sh          # dry run, lists them
-ssh -t bilbo 'sudo APPLY=1 bash -s' < delete-stale-mail-records.sh  # delete
+ssh -t bilbo 'sudo bash -s -- apply' < delete-stale-mail-records.sh  # delete
 ```
 
 The `google-site-verification` TXT and the apex website records are left alone.

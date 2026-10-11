@@ -3,8 +3,8 @@
 # the parked-domain records in cloudflare/mail.ts. Run on bilbo, where the
 # scoped DNS token lives:
 #
-#   ssh -t bilbo 'sudo bash -s' < remote/delete-stale-mail-records.sh          # dry run
-#   ssh -t bilbo 'sudo APPLY=1 bash -s' < remote/delete-stale-mail-records.sh  # delete
+#   ssh -t bilbo 'sudo bash -s' < remote/delete-stale-mail-records.sh           # dry run
+#   ssh -t bilbo 'sudo bash -s -- apply' < remote/delete-stale-mail-records.sh   # delete
 #
 # It only ever touches records whose content matches the stale set below; it
 # leaves the apex site, www and the google-site-verification record alone.
@@ -29,7 +29,7 @@ echo "$records" | jq -c '.result[] | {id, type, name, content}' | while read -r 
   id=$(jq -r .id <<<"$row"); type=$(jq -r .type <<<"$row")
   name=$(jq -r .name <<<"$row"); content=$(jq -r .content <<<"$row")
   if matches_stale "$type" "$name" "$content"; then
-    if [ "${APPLY:-0}" = 1 ]; then
+    if [ "${1:-}" = apply ]; then
       api -X DELETE "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$id" >/dev/null
       echo "deleted  $type $name  $content"
     else
@@ -37,4 +37,4 @@ echo "$records" | jq -c '.result[] | {id, type, name, content}' | while read -r 
     fi
   fi
 done
-echo "done${APPLY:+ (applied)}"
+if [ "${1:-}" = apply ]; then echo "done (applied)"; else echo "done (dry run)"; fi
