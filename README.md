@@ -290,6 +290,14 @@ Document encryption only covers files uploaded while it is on, so both keys are 
 3. Registration is off in `nixos/papra.nix`. To create the first user, append `AUTH_IS_REGISTRATION_ENABLED=true` to `papra.env` and run `systemctl restart papra`. This works because systemd lets `EnvironmentFile` override `Environment`.
 4. Sign up at [Papra][papra]. The first user becomes the admin.
 5. Remove that line from `papra.env` and restart again.
+6. Sign in. Papra refuses with a request to verify the email address, and logs a verification email instead of sending one. Open its link:
+    ```sh
+    sudo journalctl -u papra --since -10min -o cat | grep -o 'https://docs.fnune.com/api/auth/verify-email?token=[^"\\]*' | tail -1
+    ```
+
+Papra 26.6.1 ignores `AUTH_IS_REGISTRATION_ENABLED` for email sign-up, which is fixed in 26.7.0. Until then, anyone who gets past Cloudflare Access can still create an account. `AUTH_IS_EMAIL_VERIFICATION_REQUIRED` keeps such accounts unable to sign in, because their verification links only reach this journal. Delete strays under Admin -> Users.
+
+The `logger` email driver also means a password reset link lands in the same journal.
 
 OCR runs on Tesseract for German, English and Spanish (`DOCUMENTS_OCR_LANGUAGES`).
 
