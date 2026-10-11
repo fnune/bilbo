@@ -376,13 +376,13 @@ is switched, so it costs a nixpkgs source fetch and about half a minute.
 ./update.sh                          # update, report, commit
 ./update.sh --no-commit              # leave flake.lock in the working tree
 ./update.sh --diff-only              # report an update that is already committed
-./update.sh --diff-only --since HEAD~3
+./update.sh --diff-only --since @----
 ```
 
 The commit takes `flake.lock` alone, under the subject `Upgrade packages` with
-the report as its body, so `git log` says which versions moved. Anything else in
-the tree, staged or not, is left where it is. A failed evaluation commits
-nothing and leaves the updated lock in the working tree.
+the report as its body, so `jj log` says which versions moved. Anything else in
+the working copy stays in `@`. A failed evaluation commits nothing and leaves
+the updated lock in the working copy.
 
 The report has three sections: `Services` for anything with an enabled
 `services.<name>.package`, `Platform` for the kernel and the media and hardware

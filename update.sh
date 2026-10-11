@@ -8,14 +8,14 @@ usage() {
   cat <<'USAGE'
 usage: ./update.sh [--diff-only] [--since REV] [--no-commit]
 
-  --diff-only  skip `nix flake update`, compare flake.lock against a git rev
-  --since REV  the rev --diff-only compares against (default HEAD)
+  --diff-only  skip `nix flake update`, compare flake.lock against a jj revision
+  --since REV  the rev --diff-only compares against (default @-)
   --no-commit  leave flake.lock in the working tree instead of committing it
 USAGE
 }
 
 diff_only=false
-since=HEAD
+since=@-
 commit=true
 while [[ $# -gt 0 ]]; do
   arg=$1
@@ -43,7 +43,7 @@ trap 'rm -rf "$work"' EXIT
 
 if $diff_only; then
   commit=false
-  git show "$since:flake.lock" >"$work/old.lock"
+  jj file show --revision "$since" flake.lock >"$work/old.lock"
 else
   cp flake.lock "$work/old.lock"
   nix flake update
@@ -67,7 +67,7 @@ echo
 echo "$report"
 
 if $commit; then
-  printf 'Upgrade packages\n\n%s\n' "$report" | git commit --only --quiet --file - flake.lock
+  jj commit --quiet --message "$(printf 'Upgrade packages\n\n%s\n' "$report")" flake.lock
   echo
-  git --no-pager log -1 --oneline
+  jj log --no-graph --revisions @- --template builtin_log_oneline
 fi
