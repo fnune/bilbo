@@ -31,6 +31,24 @@ Run `pulumi up` before `nixos-rebuild` when both change. The private DNS records
 point at bilbo's WireGuard address; the dyndns timers on bilbo own the public
 ones and must not manage the same names.
 
+## Mail records
+
+`fnune.com` carries no mail. `cloudflare/mail.ts` declares a parked-domain
+posture so the domain cannot be spoofed: a null MX (RFC 7505), `v=spf1 -all`,
+and DMARC `p=reject`. When mail moves onto the domain, replace these with the
+provider's real MX, SPF and DKIM.
+
+The stale ProtonMail records these supersede (two SPF TXT, the
+`protonmail-verification` TXT, two MX, three `_domainkey` CNAMEs) are not in
+Pulumi. Remove them once, after `pulumi up` adds the parked records:
+
+```sh
+ssh -t bilbo 'sudo bash -s' < delete-stale-mail-records.sh          # dry run, lists them
+ssh -t bilbo 'sudo APPLY=1 bash -s' < delete-stale-mail-records.sh  # delete
+```
+
+The `google-site-verification` TXT and the apex website records are left alone.
+
 ## Accessing the output
 
 To access the output and transfer it to Bilbo:
