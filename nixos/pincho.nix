@@ -12,7 +12,7 @@
   appDir = "/srv/pincho";
   dataDir = "/var/lib/pincho";
 
-  model = "claude-haiku-4-5-20251001";
+  model = "claude-haiku-5-5";
   keepBackups = 20;
 
   backupUserData = pkgs.writeShellScript "pincho-backup" ''

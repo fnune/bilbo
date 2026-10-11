@@ -124,6 +124,7 @@ in {
           sleep 1
         done
         ${pkgs.openssh}/bin/ssh-keygen -y -f ${hubKey} > /run/beszel-agent/hub.pub
+        chmod 0644 /run/beszel-agent/hub.pub
       ''}";
       AmbientCapabilities = ["CAP_PERFMON"];
       CapabilityBoundingSet = ["CAP_PERFMON"];
