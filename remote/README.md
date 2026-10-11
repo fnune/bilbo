@@ -17,6 +17,17 @@ export PULUMI_CONFIG_PASSPHRASE='<pulumi_passphrase>'
 
 > Look for `Bilbo Borg + S3 + Pulumi Credentials` on Bitwarden.
 
+The Cloudflare credential has to carry "API Tokens: Edit" on top of its DNS
+permissions, because this project mints the scoped DNS token bilbo uses.
+
+## Outputs that feed bilbo
+
+The scoped DNS token goes into `../secrets/bilbo.yaml` with `sops`:
+
+```sh
+pulumi stack output bilboDnsTokenValue --show-secrets | sops set ../secrets/bilbo.yaml '["cloudflare-dns-token"]' "\"$(cat)\""
+```
+
 ## Accessing the output
 
 To access the output and transfer it to Bilbo:
@@ -38,10 +49,12 @@ pulumi import '<type>'                 '<name>'      '<id>'
 pulumi import "cloudflare:index/zeroTrustAccessPolicy:ZeroTrustAccessPolicy" "bilbo-access-policy" "accounts/<ACCOUNT_ID>/<POLICY_ID>"
 pulumi import "cloudflare:index/zeroTrustAccessApplication:ZeroTrustAccessApplication" "bilbo-access-app" "accounts/<ACCOUNT_ID>/<APP_ID>"
 pulumi import "cloudflare:index/zeroTrustAccessApplication:ZeroTrustAccessApplication" "papra-access-app" "accounts/<ACCOUNT_ID>/<APP_ID>"
+pulumi import "cloudflare:index/apiToken:ApiToken" "bilbo-dns-token" "<TOKEN_ID>"
 
 # AWS S3
 pulumi import "aws:s3/bucketV2:BucketV2" "bilbo-backups" "<BUCKET_NAME>"
 pulumi import "aws:s3/bucketPublicAccessBlock:BucketPublicAccessBlock" "bilbo-backups-bucket-public-access-block" "<BUCKET_NAME>"
+pulumi import "aws:s3/bucketVersioningV2:BucketVersioningV2" "bilbo-backups-versioning" "<BUCKET_NAME>"
 pulumi import "aws:s3/bucketLifecycleConfigurationV2:BucketLifecycleConfigurationV2" "bilbo-backups-lifecycle" "<BUCKET_NAME>"
 
 # AWS IAM
