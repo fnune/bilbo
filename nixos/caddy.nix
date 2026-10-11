@@ -1,4 +1,5 @@
 {
+  config,
   pkgs,
   lib,
   ...
@@ -13,6 +14,8 @@
 
   dnsOnlyHosts = [immich calibre frigate homeAssistant];
 
+  dnsToken = config.sops.secrets.cloudflare-dns-token.path;
+
   mkDyndns = hostname: let
     slug = lib.replaceStrings ["."] ["-"] hostname;
   in
@@ -20,7 +23,7 @@
       name = "dyndns-${slug}";
       runtimeInputs = with pkgs; [curl jq];
       text = ''
-        TOKEN=$(cat /etc/cloudflare/token)
+        TOKEN=$(cat ${dnsToken})
         IP=$(curl -sf https://api.ipify.org)
 
         ZONE_ID=$(curl -sf -H "Authorization: Bearer $TOKEN" \
@@ -69,10 +72,18 @@ in {
     };
   };
 
+  sops = {
+    secrets.cloudflare-dns-token = {};
+    templates."caddy.env" = {
+      owner = config.services.caddy.user;
+      content = "CLOUDFLARE_API_TOKEN=${config.sops.placeholder.cloudflare-dns-token}";
+    };
+  };
+
   systemd.services =
     (lib.listToAttrs (map mkDyndnsService dnsOnlyHosts))
     // {
-      caddy.serviceConfig.EnvironmentFile = "/etc/cloudflare/caddy-env";
+      caddy.serviceConfig.EnvironmentFile = config.sops.templates."caddy.env".path;
     };
 
   services = {
@@ -80,7 +91,7 @@ in {
       enable = true;
       proxied = true;
       domains = [bilbo papra];
-      apiTokenFile = "/etc/cloudflare/token";
+      apiTokenFile = dnsToken;
     };
     caddy = let
       cloudflareToken = "{$CLOUDFLARE_API_TOKEN}";

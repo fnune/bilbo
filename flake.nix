@@ -8,12 +8,17 @@
       url = "github:nix-community/disko/v1.11.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
     nixpkgs,
     nixpkgs-unstable,
     disko,
+    sops-nix,
     ...
   }: let
     system = "x86_64-linux";
@@ -32,6 +37,7 @@
         ./nixos/hardware-acceleration.nix
         ./nixos/network-configuration.nix
         disko.nixosModules.disko
+        sops-nix.nixosModules.sops
       ];
     };
     bilboVirtual = nixpkgs.lib.nixosSystem {
@@ -40,6 +46,7 @@
         {nixpkgs.overlays = [unstableOverlay];}
         ./nixos/configuration.nix
         ./nixos/development-configuration.nix
+        sops-nix.nixosModules.sops
       ];
     };
   in {

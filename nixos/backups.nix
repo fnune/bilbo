@@ -1,11 +1,20 @@
-{pkgs, ...}: let
+{
+  config,
+  pkgs,
+  ...
+}: let
   mirroredRepoPath = "/mnt/downloads-2t/Backups/borg/mirrored";
   mirroredSourcePath = "/mnt/mirrored";
-  # Generate secrets by running `pulumi stack output` in `../remote`:
+  # The bucket name is a `pulumi stack output` in `../remote`, hand-placed here.
   mirroredBucketNamePath = "/etc/nixos/secrets/borg-s3-bucket-name";
-  mirroredBorgPassphrasePath = "/etc/nixos/secrets/borg-passphrase";
-  mirroredRcloneConfPath = "/etc/nixos/secrets/rclone.conf";
+  mirroredBorgPassphrasePath = config.sops.secrets.borg-passphrase.path;
+  mirroredRcloneConfPath = config.sops.secrets.rclone-conf.path;
 in {
+  sops.secrets = {
+    borg-passphrase = {};
+    rclone-conf = {};
+  };
+
   services.borgbackup = {
     jobs = {
       mirrored = {

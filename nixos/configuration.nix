@@ -107,6 +107,7 @@
     ./papra.nix
     ./pincho.nix
     ./radarr.nix
+    ./secrets.nix
     ./sonarr.nix
     ./zigbee2mqtt.nix
   ];

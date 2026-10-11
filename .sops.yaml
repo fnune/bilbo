@@ -1,0 +1,9 @@
+keys:
+  - &admin age15ju6mew2u70s727dls7kadrv4arlm5vw69dgq8pw0jrzmaqt2vasrz87gm
+  - &bilbo age12zruj07hq3ghtlzt7ql3ld5h0d09wwrgqqxnrzktk4pqkazk9vyqtj806w
+creation_rules:
+  - path_regex: secrets/.*\.yaml$
+    key_groups:
+      - age:
+          - *admin
+          - *bilbo
