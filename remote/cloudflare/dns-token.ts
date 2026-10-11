@@ -1,6 +1,5 @@
 import * as cloudflare from "@pulumi/cloudflare";
-
-const ZONE_ID = "ae60391afa829b4b5f0e664484989d6b";
+import { ZONE_ID } from "./zone";
 
 const dnsWrite = cloudflare.getApiTokenPermissionGroupsListOutput({
   name: "DNS Write",

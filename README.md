@@ -35,8 +35,9 @@ Now, configure each service:
 - [Calibre][calibre]
   - On first run, point it at `/mnt/downloads-1t/Books` (initialize a Calibre
     library there with `calibredb` if `metadata.db` does not yet exist)
-  - The OPDS feed is at `https://bilbo.fnune.com/calibre/opds` — add it on
-    the PocketBook under Settings -> Accounts -> OPDS catalog
+  - The Kobo syncs through `https://calibre.fnune.com/kobo/<token>`, the only
+    path that hostname serves to the internet. Generate the token under the
+    user's profile in calibre-web.
 - [Jellyfin][jellyfin]
   - Visit [Jellyfin][jellyfin] and create the admin user
   - Create a media library for Movies in `/mnt/downloads-1t/Movies`
@@ -52,9 +53,62 @@ Now, configure each service:
 [papra]: https://docs.fnune.com
 [zigbee2mqtt]: https://bilbo.fnune.com/zigbee2mqtt
 
+### Who can reach what
+
+Every hostname is served by Caddy on 443 with a Let's Encrypt certificate from
+the Cloudflare DNS challenge. They differ in who can connect:
+
+| Hostname | Audience | How |
+| --- | --- | --- |
+| `bilbo.fnune.com` (admin tools under subpaths), `immich`, `frigate`, `home`, `docs` | your own devices | A record carries bilbo's WireGuard address; Caddy aborts anything not from the VPN |
+| `photos.fnune.com` | anyone with a share link | Immich Public Proxy, serves only what Immich shares |
+| `calibre.fnune.com` | the Kobo | `/kobo/*` only, token in the URL |
+| `watch.fnune.com` | guests with a Jellyfin account | Jellyfin at `/jellyfin` |
+| `http://192.168.178.36/...` | the LAN, the TV | plain HTTP, same subpaths as the admin host |
+
+Your devices reach bilbo through WireGuard (`nixos/wireguard.nix`, endpoint
+`wireguard.fnune.com:51820`, forwarded on the router). The private hostnames
+resolve everywhere but connect only through the tunnel, so apps keep the same
+URL at home and away. The public hostnames follow the household's public
+address through the dyndns timers in `nixos/caddy.nix`; the private records are
+managed in `remote/cloudflare/dns.ts`. To add a private service, add a subpath
+to `adminSubpaths`; to add a public one, add a hostname to `public` with its own
+site block and think about what the internet should see of it.
+
+To add a device: let the WireGuard app generate its key pair, add an entry to
+`devices` in `nixos/wireguard.nix` with the next free address and the public
+key, rebuild, then give the app these five fields:
+
+```ini
+[Interface]
+PrivateKey = <generated on the device>
+Address = 10.100.0.<n>/32
+DNS = 1.1.1.1
+
+[Peer]
+PublicKey = aVdLGe76+qHh25zQBy3zfb3qp35IeZU4DWZvrowUX0g=
+Endpoint = wireguard.fnune.com:51820
+AllowedIPs = 10.100.0.0/24
+PersistentKeepalive = 25
+```
+
+`AllowedIPs` limited to the VPN subnet means only traffic for bilbo enters the
+tunnel, so it can stay on. The `DNS` line matters on phones: apps resolve through
+the carrier's resolver, which can hold a private hostname's old address long
+after a change, while browsers resolve over encrypted DNS and never notice.
+Android allows one VPN at a time, so it shares the slot with any other VPN app.
+The TV never leaves the house and needs no tunnel.
+
 ### Secrets
 
-Hand-placed files under `/etc/nixos/secrets`, mode 600. The `mosquitto-*` files
+Most secrets live encrypted in `secrets/bilbo.yaml` and are decrypted on boot by
+`sops-nix` with bilbo's SSH host key. Edit with `sops secrets/bilbo.yaml` (the
+admin age key is in `~/.config/sops/age/keys.txt`; `.sops.yaml` lists the
+recipients). Modules declare the entries they read, so a missing entry fails the
+build rather than the unit. The Cloudflare DNS token is a Pulumi output from
+`remote/`, see its README.
+
+The rest are still hand-placed files under `/etc/nixos/secrets`, mode 600. The `mosquitto-*` files
 hold the password on one line and nothing else; Mosquitto hashes them at unit
 start and strips the trailing newline. The `.env` files are systemd
 `EnvironmentFile`s: one `KEY=value` per line, no `export`, no quotes, no spaces
@@ -92,8 +146,7 @@ database. It is interpolated into an RTSP URL, so avoid `@ : / ? #` or
 percent-encode them.
 
 The `ZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN` gates the Zigbee2MQTT frontend,
-which is served from the public `bilbo.fnune.com` origin and can otherwise
-re-pair or factory-reset devices.
+which can otherwise re-pair or factory-reset devices.
 
 `/etc/nixos/secrets/frigate-admin-password`, mode 600, holding the password of
 Frigate's `admin` account, the one you log into Frigate's web UI with.
@@ -250,7 +303,7 @@ rather than duplicating notifications in Home Assistant.
 
 ### Papra
 
-[Papra][papra] is the document archive, behind Cloudflare Access (`remote/cloudflare/web.ts`). Its data lives in `/mnt/mirrored/papra`.
+[Papra][papra] is the document archive, reachable over the VPN only like the other private hostnames. Its data lives in `/mnt/mirrored/papra`.
 
 #### Keys
 
@@ -276,7 +329,7 @@ To rotate the document key, append a new version (`1:<old>,2:<new>`) and keep th
 #### First-time setup
 
 1. Write `papra.env` and save it to Bitwarden.
-2. Run `pulumi up` in `remote/`, then rebuild.
+2. Rebuild.
 3. Append `AUTH_IS_REGISTRATION_ENABLED=true` to `papra.env`, restart Papra, sign up, then remove the line and restart again. The first user becomes the admin.
 4. Sign in. Papra asks to verify the email address and writes the link to the journal instead of sending it:
     ```sh
@@ -287,7 +340,7 @@ Email verification is required because Papra does not fully enforce closed regis
 
 #### API clients
 
-Clients outside bilbo must get past Cloudflare Access. Prefer an Access service token (`CF-Access-Client-Id` and `CF-Access-Client-Secret` headers, alongside a Papra API key), declared in `remote/cloudflare/`. A bypass policy works too, but leaves the Papra API key as the only check.
+Clients reach the API over the VPN with a Papra API key; nothing else stands in front of it.
 
 #### Auto-tagging
 

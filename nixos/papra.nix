@@ -17,7 +17,7 @@ in {
 
       AUTH_IS_REGISTRATION_ENABLED = false;
       AUTH_IS_EMAIL_VERIFICATION_REQUIRED = true;
-      AUTH_IP_ADDRESS_HEADERS = "cf-connecting-ip";
+      AUTH_IP_ADDRESS_HEADERS = "x-forwarded-for";
 
       DATABASE_URL = "file:${databaseDirectory}/db.sqlite";
 

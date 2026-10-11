@@ -1,10 +1,6 @@
 {...}: let
   lan = "192.168.178.0/24";
 in {
-  # Immich, Calibre and Frigate are served on DNS-only records, so they bypass
-  # Cloudflare Access and face the internet with nothing but their own login
-  # form in front of them. None of the three locks an attacker out after
-  # repeated failures the way Home Assistant now does.
   services.fail2ban = {
     enable = true;
     maxretry = 5;

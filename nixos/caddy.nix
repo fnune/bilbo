@@ -5,16 +5,25 @@
   ...
 }: let
   domain = "fnune.com";
-  bilbo = "bilbo.${domain}";
-  immich = "immich.${domain}";
-  photos = "photos.${domain}";
-  calibre = "calibre.${domain}";
-  frigate = "frigate.${domain}";
-  homeAssistant = "home.${domain}";
-  papra = "docs.${domain}";
-  wireguard = "wireguard.${domain}";
+  host = name: "${name}.${domain}";
 
-  dnsOnlyHosts = [immich photos calibre frigate homeAssistant wireguard];
+  vpnOnly = {
+    admin = host "bilbo";
+    immich = host "immich";
+    frigate = host "frigate";
+    homeAssistant = host "home";
+    papra = host "docs";
+  };
+
+  public = {
+    sharedPhotos = host "photos";
+    koboSync = host "calibre";
+    guestJellyfin = host "watch";
+  };
+  vpnEndpoint = host "wireguard";
+  dyndnsHosts = builtins.attrValues public ++ [vpnEndpoint];
+
+  vpnSubnet = "10.100.0.0/24";
 
   dnsToken = config.sops.secrets.cloudflare-dns-token.path;
 
@@ -64,6 +73,10 @@
       };
     };
   };
+
+  immichPort = toString config.services.immich.port;
+  sharedPhotosPort = toString config.services.immich-public-proxy.port;
+  papraPort = toString config.services.papra.environment.PORT;
 in {
   networking.firewall = {
     allowedTCPPorts = [443];
@@ -83,141 +96,134 @@ in {
   };
 
   systemd.services =
-    (lib.listToAttrs (map mkDyndnsService dnsOnlyHosts))
+    (lib.listToAttrs (map mkDyndnsService dyndnsHosts))
     // {
       caddy.serviceConfig.EnvironmentFile = config.sops.templates."caddy.env".path;
     };
 
-  services = {
-    cloudflare-dyndns = {
-      enable = true;
-      proxied = true;
-      domains = [bilbo papra];
-      apiTokenFile = dnsToken;
+  services.caddy = let
+    tlsDnsCloudflare = ''
+      tls {
+        dns cloudflare {$CLOUDFLARE_API_TOKEN}
+      }
+    '';
+    outsideVpn = ''
+      @outsideVpn not remote_ip ${vpnSubnet} 127.0.0.1/8 ::1
+    '';
+    calibreAtSubpath = ''
+      redir /calibre /calibre/ 308
+      reverse_proxy /calibre/* 127.0.0.1:8083 {
+        header_up X-Script-Name /calibre
+        header_up X-Scheme {scheme}
+        header_up X-Forwarded-Host {host}
+      }
+    '';
+    jellyfinAtSubpath = ''
+      reverse_proxy /jellyfin/* localhost:8096
+      reverse_proxy /jellyfin localhost:8096
+    '';
+    adminSubpaths = ''
+      reverse_proxy /nzbget/* localhost:6789
+      reverse_proxy /nzbget localhost:6789
+
+      reverse_proxy /radarr/* localhost:7878
+      reverse_proxy /radarr localhost:7878
+
+      reverse_proxy /sonarr/* localhost:8989
+      reverse_proxy /sonarr localhost:8989
+
+      reverse_proxy /bazarr/* 127.0.0.1:6767
+      reverse_proxy /bazarr 127.0.0.1:6767
+
+      ${calibreAtSubpath}
+
+      ${jellyfinAtSubpath}
+
+      reverse_proxy /pincho/* localhost:3210
+      reverse_proxy /pincho localhost:3210
+
+      reverse_proxy /zigbee2mqtt/* localhost:8085
+      reverse_proxy /zigbee2mqtt localhost:8085
+
+      reverse_proxy /smb/* localhost:8799
+      reverse_proxy /smb localhost:8799
+
+      respond 404
+    '';
+    # route keeps the written order; Caddy would otherwise run respond and abort after reverse_proxy
+    vpnOnlyRoute = handlers: ''
+      ${outsideVpn}
+      route {
+        abort @outsideVpn
+        ${handlers}
+      }
+    '';
+    rootIs = upstream: ''
+      reverse_proxy /* ${upstream}
+      reverse_proxy / ${upstream}
+    '';
+  in {
+    enable = true;
+    package = pkgs.caddy.withPlugins {
+      plugins = ["github.com/caddy-dns/cloudflare@v0.2.4"];
+      hash = "sha256-dQvk6ezY6TQ1J7PjhCXnThF/SqVgPwBO8/RXzHCY+js=";
     };
-    caddy = let
-      cloudflareToken = "{$CLOUDFLARE_API_TOKEN}";
-      tlsDnsCloudflare = ''
-        tls {
-          dns cloudflare ${cloudflareToken}
+    virtualHosts = {
+      "${vpnOnly.admin}".extraConfig = ''
+        ${tlsDnsCloudflare}
+        ${vpnOnlyRoute adminSubpaths}
+      '';
+      "${vpnOnly.immich}".extraConfig = ''
+        ${tlsDnsCloudflare}
+        ${vpnOnlyRoute (rootIs "localhost:${immichPort}")}
+      '';
+      "${vpnOnly.frigate}".extraConfig = ''
+        ${tlsDnsCloudflare}
+        ${vpnOnlyRoute (rootIs "localhost:8971")}
+      '';
+      "${vpnOnly.homeAssistant}".extraConfig = ''
+        ${tlsDnsCloudflare}
+        ${vpnOnlyRoute (rootIs "localhost:8123")}
+      '';
+      "${vpnOnly.papra}".extraConfig = ''
+        ${tlsDnsCloudflare}
+        ${vpnOnlyRoute (rootIs "127.0.0.1:${papraPort}")}
+      '';
+
+      "${public.sharedPhotos}".extraConfig = ''
+        ${tlsDnsCloudflare}
+        ${rootIs "localhost:${sharedPhotosPort}"}
+      '';
+      # The token in the Kobo sync URL is its login.
+      "${public.koboSync}".extraConfig = ''
+        ${tlsDnsCloudflare}
+        route {
+          reverse_proxy /kobo/* 127.0.0.1:8083 {
+            header_up X-Scheme {scheme}
+          }
+          respond 404
         }
       '';
-      proxiesSupportingSubpath = ''
-        reverse_proxy /nzbget/* localhost:6789
-        reverse_proxy /nzbget localhost:6789
-
-        reverse_proxy /radarr/* localhost:7878
-        reverse_proxy /radarr localhost:7878
-
-        reverse_proxy /sonarr/* localhost:8989
-        reverse_proxy /sonarr localhost:8989
-
-        reverse_proxy /bazarr/* 127.0.0.1:6767
-        reverse_proxy /bazarr 127.0.0.1:6767
-
-        redir /calibre /calibre/ 308
-        reverse_proxy /calibre/* 127.0.0.1:8083 {
-          header_up X-Script-Name /calibre
-          header_up X-Scheme {scheme}
-          header_up X-Forwarded-Host {host}
-        }
-
-        reverse_proxy /jellyfin/* localhost:8096
-        reverse_proxy /jellyfin localhost:8096
-
-        reverse_proxy /pincho/* localhost:3210
-        reverse_proxy /pincho localhost:3210
-
-        reverse_proxy /zigbee2mqtt/* localhost:8085
-        reverse_proxy /zigbee2mqtt localhost:8085
-
-        reverse_proxy /smb/* localhost:8799
-        reverse_proxy /smb localhost:8799
-
-      '';
-      nothingAtRoot = ''
-        respond 404
-      '';
-      rootIsFrigate = ''
-        reverse_proxy /* localhost:8971
-        reverse_proxy / localhost:8971
-      '';
-      rootIsHomeAssistant = ''
-        reverse_proxy /* localhost:8123
-        reverse_proxy / localhost:8123
-      '';
-      rootIsImmich = ''
-        reverse_proxy /* localhost:2283
-        reverse_proxy / localhost:2283
-      '';
-      rootIsSharedPhotos = ''
-        reverse_proxy /* localhost:${toString config.services.immich-public-proxy.port}
-        reverse_proxy / localhost:${toString config.services.immich-public-proxy.port}
-      '';
-      rootIsPapra = ''
-        reverse_proxy /* 127.0.0.1:1221
-        reverse_proxy / 127.0.0.1:1221
-      '';
-      rootIsCalibre = ''
-        reverse_proxy /* 127.0.0.1:8083 {
-          header_up X-Scheme {scheme}
-        }
-        reverse_proxy / 127.0.0.1:8083 {
-          header_up X-Scheme {scheme}
+      "${public.guestJellyfin}".extraConfig = ''
+        ${tlsDnsCloudflare}
+        route {
+          redir / /jellyfin/ 302
+          ${jellyfinAtSubpath}
+          respond 404
         }
       '';
-      tlsOriginKey = ''
-        tls /etc/cloudflare/origin-cert.pem /etc/cloudflare/origin-key.pem
-      '';
-    in {
-      enable = true;
-      package = pkgs.caddy.withPlugins {
-        plugins = ["github.com/caddy-dns/cloudflare@v0.2.4"];
-        hash = "sha256-dQvk6ezY6TQ1J7PjhCXnThF/SqVgPwBO8/RXzHCY+js=";
-      };
-      virtualHosts = {
-        "${immich}".extraConfig = ''
-          ${tlsDnsCloudflare}
-          ${rootIsImmich}
-        '';
-        "${photos}".extraConfig = ''
-          ${tlsDnsCloudflare}
-          ${rootIsSharedPhotos}
-        '';
-        "${calibre}".extraConfig = ''
-          ${tlsDnsCloudflare}
-          ${rootIsCalibre}
-        '';
-        "${frigate}".extraConfig = ''
-          ${tlsDnsCloudflare}
-          ${rootIsFrigate}
-        '';
-        "${homeAssistant}".extraConfig = ''
-          ${tlsDnsCloudflare}
-          ${rootIsHomeAssistant}
-        '';
-        "${papra}".extraConfig = ''
-          ${tlsDnsCloudflare}
-          ${rootIsPapra}
-        '';
-        "${bilbo}".extraConfig = ''
-          ${tlsOriginKey}
+
+      ":80".extraConfig = ''
+        @lan remote_ip private_ranges
+        handle @lan {
           route {
-            ${proxiesSupportingSubpath}
-            ${nothingAtRoot}
+            ${adminSubpaths}
           }
-        '';
-        ":80".extraConfig = ''
-          @lan remote_ip private_ranges
-          handle @lan {
-            ${proxiesSupportingSubpath}
-            ${rootIsImmich}
-          }
-          handle {
-            redir https://{host}{uri} permanent
-          }
-        '';
-      };
+        }
+        handle {
+          redir https://{host}{uri} permanent
+        }
+      '';
     };
   };
 }
