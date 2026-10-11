@@ -1,12 +1,4 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}: let
-  migrate = import ./migrate-state.nix pkgs;
-  inherit (config.services.calibre-web) user group;
-in {
+{pkgs, ...}: {
   services.calibre-web = {
     enable = true;
     package = pkgs.calibre-web.overridePythonAttrs (prev: {
@@ -22,12 +14,4 @@ in {
       enableKepubify = true;
     };
   };
-
-  systemd.services.calibre-web.serviceConfig.ExecStartPre = lib.mkBefore [
-    (migrate {
-      to = "/var/lib/calibre-web";
-      owner = user;
-      inherit group;
-    })
-  ];
 }

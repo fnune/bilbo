@@ -11,25 +11,9 @@
 
   appDir = "/srv/pincho";
   dataDir = "/var/lib/pincho";
-  legacyAppDir = "/home/fausto/pincho";
 
   model = "claude-haiku-4-5-20251001";
   keepBackups = 20;
-
-  migrate = import ./migrate-state.nix pkgs;
-
-  moveUserDataOutOfLegacyTree = pkgs.writeShellScript "pincho-move-user-data-out-of-legacy-tree" ''
-    set -euo pipefail
-    mkdir -p ${dataDir}/backups
-    for f in settings.json history.json timeline.json; do
-      [ -f ${appDir}/data/$f ] && mv -n ${appDir}/data/$f ${dataDir}/
-    done
-    for d in ${appDir}/data-backup-*; do
-      [ -d "$d" ] && mv -n "$d" ${dataDir}/backups/legacy-''${d##*/data-backup-}
-    done
-    rm -f ${appDir}/.env
-    chown -R ${user}:${user} ${dataDir}
-  '';
 
   backupUserData = pkgs.writeShellScript "pincho-backup" ''
     set -euo pipefail
@@ -71,16 +55,7 @@ in {
       Group = user;
       StateDirectory = user;
       WorkingDirectory = "-${appDir}/packages/backend"; # absent until the first deploy
-      ExecStartPre = [
-        (migrate {
-          from = legacyAppDir;
-          to = appDir;
-          owner = deployer;
-          group = user;
-        })
-        "+${moveUserDataOutOfLegacyTree}"
-        backupUserData
-      ];
+      ExecStartPre = [backupUserData];
       ExecStart = start;
       LoadCredential = ["anthropic-api-key:${config.sops.secrets.anthropic-api-key.path}"];
       Environment = [

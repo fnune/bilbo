@@ -8,9 +8,6 @@
   deployer = "fausto";
 
   appDir = "/srv/smb-jahreskarte";
-  legacyAppDir = "/home/fausto/smb-jahreskarte";
-
-  migrate = import ./migrate-state.nix pkgs;
 in {
   users.users.${user} = {
     isSystemUser = true;
@@ -32,15 +29,7 @@ in {
       User = user;
       Group = user;
       WorkingDirectory = "-${appDir}";
-      ExecStartPre = [
-        (migrate {
-          from = legacyAppDir;
-          to = appDir;
-          owner = deployer;
-          group = user;
-        })
-        "+${pkgs.coreutils}/bin/chmod -R g+w ${appDir}" # serve.py writes state.json next to itself
-      ];
+      ExecStartPre = ["+${pkgs.coreutils}/bin/chmod -R g+w ${appDir}"]; # serve.py writes state.json next to itself
       ExecStart = "${lib.getExe pkgs.python3} ${appDir}/serve.py";
       Environment = ["SMB_PORT=${toString port}"];
       Restart = "on-failure";
