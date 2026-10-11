@@ -1,18 +1,24 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }: let
-  dataDir = "${config.users.users.fausto.home}/radarr";
+  migrate = import ./migrate-state.nix pkgs;
+  inherit (config.services.radarr) user group dataDir;
 in {
   services.radarr = {
     enable = true;
-    user = "fausto";
     group = "users";
-    inherit dataDir;
     settings.server.urlbase = "/radarr";
   };
-  # 26.05 hardened the unit with ProtectHome (https://github.com/NixOS/nixpkgs/pull/483483),
-  # which would hide our /home dataDir from the service.
-  systemd.services.radarr.serviceConfig.ProtectHome = lib.mkForce false;
+
+  systemd.services.radarr.serviceConfig.ExecStartPre = lib.mkBefore [
+    (migrate {
+      from = "/home/fausto/radarr";
+      to = dataDir;
+      owner = user;
+      inherit group;
+    })
+  ];
 }

@@ -1,10 +1,17 @@
-{pkgs, ...}: {
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}: let
+  migrate = import ./migrate-state.nix pkgs;
+  inherit (config.services.calibre-web) user group;
+in {
   services.calibre-web = {
     enable = true;
     package = pkgs.calibre-web.overridePythonAttrs (prev: {
       dependencies = prev.dependencies ++ prev.optional-dependencies.kobo;
     });
-    user = "fausto";
     group = "users";
     listen.ip = "127.0.0.1";
     listen.port = 8083;
@@ -15,4 +22,12 @@
       enableKepubify = true;
     };
   };
+
+  systemd.services.calibre-web.serviceConfig.ExecStartPre = lib.mkBefore [
+    (migrate {
+      to = "/var/lib/calibre-web";
+      owner = user;
+      inherit group;
+    })
+  ];
 }
