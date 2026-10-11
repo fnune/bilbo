@@ -20,8 +20,7 @@ Now, configure each service:
   - Visit [NZBGet][nzbget]—the default credentials are `nzbget`/`tegbzn6789`
   - In Security: and change the username and password
   - In Paths: set `MainPath` to `/mnt/downloads-1t/.nzbget`
-  - In Categories: set the `DestDir` for "Books", "Movies" and "Series" to
-    `/mnt/downloads-{1,2}t/{Books,Movies,Series}`, and whatever else is necessary
+  - Categories and their `DestDir` are set in `nixos/nzbget.nix`
   - In News Servers: configure your server
     - Use port `563` for SSL
     - Enable encryption
@@ -42,6 +41,13 @@ Now, configure each service:
   - Visit [Jellyfin][jellyfin] and create the admin user
   - Create a media library for Movies in `/mnt/downloads-1t/Movies`
   - Create a media library for Series in `/mnt/downloads-2t/Series`
+- [Seerr][seerr]
+  - Sign in with the Jellyfin admin account and point it at Jellyfin on
+    `http://localhost:8096/jellyfin`
+  - Add Radarr on `localhost:7878` with base URL `/radarr`, and Sonarr on
+    `localhost:8989` with base URL `/sonarr`, using their API keys from Settings
+    -> General
+  - In Users, import the Jellyfin users who may request
 
 [jellyfin]: https://bilbo.fnune.com/jellyfin
 [nzbget]: https://bilbo.fnune.com/nzbget
@@ -52,6 +58,7 @@ Now, configure each service:
 [home-assistant]: https://home.fnune.com
 [papra]: https://docs.fnune.com
 [zigbee2mqtt]: https://bilbo.fnune.com/zigbee2mqtt
+[seerr]: https://requests.fnune.com
 
 ### Network
 
@@ -65,6 +72,7 @@ from the internet.
 | `photos.fnune.com` | anyone with a share link | Immich Public Proxy. It serves only what Immich shares. |
 | `calibre.fnune.com` | the Kobo | `/kobo/*` only. The token is in the URL. |
 | `watch.fnune.com` | guests with a Jellyfin account | Jellyfin at `/jellyfin` |
+| `requests.fnune.com` | anyone with a Jellyfin account | Seerr, for requesting movies and shows |
 | `http://192.168.178.36/...` | the LAN and the TV | plain HTTP, same subpaths as `bilbo.fnune.com` |
 
 The dyndns timers in `nixos/caddy.nix` keep the public records on the household address. Pulumi owns the private records (`remote/cloudflare/dns.ts`).
@@ -338,7 +346,7 @@ Both are served under `bilbo.fnune.com` and have no login of their own; the tunn
 
 ### Backups
 
-The Borg job in `nixos/backups.nix` runs weekly over `/mnt/mirrored`, Home Assistant's and Zigbee2MQTT's state and Pincho's data, then mirrors the repository to S3 Deep Archive with `rclone sync`. The bucket keeps deleted and overwritten objects as noncurrent versions for 180 days (`remote/aws/backups.ts`), so a damaged local repository does not destroy the off-site copy on the next run. Restoring is documented in `remote/README.md`.
+The Borg job in `nixos/backups.nix` runs weekly over `/mnt/mirrored`, Home Assistant's, Zigbee2MQTT's and Seerr's state and Pincho's data, then mirrors the repository to S3 Deep Archive with `rclone sync`. The bucket keeps deleted and overwritten objects as noncurrent versions for 180 days (`remote/aws/backups.ts`), so a damaged local repository does not destroy the off-site copy on the next run. Restoring is documented in `remote/README.md`.
 
 A run that fails, including a failed S3 upload, notifies like any other failed unit. `backup-freshness` checks daily that the last successful run is less than 8 days old, which catches a timer that stopped firing. It also fails until the first successful run after deploying, so start one with `systemctl start borgbackup-job-mirrored`.
 

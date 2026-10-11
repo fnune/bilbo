@@ -1,0 +1,3 @@
+{...}: {
+  services.seerr.enable = true;
+}

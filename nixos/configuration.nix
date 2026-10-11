@@ -107,6 +107,7 @@
     ./pincho.nix
     ./radarr.nix
     ./secrets.nix
+    ./seerr.nix
     ./smb-jahreskarte.nix
     ./sonarr.nix
     ./wireguard.nix

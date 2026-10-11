@@ -9,6 +9,7 @@
     config.services.home-assistant.configDir
     config.services.zigbee2mqtt.dataDir
     "/var/lib/pincho"
+    config.services.seerr.configDir
   ];
   mirroredBucketNamePath = config.sops.secrets.borg-s3-bucket-name.path;
   mirroredBorgPassphrasePath = config.sops.secrets.borg-passphrase.path;

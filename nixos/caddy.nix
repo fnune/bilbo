@@ -21,6 +21,7 @@
     sharedPhotos = host "photos";
     koboSync = host "calibre";
     guestJellyfin = host "watch";
+    requests = host "requests";
   };
   vpnEndpoint = host "wireguard";
   dyndnsHosts = builtins.attrValues public ++ [vpnEndpoint];
@@ -81,6 +82,7 @@
   papraPort = toString config.services.papra.environment.PORT;
   beszelPort = toString config.services.beszel.hub.port;
   ntfyListen = config.services.ntfy-sh.settings.listen-http;
+  seerrPort = toString config.services.seerr.port;
 in {
   networking.firewall = {
     allowedTCPPorts = [443];
@@ -215,6 +217,10 @@ in {
           }
           respond 404
         }
+      '';
+      "${public.requests}".extraConfig = ''
+        ${tlsDnsCloudflare}
+        ${rootIs "localhost:${seerrPort}"}
       '';
       "${public.guestJellyfin}".extraConfig = ''
         ${tlsDnsCloudflare}
