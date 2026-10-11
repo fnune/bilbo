@@ -68,11 +68,10 @@ from the internet.
 
 | Hostname | Who | How |
 | --- | --- | --- |
-| `bilbo.fnune.com` (subpaths), `immich`, `frigate`, `home`, `docs`, `health`, `notify` | your devices | DNS record points at the WireGuard address. Caddy drops connections from outside the tunnel. |
+| `bilbo.fnune.com` (subpaths), `immich`, `frigate`, `home`, `docs`, `health`, `notify`, `requests` | your devices | DNS record points at the WireGuard address. Caddy drops connections from outside the tunnel. |
 | `photos.fnune.com` | anyone with a share link | Immich Public Proxy. It serves only what Immich shares. |
 | `calibre.fnune.com` | the Kobo | `/kobo/*` only. The token is in the URL. |
 | `watch.fnune.com` | guests with a Jellyfin account | Jellyfin at `/jellyfin` |
-| `requests.fnune.com` | anyone with a Jellyfin account | Seerr, for requesting movies and shows |
 | `http://192.168.178.36/...` | the LAN and the TV | plain HTTP, same subpaths as `bilbo.fnune.com` |
 
 The dyndns timers in `nixos/caddy.nix` keep the public records on the household address. Pulumi owns the private records (`remote/cloudflare/dns.ts`).

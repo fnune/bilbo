@@ -1,7 +1,7 @@
 import * as cloudflare from "@pulumi/cloudflare";
 import { ZONE_ID, ZONE_NAME } from "./zone";
 
-const VPN_ONLY_HOSTNAMES = ["bilbo", "immich", "frigate", "home", "docs", "health", "notify"];
+const VPN_ONLY_HOSTNAMES = ["bilbo", "immich", "frigate", "home", "docs", "health", "notify", "requests"];
 const BILBO_VPN_ADDRESS = "10.100.0.1";
 
 export const vpnOnlyRecords = VPN_ONLY_HOSTNAMES.map(

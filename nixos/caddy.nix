@@ -15,13 +15,13 @@
     papra = host "docs";
     health = host "health";
     notify = host "notify";
+    requests = host "requests";
   };
 
   public = {
     sharedPhotos = host "photos";
     koboSync = host "calibre";
     guestJellyfin = host "watch";
-    requests = host "requests";
   };
   vpnEndpoint = host "wireguard";
   dyndnsHosts = builtins.attrValues public ++ [vpnEndpoint];
@@ -203,6 +203,10 @@ in {
         ${tlsDnsCloudflare}
         ${vpnOnlyRoute (rootIs ntfyListen)}
       '';
+      "${vpnOnly.requests}".extraConfig = ''
+        ${tlsDnsCloudflare}
+        ${vpnOnlyRoute (rootIs "localhost:${seerrPort}")}
+      '';
 
       "${public.sharedPhotos}".extraConfig = ''
         ${tlsDnsCloudflare}
@@ -217,10 +221,6 @@ in {
           }
           respond 404
         }
-      '';
-      "${public.requests}".extraConfig = ''
-        ${tlsDnsCloudflare}
-        ${rootIs "localhost:${seerrPort}"}
       '';
       "${public.guestJellyfin}".extraConfig = ''
         ${tlsDnsCloudflare}
