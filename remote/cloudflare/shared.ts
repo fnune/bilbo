@@ -12,6 +12,6 @@ export const bilboAccessPolicy = new cloudflare.ZeroTrustAccessPolicy(
     sessionDuration: "730h",
   },
   {
-    protect: true,
+    protect: false,
   },
 );

@@ -19,7 +19,7 @@ export const bilboAccessApplication = new cloudflare.ZeroTrustAccessApplication(
     type: "self_hosted",
   },
   {
-    protect: true,
+    protect: false,
   },
 );
 
@@ -41,6 +41,6 @@ export const papraAccessApplication = new cloudflare.ZeroTrustAccessApplication(
     type: "self_hosted",
   },
   {
-    protect: true,
+    protect: false,
   },
 );
