@@ -1,13 +1,20 @@
-{...}: let
-  secrets = "/etc/nixos/secrets";
+{config, ...}: let
+  clients = ["frigate" "zigbee2mqtt" "home-assistant"];
+  passwordSecret = name: "mosquitto-${name}-password";
 
   discoveryTopic = "readwrite homeassistant/#";
 
   mkClient = name: acl: {
-    passwordFile = "${secrets}/mosquitto-${name}-password";
+    passwordFile = config.sops.secrets.${passwordSecret name}.path;
     inherit acl;
   };
 in {
+  sops.secrets = builtins.listToAttrs (map (name: {
+      name = passwordSecret name;
+      value = {};
+    })
+    clients);
+
   services.mosquitto = {
     enable = true;
     listeners = [

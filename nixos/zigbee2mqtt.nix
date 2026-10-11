@@ -59,5 +59,17 @@ in {
     };
   };
 
-  systemd.services.zigbee2mqtt.serviceConfig.EnvironmentFile = "/etc/nixos/secrets/zigbee2mqtt.env";
+  sops = {
+    secrets = {
+      zigbee2mqtt-frontend-auth-token = {};
+      zigbee2mqtt-network-key = {};
+    };
+    templates."zigbee2mqtt.env".content = ''
+      ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=${config.sops.placeholder.mosquitto-zigbee2mqtt-password}
+      ZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN=${config.sops.placeholder.zigbee2mqtt-frontend-auth-token}
+      ZIGBEE2MQTT_CONFIG_ADVANCED_NETWORK_KEY=${config.sops.placeholder.zigbee2mqtt-network-key}
+    '';
+  };
+
+  systemd.services.zigbee2mqtt.serviceConfig.EnvironmentFile = config.sops.templates."zigbee2mqtt.env".path;
 }

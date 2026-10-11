@@ -170,13 +170,21 @@ in {
     "${recordingsDirectory}".L.argument = recordingsStore;
   };
 
+  sops = {
+    secrets.camera-password = {};
+    templates = {
+      "frigate.env".content = "${mqttPasswordVariable}=${config.sops.placeholder.mosquitto-frigate-password}";
+      "go2rtc.env".content = "CAMERA_PASSWORD=${config.sops.placeholder.camera-password}";
+    };
+  };
+
   systemd.services.frigate.serviceConfig = {
     ExecStartPre = [
       "+${pkgs.coreutils}/bin/install --directory --owner frigate --group frigate --mode 0750 ${recordingsStore}"
       "+${discardStaleSharedMemory}"
     ];
-    EnvironmentFile = ["/etc/nixos/secrets/frigate.env"];
+    EnvironmentFile = [config.sops.templates."frigate.env".path];
   };
 
-  systemd.services.go2rtc.serviceConfig.EnvironmentFile = ["/etc/nixos/secrets/go2rtc.env"];
+  systemd.services.go2rtc.serviceConfig.EnvironmentFile = [config.sops.templates."go2rtc.env".path];
 }

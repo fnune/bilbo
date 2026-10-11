@@ -9,13 +9,13 @@
     config.services.home-assistant.configDir
     config.services.zigbee2mqtt.dataDir
   ];
-  # The bucket name is a `pulumi stack output` in `../remote`, hand-placed here.
-  mirroredBucketNamePath = "/etc/nixos/secrets/borg-s3-bucket-name";
+  mirroredBucketNamePath = config.sops.secrets.borg-s3-bucket-name.path;
   mirroredBorgPassphrasePath = config.sops.secrets.borg-passphrase.path;
   mirroredRcloneConfPath = config.sops.secrets.rclone-conf.path;
 in {
   sops.secrets = {
     borg-passphrase = {};
+    borg-s3-bucket-name = {};
     rclone-conf = {};
   };
 

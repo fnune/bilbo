@@ -101,55 +101,39 @@ The TV never leaves the house and needs no tunnel.
 
 ### Secrets
 
-Most secrets live encrypted in `secrets/bilbo.yaml` and are decrypted on boot by
-`sops-nix` with bilbo's SSH host key. Edit with `sops secrets/bilbo.yaml` (the
-admin age key is in `~/.config/sops/age/keys.txt`; `.sops.yaml` lists the
-recipients). Modules declare the entries they read, so a missing entry fails the
-build rather than the unit. The Cloudflare DNS token is a Pulumi output from
-`remote/`, see its README.
+Secrets live encrypted in `secrets/bilbo.yaml` and are decrypted on boot by
+`sops-nix` with bilbo's SSH host key. Edit with `sops secrets/bilbo.yaml`, or
+set one entry with `sops set secrets/bilbo.yaml '["key"]' '"value"'`. The admin
+age key is in `~/.config/sops/age/keys.txt` and `.sops.yaml` lists the
+recipients. Modules declare the entries they read, so a missing entry fails the
+build rather than the unit. Nothing is hand-placed on the machine any more.
 
-The rest are still hand-placed files under `/etc/nixos/secrets`, mode 600. The `mosquitto-*` files
-hold the password on one line and nothing else; Mosquitto hashes them at unit
-start and strips the trailing newline. The `.env` files are systemd
-`EnvironmentFile`s: one `KEY=value` per line, no `export`, no quotes, no spaces
-around the `=`. None are optional, so a missing file fails its unit.
+| Entry | Contents | Comes from |
+| --- | --- | --- |
+| `cloudflare-dns-token` | DNS write on the zone, for dyndns and the ACME challenge | `pulumi stack output bilboDnsTokenValue --show-secrets` in `remote/` |
+| `wireguard-private-key` | bilbo's WireGuard key; its public half is in the client config above | `wg genkey` |
+| `borg-passphrase`, `rclone-conf`, `borg-s3-bucket-name` | the off-site backup | `pulumi stack output` in `remote/` |
+| `anthropic-api-key` | Pincho's LLM | the Anthropic console |
+| `papra-env` | Papra's whole environment file, see its section | generated once, kept in Bitwarden too |
+| `mosquitto-frigate-password`, `mosquitto-zigbee2mqtt-password`, `mosquitto-home-assistant-password` | one MQTT password per client; Frigate's and Zigbee2MQTT's environment files are templated from the same entries | generated |
+| `zigbee2mqtt-frontend-auth-token` | gates the Zigbee2MQTT frontend, which can otherwise re-pair or factory-reset devices | generated |
+| `zigbee2mqtt-network-key` | the Zigbee network key; changing it means re-pairing everything | generated once |
+| `camera-password` | the camera's own password, used only by go2rtc | the camera's web UI |
+| `frigate-admin-password` | Frigate's `admin` account, which Home Assistant also uses | Frigate's web UI |
 
-| File | Contents |
-| --- | --- |
-| `mosquitto-frigate-password` | plaintext password |
-| `mosquitto-zigbee2mqtt-password` | plaintext password |
-| `mosquitto-home-assistant-password` | plaintext password |
-| `frigate.env` | `FRIGATE_MQTT_PASSWORD=` matching the Frigate one |
-| `zigbee2mqtt.env` | `ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=` matching the Zigbee2MQTT one, `ZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN=`, and `ZIGBEE2MQTT_CONFIG_ADVANCED_NETWORK_KEY=` |
-| `go2rtc.env` | `CAMERA_PASSWORD=` for the camera |
-| `papra.env` | `AUTH_SECRET=`, `DOCUMENT_STORAGE_DOCUMENT_KEY_ENCRYPTION_KEYS=`, `DATABASE_ENCRYPTION_KEY=` and `ANTHROPIC_API_KEY=`, see [Papra](#papra) |
-
-To generate the five machine-chosen ones consistently, as `root`:
+To generate the machine-chosen ones:
 
 ```sh
-cd /etc/nixos/secrets
-umask 077
 gen() { tr -dc A-Za-z0-9 </dev/urandom | head -c 32; }
-f=$(gen); z=$(gen); h=$(gen); t=$(gen)
-printf '%s\n' "$f" > mosquitto-frigate-password
-printf '%s\n' "$z" > mosquitto-zigbee2mqtt-password
-printf '%s\n' "$h" > mosquitto-home-assistant-password
-printf 'FRIGATE_MQTT_PASSWORD=%s\n' "$f" > frigate.env
-printf 'ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=%s\nZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN=%s\n' "$z" "$t" > zigbee2mqtt.env
-chmod 600 mosquitto-*-password frigate.env zigbee2mqtt.env
+for k in mosquitto-frigate-password mosquitto-zigbee2mqtt-password mosquitto-home-assistant-password zigbee2mqtt-frontend-auth-token; do
+  sops set secrets/bilbo.yaml "[\"$k\"]" "\"$(gen)\""
+done
 ```
 
-`go2rtc.env` holds the camera's own password, so write it by hand. go2rtc is the
-only service that opens the camera, and Frigate reads both streams from the
-restream on localhost, so the camera credential never reaches Frigate's config or
-database. It is interpolated into an RTSP URL, so avoid `@ : / ? #` or
+go2rtc is the only service that opens the camera, and Frigate reads both streams
+from the restream on localhost, so the camera credential never reaches Frigate's
+config or database. It is interpolated into an RTSP URL, so avoid `@ : / ? #` or
 percent-encode them.
-
-The `ZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN` gates the Zigbee2MQTT frontend,
-which can otherwise re-pair or factory-reset devices.
-
-`/etc/nixos/secrets/frigate-admin-password`, mode 600, holding the password of
-Frigate's `admin` account, the one you log into Frigate's web UI with.
 
 Frigate keeps review state per user, so the unreviewed list only agrees with what
 you see in Frigate if Home Assistant asks as the same account. A dedicated
@@ -308,29 +292,27 @@ rather than duplicating notifications in Home Assistant.
 #### Keys
 
 > [!CAUTION]
-> Losing `DOCUMENT_STORAGE_DOCUMENT_KEY_ENCRYPTION_KEYS` or `DATABASE_ENCRYPTION_KEY` loses every document, backups included. Borg does not back up `/etc/nixos/secrets`, so keep `papra.env` in Bitwarden and update it there after any change.
+> Losing `DOCUMENT_STORAGE_DOCUMENT_KEY_ENCRYPTION_KEYS` or `DATABASE_ENCRYPTION_KEY` loses every document, backups included. The `papra-env` entry in `secrets/bilbo.yaml` is in this repository, but keep a copy in Bitwarden and update it there after any change.
 
-As `root`:
+To generate the file once:
 
 ```sh
-cd /etc/nixos/secrets
-umask 077
 hex() { head -c "$1" /dev/urandom | od -An -tx1 | tr -d ' \n'; }
 {
   printf 'AUTH_SECRET=%s\n' "$(hex 48)"
   printf 'DOCUMENT_STORAGE_DOCUMENT_KEY_ENCRYPTION_KEYS=1:%s\n' "$(hex 32)"
   printf 'DATABASE_ENCRYPTION_KEY=%s\n' "$(hex 32)"
   printf 'ANTHROPIC_API_KEY=%s\n' 'sk-ant-...'
-} > papra.env
+} | sops set secrets/bilbo.yaml '["papra-env"]' "\"$(cat)\""
 ```
 
 To rotate the document key, append a new version (`1:<old>,2:<new>`) and keep the old one.
 
 #### First-time setup
 
-1. Write `papra.env` and save it to Bitwarden.
+1. Generate `papra-env` and save a copy to Bitwarden.
 2. Rebuild.
-3. Append `AUTH_IS_REGISTRATION_ENABLED=true` to `papra.env`, restart Papra, sign up, then remove the line and restart again. The first user becomes the admin.
+3. Set `AUTH_IS_REGISTRATION_ENABLED = true` in `papra.nix`, rebuild, sign up, then set it back and rebuild again. The first user becomes the admin.
 4. Sign in. Papra asks to verify the email address and writes the link to the journal instead of sending it:
     ```sh
     sudo journalctl -u papra --since -10min -o cat | grep -o 'https://docs.fnune.com/api/auth/verify-email?token=[^"\\]*' | tail -1

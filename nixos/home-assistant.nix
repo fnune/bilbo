@@ -39,7 +39,7 @@
 
   frigateApi = "http://127.0.0.1:8971/api";
   frigateUser = "admin";
-  frigatePasswordFile = "/etc/nixos/secrets/frigate-admin-password";
+  frigatePasswordFile = config.sops.secrets.frigate-admin-password.path;
   frigatePasswordCredential = "frigate-password";
 
   openFrigateSession = ''
@@ -603,6 +603,8 @@ in {
       }
     ];
   };
+
+  sops.secrets.frigate-admin-password = {};
 
   systemd.services.home-assistant.serviceConfig.LoadCredential = [
     "${frigatePasswordCredential}:${frigatePasswordFile}"

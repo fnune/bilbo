@@ -1,4 +1,4 @@
-{...}: let
+{config, ...}: let
   hostname = "docs.fnune.com";
   port = 1221;
 
@@ -7,9 +7,11 @@
   databaseSnapshot = "${storage}/db-snapshot";
   documentsDirectory = "${storage}/documents";
 in {
+  sops.secrets.papra-env = {};
+
   services.papra = {
     enable = true;
-    environmentFile = "/etc/nixos/secrets/papra.env";
+    environmentFile = config.sops.secrets.papra-env.path;
     environment = {
       APP_BASE_URL = "https://${hostname}";
       SERVER_HOSTNAME = "127.0.0.1";
