@@ -131,6 +131,9 @@ in {
         reverse_proxy /zigbee2mqtt/* localhost:8085
         reverse_proxy /zigbee2mqtt localhost:8085
 
+        reverse_proxy /smb/* localhost:8799
+        reverse_proxy /smb localhost:8799
+
       '';
       nothingAtRoot = ''
         respond 404
@@ -201,7 +204,6 @@ in {
           ${tlsOriginKey}
           route {
             ${proxiesSupportingSubpath}
-            import /etc/caddy.d/*.caddy
             ${nothingAtRoot}
           }
         '';

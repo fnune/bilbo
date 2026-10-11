@@ -106,6 +106,7 @@
     ./pincho.nix
     ./radarr.nix
     ./secrets.nix
+    ./smb-jahreskarte.nix
     ./sonarr.nix
     ./wireguard.nix
     ./zigbee2mqtt.nix
