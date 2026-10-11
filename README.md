@@ -53,31 +53,33 @@ Now, configure each service:
 [papra]: https://docs.fnune.com
 [zigbee2mqtt]: https://bilbo.fnune.com/zigbee2mqtt
 
-### Who can reach what
+### Network
 
-Every hostname is served by Caddy on 443 with a Let's Encrypt certificate from
-the Cloudflare DNS challenge. They differ in who can connect:
+Caddy serves every hostname on 443 with a Let's Encrypt certificate. The DNS
+challenge issues the certificates, so a hostname does not need to be reachable
+from the internet.
 
-| Hostname | Audience | How |
+| Hostname | Who | How |
 | --- | --- | --- |
-| `bilbo.fnune.com` (admin tools under subpaths), `immich`, `frigate`, `home`, `docs` | your own devices | A record carries bilbo's WireGuard address; Caddy aborts anything not from the VPN |
-| `photos.fnune.com` | anyone with a share link | Immich Public Proxy, serves only what Immich shares |
-| `calibre.fnune.com` | the Kobo | `/kobo/*` only, token in the URL |
+| `bilbo.fnune.com` (subpaths), `immich`, `frigate`, `home`, `docs` | your devices | DNS record points at the WireGuard address. Caddy drops connections from outside the tunnel. |
+| `photos.fnune.com` | anyone with a share link | Immich Public Proxy. It serves only what Immich shares. |
+| `calibre.fnune.com` | the Kobo | `/kobo/*` only. The token is in the URL. |
 | `watch.fnune.com` | guests with a Jellyfin account | Jellyfin at `/jellyfin` |
-| `http://192.168.178.36/...` | the LAN, the TV | plain HTTP, same subpaths as the admin host |
+| `http://192.168.178.36/...` | the LAN and the TV | plain HTTP, same subpaths as `bilbo.fnune.com` |
 
-Your devices reach bilbo through WireGuard (`nixos/wireguard.nix`, endpoint
-`wireguard.fnune.com:51820`, forwarded on the router). The private hostnames
-resolve everywhere but connect only through the tunnel, so apps keep the same
-URL at home and away. The public hostnames follow the household's public
-address through the dyndns timers in `nixos/caddy.nix`; the private records are
-managed in `remote/cloudflare/dns.ts`. To add a private service, add a subpath
-to `adminSubpaths`; to add a public one, add a hostname to `public` with its own
-site block and think about what the internet should see of it.
+The dyndns timers in `nixos/caddy.nix` keep the public records on the household address. Pulumi owns the private records (`remote/cloudflare/dns.ts`).
 
-To add a device: let the WireGuard app generate its key pair, add an entry to
-`devices` in `nixos/wireguard.nix` with the next free address and the public
-key, rebuild, then give the app these five fields:
+To add a private service, add a subpath to `adminSubpaths` in `nixos/caddy.nix`. To add a public one, add a hostname to `public` with its own site block, and decide what the internet may see.
+
+#### WireGuard
+
+Your devices reach bilbo through WireGuard. The endpoint is `wireguard.fnune.com:51820`, forwarded on the router. The private hostnames resolve everywhere but connect only through the tunnel, so apps use one URL at home and away.
+
+To add a device:
+
+1. Let the WireGuard app generate a key pair.
+2. Add the public key to `devices` in `nixos/wireguard.nix`, with the next free address. Rebuild.
+3. Enter these fields in the app:
 
 ```ini
 [Interface]
@@ -92,36 +94,32 @@ AllowedIPs = 10.100.0.0/24
 PersistentKeepalive = 25
 ```
 
-`AllowedIPs` limited to the VPN subnet means only traffic for bilbo enters the
-tunnel, so it can stay on. The `DNS` line matters on phones: apps resolve through
-the carrier's resolver, which can hold a private hostname's old address long
-after a change, while browsers resolve over encrypted DNS and never notice.
-Android allows one VPN at a time, so it shares the slot with any other VPN app.
-The TV never leaves the house and needs no tunnel.
+Only traffic for bilbo enters the tunnel, so it can stay on. The `DNS` line is necessary on phones: apps use the carrier's resolver, which can keep an old address for a long time. Android runs one VPN at a time. The TV stays on the LAN address.
+
+On melian and feanor, `home-manager` creates the NetworkManager connection and prints the public key (`modules/system/wireguard.nix` in `home.nix`).
 
 ### Secrets
 
-Secrets live encrypted in `secrets/bilbo.yaml` and are decrypted on boot by
-`sops-nix` with bilbo's SSH host key. Edit with `sops secrets/bilbo.yaml`, or
-set one entry with `sops set secrets/bilbo.yaml '["key"]' '"value"'`. The admin
-age key is in `~/.config/sops/age/keys.txt` and `.sops.yaml` lists the
-recipients. Modules declare the entries they read, so a missing entry fails the
-build rather than the unit. Nothing is hand-placed on the machine any more.
+Secrets are encrypted in `secrets/bilbo.yaml`. `sops-nix` decrypts them at boot with bilbo's SSH host key. Nothing is placed on the machine by hand.
 
-| Entry | Contents | Comes from |
+- Edit: `sops secrets/bilbo.yaml`. Set one entry: `sops set secrets/bilbo.yaml '["key"]' '"value"'`.
+- Keys: the admin age key is in `~/.config/sops/age/keys.txt`, and a copy is in Bitwarden. `.sops.yaml` lists the recipients. To add a recipient, add its public key there and run `sops updatekeys secrets/bilbo.yaml`.
+- Each module declares the entries it reads. A missing entry fails the build, not the unit.
+
+| Entry | Contents | Source |
 | --- | --- | --- |
-| `cloudflare-dns-token` | DNS write on the zone, for dyndns and the ACME challenge | `pulumi stack output bilboDnsTokenValue --show-secrets` in `remote/` |
-| `wireguard-private-key` | bilbo's WireGuard key; its public half is in the client config above | `wg genkey` |
+| `cloudflare-dns-token` | DNS write on the zone, for dyndns and the certificate challenge | `pulumi stack output bilboDnsTokenValue --show-secrets` in `remote/` |
+| `wireguard-private-key` | bilbo's WireGuard key | `wg genkey` |
 | `borg-passphrase`, `rclone-conf`, `borg-s3-bucket-name` | the off-site backup | `pulumi stack output` in `remote/` |
 | `anthropic-api-key` | Pincho's LLM | the Anthropic console |
-| `papra-env` | Papra's whole environment file, see its section | generated once, kept in Bitwarden too |
-| `mosquitto-frigate-password`, `mosquitto-zigbee2mqtt-password`, `mosquitto-home-assistant-password` | one MQTT password per client; Frigate's and Zigbee2MQTT's environment files are templated from the same entries | generated |
-| `zigbee2mqtt-frontend-auth-token` | gates the Zigbee2MQTT frontend, which can otherwise re-pair or factory-reset devices | generated |
-| `zigbee2mqtt-network-key` | the Zigbee network key; changing it means re-pairing everything | generated once |
-| `camera-password` | the camera's own password, used only by go2rtc | the camera's web UI |
+| `papra-env` | Papra's environment file, see its section | generated once |
+| `mosquitto-*-password` | one MQTT password per client. Frigate's and Zigbee2MQTT's environment files use the same entries. | generated |
+| `zigbee2mqtt-frontend-auth-token` | gates the Zigbee2MQTT frontend, which can re-pair or reset devices | generated |
+| `zigbee2mqtt-network-key` | the Zigbee network key. A change means re-pairing every device. | generated once |
+| `camera-password` | the camera's password, used only by go2rtc | the camera's web UI |
 | `frigate-admin-password` | Frigate's `admin` account, which Home Assistant also uses | Frigate's web UI |
 
-To generate the machine-chosen ones:
+To generate the random ones:
 
 ```sh
 gen() { tr -dc A-Za-z0-9 </dev/urandom | head -c 32; }
@@ -130,15 +128,9 @@ for k in mosquitto-frigate-password mosquitto-zigbee2mqtt-password mosquitto-hom
 done
 ```
 
-go2rtc is the only service that opens the camera, and Frigate reads both streams
-from the restream on localhost, so the camera credential never reaches Frigate's
-config or database. It is interpolated into an RTSP URL, so avoid `@ : / ? #` or
-percent-encode them.
+go2rtc is the only service that opens the camera. Frigate reads both streams from the restream on localhost, so the camera password never reaches Frigate's config or database. The password goes into an RTSP URL, so avoid `@ : / ? #` or percent-encode them.
 
-Frigate keeps review state per user, so the unreviewed list only agrees with what
-you see in Frigate if Home Assistant asks as the same account. A dedicated
-service account would report everything as unreviewed forever, because it never
-reviews anything itself.
+Frigate keeps review state per user. The unreviewed list in Home Assistant agrees with Frigate only if Home Assistant asks as the same account.
 
 ### Camera
 
@@ -269,9 +261,8 @@ For the Innr bulbs:
 [Home Assistant][home-assistant] owns the lighting. Its base configuration is
 declarative. Automations, scenes and scripts are
 `!include`d from `/var/lib/hass` so they stay editable from the UI without a
-rebuild. Those files are not in this repository, and `nixos/backups.nix` only
-covers `/mnt/mirrored`, so nothing under `/var/lib` is backed up. Losing the disk
-loses the automations.
+rebuild. Those files are not in this repository; the Borg job in
+`nixos/backups.nix` covers them along with the Zigbee2MQTT state.
 
 On first run create the owner account, then add MQTT under Settings -> Devices &
 Services -> Add integration -> MQTT, pointing at `127.0.0.1:1883` as
@@ -334,7 +325,20 @@ Off for now. `INGESTION_FOLDER_IS_ENABLED` makes Papra import files dropped into
 
 #### Backups
 
-Borg covers `/mnt/mirrored/papra/documents` and `db-snapshot`, a copy of the database taken with Papra briefly stopped. The live `db` is excluded. Keys are only in Bitwarden.
+Borg covers `/mnt/mirrored/papra/documents` and `db-snapshot`, a copy of the database taken with Papra briefly stopped. The live `db` is excluded. The keys are in `secrets/bilbo.yaml` and in Bitwarden.
+
+### Pincho and the museum map
+
+Two small apps of my own run as system services with their own users.
+
+- Pincho (`nixos/pincho.nix`): the code is in `/srv/pincho`, user data in `/var/lib/pincho`. `deploy.sh` in the Pincho repository builds locally, syncs the tree to `/srv/pincho` and restarts the unit through a passwordless sudo rule. The unit snapshots the user data files into `/var/lib/pincho/backups` on every start and keeps the last 20. The Anthropic key comes from sops.
+- Museum map (`nixos/smb-jahreskarte.nix`): a static page and a stdlib Python server in `/srv/smb-jahreskarte`, edited in place. Its state file lives next to it.
+
+Both are served under `bilbo.fnune.com` and have no login of their own; the tunnel is the gate.
+
+### Backups
+
+The Borg job in `nixos/backups.nix` runs weekly over `/mnt/mirrored`, Home Assistant's and Zigbee2MQTT's state and Pincho's data, then mirrors the repository to S3 Deep Archive with `rclone sync`. The bucket keeps deleted and overwritten objects as noncurrent versions for 180 days (`remote/aws/backups.ts`), so a damaged local repository does not destroy the off-site copy on the next run. Restoring is documented in `remote/README.md`.
 
 ## Updating packages
 

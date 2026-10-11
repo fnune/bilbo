@@ -1,9 +1,9 @@
 # Bilbo Remote
 
-This is an infrastructure project that uses Pulumi to e.g. maintain an S3
-bucket for off-site backups of critical data within Bilbo.
+Pulumi project for what Bilbo needs outside itself: the S3 bucket for off-site
+backups, the DNS records and the API token at Cloudflare.
 
-To use it, you'll need `direnv` and an `.envrc` file:
+You need `direnv` and an `.envrc` file:
 
 ```sh
 use flake
@@ -17,16 +17,19 @@ export PULUMI_CONFIG_PASSPHRASE='<pulumi_passphrase>'
 
 > Look for `Bilbo Borg + S3 + Pulumi Credentials` on Bitwarden.
 
-The Cloudflare credential has to carry "API Tokens: Edit" on top of its DNS
-permissions, because this project mints the scoped DNS token bilbo uses.
+The Cloudflare credential needs "API Tokens: Edit" in addition to its DNS
+permissions, because this project creates the DNS token that bilbo uses.
 
-## Outputs that feed bilbo
-
-The scoped DNS token goes into `../secrets/bilbo.yaml` with `sops`:
+Two outputs go into `../secrets/bilbo.yaml` with `sops`:
 
 ```sh
 pulumi stack output bilboDnsTokenValue --show-secrets | sops set ../secrets/bilbo.yaml '["cloudflare-dns-token"]' "\"$(cat)\""
+pulumi stack output bucketRcloneConfig --show-secrets | sops set ../secrets/bilbo.yaml '["rclone-conf"]' "\"$(cat)\""
 ```
+
+Run `pulumi up` before `nixos-rebuild` when both change. The private DNS records
+point at bilbo's WireGuard address; the dyndns timers on bilbo own the public
+ones and must not manage the same names.
 
 ## Accessing the output
 
