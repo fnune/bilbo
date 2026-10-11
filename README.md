@@ -49,6 +49,7 @@ Now, configure each service:
 [calibre]: https://bilbo.fnune.com/calibre
 [frigate]: https://frigate.fnune.com
 [home-assistant]: https://home.fnune.com
+[papra]: https://docs.fnune.com
 [zigbee2mqtt]: https://bilbo.fnune.com/zigbee2mqtt
 
 ### Secrets
@@ -67,6 +68,7 @@ around the `=`. None are optional, so a missing file fails its unit.
 | `frigate.env` | `FRIGATE_MQTT_PASSWORD=` matching the Frigate one |
 | `zigbee2mqtt.env` | `ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD=` matching the Zigbee2MQTT one, `ZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN=`, and `ZIGBEE2MQTT_CONFIG_ADVANCED_NETWORK_KEY=` |
 | `go2rtc.env` | `CAMERA_PASSWORD=` for the camera |
+| `papra.env` | `AUTH_SECRET=`, `DOCUMENT_STORAGE_DOCUMENT_KEY_ENCRYPTION_KEYS=`, `DATABASE_ENCRYPTION_KEY=` and `ANTHROPIC_API_KEY=`, see [Papra](#papra) |
 
 To generate the five machine-chosen ones consistently, as `root`:
 
@@ -245,6 +247,92 @@ publishes its cameras and sensors the same way.
 Frigate's own web push can be switched at runtime by publishing to
 `frigate/notifications/set`, so an automation can silence it while you are home
 rather than duplicating notifications in Home Assistant.
+
+### Papra
+
+[Papra][papra] is the document archive. It has its own hostname, `docs.fnune.com`, because Papra only documents running at the root of a hostname. Cloudflare proxies that hostname, and `papra-access-app` in `remote/cloudflare/web.ts` puts it behind the same Cloudflare Access policy as `bilbo.fnune.com`. It runs from the nixpkgs module, listens on `127.0.0.1:1221` only, and keeps everything under `/mnt/mirrored/papra`.
+
+#### Keys
+
+> [!CAUTION]
+> Losing `DOCUMENT_STORAGE_DOCUMENT_KEY_ENCRYPTION_KEYS` or `DATABASE_ENCRYPTION_KEY` loses every document, permanently. The files and the database on disk, and in every Borg archive, are useless without them. Borg does not back up `/etc/nixos/secrets`, so the backup does not contain the keys either. Store the whole of `papra.env` in Bitwarden, next to _Bilbo Borg + S3 + Pulumi Credentials_, as soon as you write it and again after any change.
+
+| Line | What it does | If lost |
+| --- | --- | --- |
+| `DOCUMENT_STORAGE_DOCUMENT_KEY_ENCRYPTION_KEYS` | Key encryption key (KEK). Each document is encrypted with its own key, which is wrapped with this one and kept in the database. | Every document is unreadable |
+| `DATABASE_ENCRYPTION_KEY` | Encrypts the SQLite database at rest, including the OCR text of every document | The database is unreadable, and with it the wrapped document keys |
+| `AUTH_SECRET` | Signs session cookies and document share links | Everyone is logged out and share links stop working; regenerate it |
+| `ANTHROPIC_API_KEY` | Auto-tagging | Issue a new one in the Anthropic Console |
+
+Generate the file as `root`:
+
+```sh
+cd /etc/nixos/secrets
+umask 077
+hex() { head -c "$1" /dev/urandom | od -An -tx1 | tr -d ' \n'; }
+{
+  printf 'AUTH_SECRET=%s\n' "$(hex 48)"
+  printf 'DOCUMENT_STORAGE_DOCUMENT_KEY_ENCRYPTION_KEYS=1:%s\n' "$(hex 32)"
+  printf 'DATABASE_ENCRYPTION_KEY=%s\n' "$(hex 32)"
+  printf 'ANTHROPIC_API_KEY=%s\n' 'sk-ant-...'
+} > papra.env
+chmod 600 papra.env
+```
+
+The `1:` prefix is the key's version. To rotate, append a new version, `1:<old>,2:<new>`, and keep the old one. Papra encrypts new documents with the highest version and still needs the old ones to read existing documents.
+
+Document encryption only covers files uploaded while it is on, so both keys are in place from the first start.
+
+#### First-time setup
+
+1. Write `papra.env` as above and save it to Bitwarden.
+2. In `remote/`, run `pulumi up` to create the Access application, then rebuild bilbo. `cloudflare-dyndns` creates the proxied DNS record.
+3. Registration is off in `nixos/papra.nix`. To create the first user, append `AUTH_IS_REGISTRATION_ENABLED=true` to `papra.env` and run `systemctl restart papra`. This works because systemd lets `EnvironmentFile` override `Environment`.
+4. Sign up at [Papra][papra]. The first user becomes the admin.
+5. Remove that line from `papra.env` and restart again.
+
+OCR runs on Tesseract for German, English and Spanish (`DOCUMENTS_OCR_LANGUAGES`).
+
+Stored files are named `<organization id>/<year>/<month>/<document name>`, using the upload date. The names are readable but the contents are encrypted, so a file is only useful through Papra. `organization.name` only exists from Papra 26.7.0, and nixpkgs ships 26.6.1.
+
+#### API clients
+
+Anything that calls Papra's API from outside, such as a future script or an LLM tool on another host, has to get past Cloudflare Access before Papra sees it. Two ways:
+
+- **Service token (preferred):** create one in Zero Trust under Access -> Service credentials, add a Service Auth policy for it to the Papra application, and send `CF-Access-Client-Id` and `CF-Access-Client-Secret` with every request, alongside the Papra API key. Declare the token and policy in `remote/cloudflare/` rather than in the dashboard.
+- **Bypass policy:** skips Access for the matching requests, leaving the Papra API key as the only check. Use it only for a narrow path.
+
+Clients get decrypted documents and OCR text from the API. They never need the encryption keys.
+
+#### Auto-tagging
+
+AI is on server-wide with `anthropic://claude-haiku-4-5`, at USD 1 per million input tokens and USD 5 per million output tokens. `AUTO_TAGGING_MODEL` overrides it for tagging alone. Tagging only runs where an organization opts in:
+
+- Organization settings -> Auto tagging -> Enable auto tagging.
+- Turn off "Create new tags" once the taxonomy exists, so new documents land on existing tags.
+- The model reads each tag's name and description, so a precise description steers it more than anything else.
+- "Max number of tags" defaults to 5.
+
+#### Ingestion folder (not enabled)
+
+Papra can import files dropped into a watched folder, for example Syncthing scans from a phone. It is off today. To enable it:
+
+- Set `INGESTION_FOLDER_IS_ENABLED = true` and `INGESTION_FOLDER_ROOT_PATH` in `nixos/papra.nix`.
+- Files go in `<root>/<organization id>/`, and the folder must be writable by the `papra` user.
+- After import, files are deleted by default. `INGESTION_FOLDER_POST_PROCESSING_STRATEGY=move` keeps them instead.
+
+Email intake (`INTAKE_EMAILS_IS_ENABLED`) is off too.
+
+#### Backups
+
+| What | Where | Backed up by |
+| --- | --- | --- |
+| Encrypted documents | `/mnt/mirrored/papra/documents` | Borg, weekly, and S3 |
+| Encrypted database, consistent copy | `/mnt/mirrored/papra/db-snapshot` | Borg, weekly, and S3 |
+| Live database | `/mnt/mirrored/papra/db` | Nothing: excluded from Borg |
+| Keys | `/etc/nixos/secrets/papra.env` | Bitwarden only, by hand |
+
+Borg copies files while services run, so its `preHook` stops Papra for the few seconds it takes to copy the database to `db-snapshot`, then starts it again. To restore, stop Papra, replace `db` with `db-snapshot` and `documents` with their restored copies, owned by `papra:papra`, put back `papra.env`, and start Papra.
 
 ## Updating packages
 

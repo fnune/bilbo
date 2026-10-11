@@ -9,6 +9,7 @@
   calibre = "calibre.${domain}";
   frigate = "frigate.${domain}";
   homeAssistant = "home.${domain}";
+  papra = "docs.${domain}";
 
   dnsOnlyHosts = [immich calibre frigate homeAssistant];
 
@@ -78,7 +79,7 @@ in {
     cloudflare-dyndns = {
       enable = true;
       proxied = true;
-      domains = [bilbo];
+      domains = [bilbo papra];
       apiTokenFile = "/etc/cloudflare/token";
     };
     caddy = let
@@ -140,6 +141,10 @@ in {
         reverse_proxy /* localhost:2283
         reverse_proxy / localhost:2283
       '';
+      rootIsPapra = ''
+        reverse_proxy /* 127.0.0.1:1221
+        reverse_proxy / 127.0.0.1:1221
+      '';
       rootIsCalibre = ''
         reverse_proxy /* 127.0.0.1:8083 {
           header_up X-Scheme {scheme}
@@ -173,6 +178,10 @@ in {
         "${homeAssistant}".extraConfig = ''
           ${tlsDnsCloudflare}
           ${rootIsHomeAssistant}
+        '';
+        "${papra}".extraConfig = ''
+          ${tlsDnsCloudflare}
+          ${rootIsPapra}
         '';
         "${bilbo}".extraConfig = ''
           ${tlsOriginKey}

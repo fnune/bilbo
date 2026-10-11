@@ -108,6 +108,13 @@
       {
         "Tools" = [
           {
+            "Papra" = {
+              icon = "papra.svg";
+              description = "Document archive with OCR and auto-tagging";
+              href = "https://docs.fnune.com";
+            };
+          }
+          {
             "Grafana" = {
               icon = "grafana.svg";
               description = "Dashboard for metrics and system monitoring";

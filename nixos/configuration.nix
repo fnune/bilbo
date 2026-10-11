@@ -104,6 +104,7 @@
     ./monitoring.nix
     ./mosquitto.nix
     ./nzbget.nix
+    ./papra.nix
     ./pincho.nix
     ./radarr.nix
     ./sonarr.nix

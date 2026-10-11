@@ -9,8 +9,9 @@
   downloads-2t-mount = "/mnt/downloads-2t";
 
   surveillance-storage = "${downloads-2t-mount}/frigate";
+  document-storage = "${mirrored-storage-mount}/papra";
 
-  ownedByServices = [surveillance-storage config.services.immich.mediaLocation];
+  ownedByServices = [surveillance-storage document-storage config.services.immich.mediaLocation];
 
   outsideServiceOwned = "\\( ${lib.concatMapStringsSep " -o " (path: "-path ${path}") ownedByServices} \\) -prune -o";
 

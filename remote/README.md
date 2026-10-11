@@ -37,6 +37,7 @@ pulumi import '<type>'                 '<name>'      '<id>'
 # Cloudflare
 pulumi import "cloudflare:index/zeroTrustAccessPolicy:ZeroTrustAccessPolicy" "bilbo-access-policy" "accounts/<ACCOUNT_ID>/<POLICY_ID>"
 pulumi import "cloudflare:index/zeroTrustAccessApplication:ZeroTrustAccessApplication" "bilbo-access-app" "accounts/<ACCOUNT_ID>/<APP_ID>"
+pulumi import "cloudflare:index/zeroTrustAccessApplication:ZeroTrustAccessApplication" "papra-access-app" "accounts/<ACCOUNT_ID>/<APP_ID>"
 
 # AWS S3
 pulumi import "aws:s3/bucketV2:BucketV2" "bilbo-backups" "<BUCKET_NAME>"

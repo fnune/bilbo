@@ -22,3 +22,25 @@ export const bilboAccessApplication = new cloudflare.ZeroTrustAccessApplication(
     protect: true,
   },
 );
+
+export const papraAccessApplication = new cloudflare.ZeroTrustAccessApplication(
+  "papra-access-app",
+  {
+    accountId: ACCOUNT_ID,
+    appLauncherVisible: true,
+    domain: "docs.fnune.com",
+    name: "Papra",
+    policies: [
+      {
+        id: bilboAccessPolicy.id,
+        precedence: 1,
+      },
+    ],
+    selfHostedDomains: ["docs.fnune.com"],
+    sessionDuration: "730h",
+    type: "self_hosted",
+  },
+  {
+    protect: true,
+  },
+);
