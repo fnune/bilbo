@@ -4,7 +4,11 @@
   ...
 }: let
   mirroredRepoPath = "/mnt/downloads-2t/Backups/borg/mirrored";
-  mirroredSourcePath = "/mnt/mirrored";
+  backedUpPaths = [
+    "/mnt/mirrored"
+    config.services.home-assistant.configDir
+    config.services.zigbee2mqtt.dataDir
+  ];
   # The bucket name is a `pulumi stack output` in `../remote`, hand-placed here.
   mirroredBucketNamePath = "/etc/nixos/secrets/borg-s3-bucket-name";
   mirroredBorgPassphrasePath = config.sops.secrets.borg-passphrase.path;
@@ -18,7 +22,7 @@ in {
   services.borgbackup = {
     jobs = {
       mirrored = {
-        paths = [mirroredSourcePath];
+        paths = backedUpPaths;
         repo = mirroredRepoPath;
         startAt = "weekly";
         inhibitsSleep = false;

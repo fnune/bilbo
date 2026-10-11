@@ -15,21 +15,40 @@ new aws.s3.BucketPublicAccessBlock(`${NAME}-bucket-public-access-block`, {
   restrictPublicBuckets: true,
 });
 
-new aws.s3.BucketLifecycleConfigurationV2(`${NAME}-lifecycle`, {
+// The backup user can only add delete markers; it cannot delete versions.
+const keepsDeletedObjectsAsVersions = new aws.s3.BucketVersioningV2(`${NAME}-versioning`, {
   bucket: bucket.id,
-  rules: [
-    {
-      id: "glacier-transition",
-      status: "Enabled",
-      transitions: [
-        {
-          days: 0,
-          storageClass: "DEEP_ARCHIVE",
-        },
-      ],
-    },
-  ],
+  versioningConfiguration: { status: "Enabled" },
 });
+
+const KEEP_NONCURRENT_VERSIONS_FOR_DAYS = 180;
+
+new aws.s3.BucketLifecycleConfigurationV2(
+  `${NAME}-lifecycle`,
+  {
+    bucket: bucket.id,
+    rules: [
+      {
+        id: "glacier-transition",
+        status: "Enabled",
+        transitions: [
+          {
+            days: 0,
+            storageClass: "DEEP_ARCHIVE",
+          },
+        ],
+      },
+      {
+        id: "expire-noncurrent-versions",
+        status: "Enabled",
+        noncurrentVersionExpiration: {
+          noncurrentDays: KEEP_NONCURRENT_VERSIONS_FOR_DAYS,
+        },
+      },
+    ],
+  },
+  { dependsOn: [keepsDeletedObjectsAsVersions] },
+);
 
 const policy = new aws.iam.Policy(`${NAME}-policy`, {
   policy: bucket.arn.apply((arn) => ({
