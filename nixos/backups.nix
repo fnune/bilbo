@@ -13,6 +13,11 @@
   mirroredBucketNamePath = config.sops.secrets.borg-s3-bucket-name.path;
   mirroredBorgPassphrasePath = config.sops.secrets.borg-passphrase.path;
   mirroredRcloneConfPath = config.sops.secrets.rclone-conf.path;
+
+  statusDir = "/var/lib/backup-status";
+  lastSuccess = "${statusDir}/mirrored-last-success";
+  backupIntervalDays = 7;
+  maxAgeDays = backupIntervalDays + 1;
 in {
   sops.secrets = {
     borg-passphrase = {};
@@ -45,10 +50,27 @@ in {
           ${pkgs.rclone}/bin/rclone sync ${mirroredRepoPath} aws-glacier:$BUCKET_NAME/mirrored \
             --config ${mirroredRcloneConfPath} \
             --progress \
-            --stats 1m \
-            || echo "Warning: S3 upload failed, but local backup completed successfully"
+            --stats 1m
+          if [ "$exitStatus" = 0 ]; then
+            touch ${lastSuccess}
+          fi
         '';
+        readWritePaths = [statusDir];
       };
     };
+  };
+
+  systemd.tmpfiles.rules = ["d ${statusDir} 0755 root root -"];
+
+  systemd.services.backup-freshness = {
+    description = "Check that the mirrored backup succeeded recently";
+    startAt = "daily";
+    serviceConfig.Type = "oneshot";
+    script = ''
+      if [ -z "$(${pkgs.findutils}/bin/find ${lastSuccess} -mtime -${toString maxAgeDays} 2>/dev/null)" ]; then
+        echo "No successful backup of /mnt/mirrored in the last ${toString maxAgeDays} days."
+        exit 1
+      fi
+    '';
   };
 }

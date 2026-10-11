@@ -100,6 +100,7 @@
     ./immich.nix
     ./immich-public-proxy.nix
     ./jellyfin.nix
+    ./monitoring.nix
     ./mosquitto.nix
     ./nzbget.nix
     ./papra.nix

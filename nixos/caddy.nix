@@ -13,6 +13,8 @@
     frigate = host "frigate";
     homeAssistant = host "home";
     papra = host "docs";
+    health = host "health";
+    notify = host "notify";
   };
 
   public = {
@@ -77,6 +79,8 @@
   immichPort = toString config.services.immich.port;
   sharedPhotosPort = toString config.services.immich-public-proxy.port;
   papraPort = toString config.services.papra.environment.PORT;
+  beszelPort = toString config.services.beszel.hub.port;
+  ntfyListen = config.services.ntfy-sh.settings.listen-http;
 in {
   networking.firewall = {
     allowedTCPPorts = [443];
@@ -188,6 +192,14 @@ in {
       "${vpnOnly.papra}".extraConfig = ''
         ${tlsDnsCloudflare}
         ${vpnOnlyRoute (rootIs "127.0.0.1:${papraPort}")}
+      '';
+      "${vpnOnly.health}".extraConfig = ''
+        ${tlsDnsCloudflare}
+        ${vpnOnlyRoute (rootIs "127.0.0.1:${beszelPort}")}
+      '';
+      "${vpnOnly.notify}".extraConfig = ''
+        ${tlsDnsCloudflare}
+        ${vpnOnlyRoute (rootIs ntfyListen)}
       '';
 
       "${public.sharedPhotos}".extraConfig = ''

@@ -31,21 +31,6 @@ Run `pulumi up` before `nixos-rebuild` when both change. The private DNS records
 point at bilbo's WireGuard address; the dyndns timers on bilbo own the public
 ones and must not manage the same names.
 
-## Mail records
-
-`fnune.com` carries no mail since Proton was dropped. The stale ProtonMail
-records (two SPF TXT, the `protonmail-verification` TXT, two MX, three
-`_domainkey` CNAMEs) are not in Pulumi; remove them once:
-
-```sh
-ssh -t bilbo 'sudo bash -s' < delete-stale-mail-records.sh          # dry run, lists them
-ssh -t bilbo 'sudo bash -s -- apply' < delete-stale-mail-records.sh  # delete
-```
-
-The `google-site-verification` TXT and the apex website records are left alone.
-The domain then has no mail authentication, so it can be spoofed; add SPF
-`-all` and DMARC `p=reject` here if that matters before real mail moves on.
-
 ## Accessing the output
 
 To access the output and transfer it to Bilbo:

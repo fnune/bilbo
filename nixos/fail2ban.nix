@@ -1,11 +1,14 @@
-{...}: let
+{notify, ...}: let
   lan = "192.168.178.0/24";
+  banThenNotify = "%(action_)s\n           notify";
 in {
   services.fail2ban = {
     enable = true;
     maxretry = 5;
     bantime = "24h";
     ignoreIP = ["127.0.0.1/8" "::1" lan];
+
+    jails.DEFAULT.settings.action = banThenNotify;
 
     jails.caddy-auth.settings = {
       enabled = true;
@@ -26,5 +29,10 @@ in {
     failregex = ^\{.*"client_ip":"<HOST>".*"status":(?:401|403).*\}$
     datepattern = "ts":{EPOCH}
     ignoreregex =
+  '';
+
+  environment.etc."fail2ban/action.d/notify.conf".text = ''
+    [Definition]
+    actionban = ${notify}/bin/notify "Banned <ip>" "fail2ban jail <name> banned <ip> after <failures> failures."
   '';
 }

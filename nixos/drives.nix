@@ -1,6 +1,8 @@
 {
   config,
   lib,
+  pkgs,
+  notify,
   ...
 }: let
   mirrored-storage = "mirrored";
@@ -21,8 +23,19 @@
     find ${mount} ${outsideServiceOwned} ! -type l -print0 \
       | xargs --null --no-run-if-empty chmod 775
   '';
+
+  mdadmEvent = pkgs.writeShellScript "mdadm-event" ''
+    event=$1
+    array=$2
+    disk=''${3:-}
+    case "$event" in
+      Fail | FailSpare | DegradedArray | DeviceDisappeared | SparesMissing | TestMessage)
+        ${notify}/bin/notify "RAID $event on $array" "mdadm reported $event on $array $disk" urgent
+        ;;
+    esac
+  '';
 in {
-  boot.swraid.mdadmConf = "MAILADDR mdadm@example.com";
+  boot.swraid.mdadmConf = "PROGRAM ${mdadmEvent}";
 
   systemd.services.adjustMountPoints = {
     description = "Adjust mount point permissions";
