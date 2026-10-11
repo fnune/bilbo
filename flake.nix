@@ -40,17 +40,7 @@
         sops-nix.nixosModules.sops
       ];
     };
-    bilboVirtual = nixpkgs.lib.nixosSystem {
-      inherit system;
-      modules = [
-        {nixpkgs.overlays = [unstableOverlay];}
-        ./nixos/configuration.nix
-        ./nixos/development-configuration.nix
-        sops-nix.nixosModules.sops
-      ];
-    };
   in {
     nixosConfigurations.bilbo = bilbo;
-    nixosConfigurations.bilboVirtual = bilboVirtual;
   };
 }

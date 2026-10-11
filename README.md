@@ -398,22 +398,3 @@ like `immich`, are listed by hand in `extraServices` and
 Comparing names means a package rebuilt at the same version, after a patch or a
 dependency change, does not show up. Catching that needs real store paths, which
 means building.
-
-## Running in a VM
-
-Warning: security measures are waived for the VM in order to facilitate testing.
-
-```sh
-# Build the VM:
-nixos-rebuild build-vm --flake .#bilboVirtual
-
-# Run the VM:
-./result/bin/run-bilbo-vm
-```
-
-After having changed `configuration.nix` or any of its dependencies:
-
-```sh
-# Remove the VM's state:
-rm ./bilbo.qcow2
-```
