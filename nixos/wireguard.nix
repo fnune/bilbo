@@ -12,9 +12,17 @@
       address = "${subnet}.3";
       publicKey = "2q6yye63F7NyNPwNNheo7MhY0Gw52MdV2+oYvZYed04=";
     };
+    feanor = {
+      address = "${subnet}.4";
+      publicKey = "Xr/kanbihoJB+op9tsBlisiCWCNy1DLOYTt+5jOYE2k=";
+    };
     estella = {
       address = "${subnet}.5";
       publicKey = "dl7U16OFsj5wziRM/pR60aFhQL1Z1cVDXMIdxi//0mo=";
+    };
+    pippin = {
+      address = "${subnet}.6";
+      publicKey = "F4MVYxCn7D/+76iPMm4g6SCZMcJxD6KVV4O5SjggTgc=";
     };
   };
 
