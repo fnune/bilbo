@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  notify,
   pkgs,
   ...
 }: let
@@ -118,6 +119,58 @@
   ];
 
   climateEntity = measurement: sensor: "sensor.${sensor.entityId}_${measurement}";
+  airingEntity = sensor: "binary_sensor.${sensor.entityId}_airing_recommended";
+
+  comfortableTemperature = {
+    low = 19;
+    high = 22;
+  };
+  comfortableHumidity = {
+    low = 40;
+    high = 60;
+  };
+
+  weatherEntity = "weather.forecast_home";
+  outdoorDewPoint = "sensor.outdoor_dew_point";
+  outdoorAirDrierByAtLeast = 2;
+
+  dewPointSensor = sensor: let
+    temperature = "states('${climateEntity "temperature" sensor}') | float";
+    humidity = "states('${climateEntity "humidity" sensor}') | float";
+  in {
+    name = "${sensor.name} dew point";
+    unique_id = "${sensor.entityId}_dew_point";
+    default_entity_id = climateEntity "dew_point" sensor;
+    device_class = "temperature";
+    unit_of_measurement = "°C";
+    state_class = "measurement";
+    availability = "{{ has_value('${climateEntity "temperature" sensor}') and has_value('${climateEntity "humidity" sensor}') }}";
+    state = ''
+      {% set t = ${temperature} %}
+      {% set gamma = log(${humidity} / 100) + 17.62 * t / (243.12 + t) %}
+      {{ (243.12 * gamma / (17.62 - gamma)) | round(1) }}
+    '';
+  };
+
+  wakingHours = {
+    start = "08:00:00";
+    end = "22:00:00";
+  };
+  airingRecommendationSettles = "00:10:00";
+
+  roomsToAirOut = "expand(${builtins.toJSON (map airingEntity climateSensors)}) | selectattr('state', 'eq', 'on') | map(attribute='name') | map('replace', ' airing recommended', '') | join(', ')";
+
+  airingSensor = sensor: {
+    name = "${sensor.name} airing recommended";
+    unique_id = "${sensor.entityId}_airing_recommended";
+    default_entity_id = airingEntity sensor;
+    icon = "mdi:window-open-variant";
+    availability = "{{ has_value('${climateEntity "humidity" sensor}') and has_value('${climateEntity "dew_point" sensor}') and has_value('${outdoorDewPoint}') }}";
+    state = ''
+      {{ states('${climateEntity "humidity" sensor}') | float > ${toString comfortableHumidity.high}
+         and states('${outdoorDewPoint}') | float <= states('${climateEntity "dew_point" sensor}') | float - ${toString outdoorAirDrierByAtLeast} }}
+    '';
+  };
 
   climateTile = measurement: sensor: {
     type = "tile";
@@ -317,6 +370,7 @@ in {
       "mobile_app"
       "mqtt"
       "radio_browser"
+      "shell_command"
       "template"
     ];
 
@@ -369,14 +423,26 @@ in {
 
         template = [
           {
-            sensor = [
-              {
-                name = "Sunset";
-                unique_id = "sunset_clock";
-                icon = "mdi:weather-sunset-down";
-                state = "{{ as_timestamp(state_attr('sun.sun', 'next_setting')) | timestamp_custom('%H:%M') }}";
-              }
-            ];
+            sensor =
+              [
+                {
+                  name = "Sunset";
+                  unique_id = "sunset_clock";
+                  icon = "mdi:weather-sunset-down";
+                  state = "{{ as_timestamp(state_attr('sun.sun', 'next_setting')) | timestamp_custom('%H:%M') }}";
+                }
+                {
+                  name = "Outdoor dew point";
+                  unique_id = "outdoor_dew_point";
+                  default_entity_id = outdoorDewPoint;
+                  device_class = "temperature";
+                  unit_of_measurement = "°C";
+                  state_class = "measurement";
+                  availability = "{{ state_attr('${weatherEntity}', 'dew_point') is number }}";
+                  state = "{{ state_attr('${weatherEntity}', 'dew_point') }}";
+                }
+              ]
+              ++ map dewPointSensor climateSensors;
 
             binary_sensor =
               map (light: {
@@ -385,7 +451,8 @@ in {
                 device_class = "connectivity";
                 state = "{{ not is_state('${lightEntity light}', 'unavailable') }}";
               })
-              lights;
+              lights
+              ++ map airingSensor climateSensors;
           }
         ];
 
@@ -401,6 +468,8 @@ in {
             };
           }
         ];
+
+        shell_command.notify = "${lib.getExe notify} \"{{ title }}\" \"{{ message }}\"";
 
         mqtt.switch = [
           (frigateAvailability
@@ -450,6 +519,42 @@ in {
                       target.entity_id = simulatedLight;
                     }
                   ];
+                }
+              ];
+            }
+            {
+              alias = "Notify when the rooms need airing out";
+              id = "notify-when-the-rooms-need-airing-out";
+              triggers = [
+                {
+                  trigger = "state";
+                  entity_id = map airingEntity climateSensors;
+                  to = "on";
+                  for = airingRecommendationSettles;
+                }
+                {
+                  trigger = "time";
+                  at = wakingHours.start;
+                }
+              ];
+              conditions = [
+                {
+                  condition = "time";
+                  after = wakingHours.start;
+                  before = wakingHours.end;
+                }
+                {
+                  condition = "template";
+                  value_template = "{{ ${roomsToAirOut} != '' }}";
+                }
+              ];
+              actions = [
+                {
+                  action = "shell_command.notify";
+                  data = {
+                    title = "Time to air out";
+                    message = "Drier air outside. Open the windows in: {{ ${roomsToAirOut} }}";
+                  };
                 }
               ];
             }
@@ -559,6 +664,11 @@ in {
               ++ lib.concatMap (sensor: [
                 (climateTile "temperature" sensor)
                 (climateTile "humidity" sensor)
+                (fullWidth
+                  // {
+                    type = "tile";
+                    entity = airingEntity sensor;
+                  })
               ])
               climateSensors
               ++ [
@@ -578,17 +688,11 @@ in {
                     entities = [cameraSwitch];
                   })
                 (climateHistory "temperature" "Temperature" {
-                  comfortable = {
-                    low = 19;
-                    high = 22;
-                  };
+                  comfortable = comfortableTemperature;
                   margin = 1;
                 })
                 (climateHistory "humidity" "Humidity" {
-                  comfortable = {
-                    low = 40;
-                    high = 60;
-                  };
+                  comfortable = comfortableHumidity;
                   margin = 5;
                 })
               ]
