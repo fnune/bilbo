@@ -48,7 +48,6 @@ system: let
 
   unmatchedServices = entriesAt [
     ["immich"]
-    ["filebrowser"]
     ["home-assistant-custom-components" "frigate"]
     ["home-assistant-custom-lovelace-modules" "advanced-camera-card"]
   ];

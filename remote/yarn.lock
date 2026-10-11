@@ -858,6 +858,13 @@
   resolved "https://registry.yarnpkg.com/@pulumi/query/-/query-0.3.0.tgz#f496608e86a18c3dd31b6c533408e2441c29071d"
   integrity sha512-xfo+yLRM2zVjVEA4p23IjQWzyWl1ZhWOGobsBqRpIarzLvwNH/RAGaoehdxlhx4X92302DrpdIFgTICMN4P38w==
 
+"@pulumi/tailscale@^0.29.1":
+  version "0.29.1"
+  resolved "https://registry.yarnpkg.com/@pulumi/tailscale/-/tailscale-0.29.1.tgz#ee143993a27dfe7c8abe41b6b2009d614908f99d"
+  integrity sha512-z+3emtm0ED4HiDEH+uR8v9MlZp7jchrVGpTpGshAZ4AaG0GEzAJ04HqEJM2n6GMcaGa15BIrwfKymFVrxm+Wlg==
+  dependencies:
+    "@pulumi/pulumi" "^3.142.0"
+
 "@sigstore/bundle@^2.3.2":
   version "2.3.2"
   resolved "https://registry.yarnpkg.com/@sigstore/bundle/-/bundle-2.3.2.tgz#ad4dbb95d665405fd4a7a02c8a073dbd01e4e95e"

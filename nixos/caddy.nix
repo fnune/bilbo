@@ -102,9 +102,6 @@ in {
         }
       '';
       proxiesSupportingSubpath = ''
-        reverse_proxy /grafana/* localhost:2342
-        reverse_proxy /grafana localhost:2342
-
         reverse_proxy /nzbget/* localhost:6789
         reverse_proxy /nzbget localhost:6789
 
@@ -124,9 +121,6 @@ in {
           header_up X-Forwarded-Host {host}
         }
 
-        reverse_proxy /filebrowser/* localhost:8080
-        reverse_proxy /filebrowser localhost:8080
-
         reverse_proxy /jellyfin/* localhost:8096
         reverse_proxy /jellyfin localhost:8096
 
@@ -137,9 +131,8 @@ in {
         reverse_proxy /zigbee2mqtt localhost:8085
 
       '';
-      rootIsHomepage = ''
-        reverse_proxy /* localhost:8084
-        reverse_proxy / localhost:8084
+      nothingAtRoot = ''
+        respond 404
       '';
       rootIsFrigate = ''
         reverse_proxy /* localhost:8971
@@ -197,9 +190,11 @@ in {
         '';
         "${bilbo}".extraConfig = ''
           ${tlsOriginKey}
-          ${rootIsHomepage}
-          ${proxiesSupportingSubpath}
-          import /etc/caddy.d/*.caddy
+          route {
+            ${proxiesSupportingSubpath}
+            import /etc/caddy.d/*.caddy
+            ${nothingAtRoot}
+          }
         '';
         ":80".extraConfig = ''
           @lan remote_ip private_ranges

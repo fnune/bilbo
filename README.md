@@ -146,8 +146,8 @@ No port forward to the camera.
 Frigate has its own hostname because subpath proxying breaks its websockets and
 service worker. The NixOS module force-enables nginx and builds its own vhost, so
 that vhost is pinned to `127.0.0.1:8971` and Caddy fronts it, keeping Caddy alone
-on 80 and 443. Frigate's jsmpeg upstream is hardcoded to `127.0.0.1:8082`, which
-is why the homepage dashboard moved to 8084.
+on 80 and 443. Frigate's jsmpeg upstream is hardcoded to `127.0.0.1:8082`, so
+nothing else may take that port.
 
 go2rtc holds the only connection to the camera and restreams both streams on
 localhost; Frigate reads detect and record from the restream. The NixOS Frigate
@@ -327,8 +327,8 @@ packages under it, and `System packages` for `environment.systemPackages`.
 `lib/versions.nix` decides what is tracked. The services pass only visits option
 names that own a systemd unit, because touching a removed or renamed module
 calls `abort`, which `tryEval` cannot catch. Packages that skip that pass, either
-behind a hand-written unit like `filebrowser` or under a unit whose name differs
-from its option like `immich`, are listed by hand in `extraServices` and
+behind a hand-written unit or under a unit whose name differs from its option
+like `immich`, are listed by hand in `extraServices` and
 `platform`. Add to those lists when a new unit takes its package from `pkgs`.
 
 Comparing names means a package rebuilt at the same version, after a patch or a

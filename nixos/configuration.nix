@@ -95,13 +95,10 @@
     ./caddy.nix
     ./calibre.nix
     ./fail2ban.nix
-    ./filebrowser.nix
     ./frigate.nix
     ./home-assistant.nix
-    ./homepage.nix
     ./immich.nix
     ./jellyfin.nix
-    ./monitoring.nix
     ./mosquitto.nix
     ./nzbget.nix
     ./papra.nix
