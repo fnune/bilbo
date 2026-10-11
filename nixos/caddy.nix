@@ -11,8 +11,9 @@
   frigate = "frigate.${domain}";
   homeAssistant = "home.${domain}";
   papra = "docs.${domain}";
+  wireguard = "wireguard.${domain}";
 
-  dnsOnlyHosts = [immich calibre frigate homeAssistant];
+  dnsOnlyHosts = [immich calibre frigate homeAssistant wireguard];
 
   dnsToken = config.sops.secrets.cloudflare-dns-token.path;
 
