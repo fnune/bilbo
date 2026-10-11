@@ -35,6 +35,12 @@
     esac
   '';
 in {
+  _module.args.mounts = {
+    downloads-1t = downloads-1t-mount;
+    downloads-2t = downloads-2t-mount;
+    mirrored = mirrored-storage-mount;
+  };
+
   boot.swraid.mdadmConf = "PROGRAM ${mdadmEvent}";
 
   systemd.services.adjustMountPoints = {
