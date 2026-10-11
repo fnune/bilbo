@@ -4,11 +4,7 @@
   pkgs,
   ...
 }: let
-  # Bound to every interface so LAN clients can reach Home Assistant directly.
-  # Going through home.fnune.com hairpins via the router, so HA sees the
-  # household WAN IP: one ip_bans entry would then lock out the whole house.
-  # The firewall below only opens this port on eno1.
-  listenAddress = "0.0.0.0";
+  listenAddress = "127.0.0.1";
   listenPort = 8123;
 
   inherit (config.services.home-assistant) configDir;
@@ -607,8 +603,6 @@ in {
       }
     ];
   };
-
-  networking.firewall.interfaces."eno1".allowedTCPPorts = [listenPort];
 
   systemd.services.home-assistant.serviceConfig.LoadCredential = [
     "${frigatePasswordCredential}:${frigatePasswordFile}"

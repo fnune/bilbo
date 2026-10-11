@@ -46,10 +46,8 @@ If state were lost, it could be recovered by running:
 pulumi import '<type>'                 '<name>'      '<id>'
 
 # Cloudflare
-pulumi import "cloudflare:index/zeroTrustAccessPolicy:ZeroTrustAccessPolicy" "bilbo-access-policy" "accounts/<ACCOUNT_ID>/<POLICY_ID>"
-pulumi import "cloudflare:index/zeroTrustAccessApplication:ZeroTrustAccessApplication" "bilbo-access-app" "accounts/<ACCOUNT_ID>/<APP_ID>"
-pulumi import "cloudflare:index/zeroTrustAccessApplication:ZeroTrustAccessApplication" "papra-access-app" "accounts/<ACCOUNT_ID>/<APP_ID>"
 pulumi import "cloudflare:index/apiToken:ApiToken" "bilbo-dns-token" "<TOKEN_ID>"
+pulumi import "cloudflare:index/dnsRecord:DnsRecord" "home-vpn-record" "<ZONE_ID>/<RECORD_ID>"   # and bilbo, immich, frigate, docs
 
 # AWS S3
 pulumi import "aws:s3/bucketV2:BucketV2" "bilbo-backups" "<BUCKET_NAME>"
