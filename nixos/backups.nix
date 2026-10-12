@@ -21,6 +21,7 @@
   ];
   rebuildableOnTheirOwn = [
     jellyfin.logDir
+    "${jellyfin.dataDir}/transcodes"
     "${radarr.dataDir}/logs"
     "${radarr.dataDir}/MediaCover"
     "${sonarr.dataDir}/logs"
