@@ -39,6 +39,10 @@
     "languages-enabled" = map (i: i.language) languageProfile.items;
     "languages-profiles" = builtins.toJSON [languageProfile];
     "settings-general-base_url" = baseUrl;
+    # Takes effect on Bazarr's next restart; Caddy is the only client.
+    "settings-general-ip" = "127.0.0.1";
+    # Caddy reaches it from localhost, so a login is the only gate on the LAN address.
+    "settings-auth-type" = "form";
     "settings-general-serie_default_enabled" = true;
     "settings-general-serie_default_profile" = profileId;
     "settings-general-movie_default_enabled" = true;
@@ -77,7 +81,9 @@
       bazarr --request POST ${api}/system/settings \
         ${lib.concatStringsSep " \\\n  " formFields} \
         --form "settings-opensubtitlescom-username=<$CREDENTIALS_DIRECTORY/opensubtitles-username" \
-        --form "settings-opensubtitlescom-password=<$CREDENTIALS_DIRECTORY/opensubtitles-password"
+        --form "settings-opensubtitlescom-password=<$CREDENTIALS_DIRECTORY/opensubtitles-password" \
+        --form "settings-auth-username=<$CREDENTIALS_DIRECTORY/bazarr-username" \
+        --form "settings-auth-password=<$CREDENTIALS_DIRECTORY/bazarr-password"
 
       # Every series and movie gets the one profile, including those added before it existed.
       for kind in series:seriesid:sonarrSeriesId movies:radarrid:radarrId; do
@@ -101,6 +107,8 @@ in {
   sops.secrets = {
     opensubtitles-username = {};
     opensubtitles-password = {};
+    bazarr-username = {};
+    bazarr-password = {};
   };
 
   systemd.services.bazarr-settings = {
@@ -118,6 +126,8 @@ in {
       LoadCredential = [
         "opensubtitles-username:${config.sops.secrets.opensubtitles-username.path}"
         "opensubtitles-password:${config.sops.secrets.opensubtitles-password.path}"
+        "bazarr-username:${config.sops.secrets.bazarr-username.path}"
+        "bazarr-password:${config.sops.secrets.bazarr-password.path}"
       ];
     };
   };
