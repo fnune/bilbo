@@ -79,8 +79,7 @@ in {
         vp8 = true;
         vp9 = true;
       };
-      enableToneMapping = false;
-      deleteSegments = false;
+      throttleTranscoding = true;
     };
   };
 
