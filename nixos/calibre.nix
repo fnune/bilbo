@@ -14,4 +14,7 @@
       enableKepubify = true;
     };
   };
+
+  # UMask stays at the default so books added here remain readable outside the users group.
+  systemd.services.calibre-web.serviceConfig.PrivateUsers = true;
 }

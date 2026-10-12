@@ -14,4 +14,15 @@ in {
     immichUrl = "http://${immich.host}:${toString immich.port}";
     inherit port;
   };
+
+  # MemoryDenyWriteExecute stays off for the V8 JIT.
+  systemd.services.immich-public-proxy.serviceConfig = {
+    LockPersonality = true;
+    ProcSubset = "pid";
+    ProtectProc = "invisible";
+    SystemCallArchitectures = "native";
+    SystemCallFilter = ["@system-service" "~@privileged"];
+    SystemCallErrorNumber = "EPERM";
+    UMask = "0077";
+  };
 }
