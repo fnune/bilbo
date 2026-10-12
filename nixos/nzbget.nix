@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  libraries,
   mounts,
   pkgs,
   ...
@@ -23,7 +24,7 @@
       unused
       {
         name = "Books";
-        destDir = "${mounts.downloads-1t}/Books";
+        destDir = libraries.books;
       }
     ];
 

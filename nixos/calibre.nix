@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  libraries,
   pkgs,
   ...
 }: let
@@ -13,6 +14,7 @@
     config_external_port = 443;
   };
   applySettings = pkgs.writeShellScript "calibre-web-apply-settings" ''
+    [ -f ${libraries.books}/metadata.db ] || HOME=$(mktemp -d) ${cfg.calibrePackage}/bin/calibredb --library-path ${libraries.books} list
     [ -f ${appDb} ] || exit 0
     ${lib.getExe pkgs.sqlite} ${appDb} "update settings set ${
       lib.concatStringsSep ", " (lib.mapAttrsToList (k: v: "${k} = ${toString v}") settings)
@@ -28,7 +30,7 @@ in {
     listen.ip = "127.0.0.1";
     listen.port = 8083;
     options = {
-      calibreLibrary = "/mnt/downloads-1t/Books";
+      calibreLibrary = libraries.books;
       enableBookConversion = true;
       enableBookUploading = true;
       enableKepubify = true;

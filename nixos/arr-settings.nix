@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  libraries,
   mkSettingsService,
   servarrUrl,
   ...
@@ -10,13 +11,13 @@
   arrs = {
     radarr = {
       implementation = "Radarr";
-      rootFolder = "/mnt/downloads-1t/Movies";
+      rootFolder = libraries.movies;
       categoryField = "movieCategory";
       category = "Movies";
     };
     sonarr = {
       implementation = "Sonarr";
-      rootFolder = "/mnt/downloads-2t/Series";
+      rootFolder = libraries.series;
       categoryField = "tvCategory";
       category = "Series";
     };

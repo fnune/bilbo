@@ -13,6 +13,12 @@
   surveillance-storage = "${downloads-2t-mount}/frigate";
   document-storage = "${mirrored-storage-mount}/papra";
 
+  libraries = {
+    movies = "${downloads-1t-mount}/Movies";
+    series = "${downloads-2t-mount}/Series";
+    books = "${downloads-1t-mount}/Books";
+  };
+
   ownedByServices = [surveillance-storage document-storage config.services.immich.mediaLocation];
 
   outsideServiceOwned = "\\( ${lib.concatMapStringsSep " -o " (path: "-path ${path}") ownedByServices} \\) -prune -o";
@@ -35,11 +41,16 @@
     esac
   '';
 in {
-  _module.args.mounts = {
-    downloads-1t = downloads-1t-mount;
-    downloads-2t = downloads-2t-mount;
-    mirrored = mirrored-storage-mount;
+  _module.args = {
+    mounts = {
+      downloads-1t = downloads-1t-mount;
+      downloads-2t = downloads-2t-mount;
+      mirrored = mirrored-storage-mount;
+    };
+    inherit libraries;
   };
+
+  systemd.tmpfiles.rules = map (library: "d ${library} 0775 fausto users -") (builtins.attrValues libraries);
 
   boot.swraid.mdadmConf = "PROGRAM ${mdadmEvent}";
 
