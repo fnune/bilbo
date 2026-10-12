@@ -31,6 +31,12 @@
   };
   # Seerr's default for new requests; left alone until Recyclarr has created it.
   seerrProfile = "1080p, then 720p";
+  seerrMain = {
+    # Links in notifications and emails are built from this.
+    applicationUrl = "https://requests.fnune.com";
+    # Everyone signs in with their Jellyfin account.
+    localLogin = false;
+  };
 
   applySettings = pkgs.writeShellApplication {
     name = "arr-apply-settings";
@@ -101,6 +107,8 @@
       seerrKey=$(jq -r .main.apiKey ${seerr.configDir}/settings.json)
       seerr=http://127.0.0.1:${toString seerr.port}/api/v1
       wait_for "$seerrKey" "$seerr/settings/main"
+      call "$seerrKey" "$seerr/settings/main" | jq -c '. * ${builtins.toJSON seerrMain}' |
+        call "$seerrKey" "$seerr/settings/main" --request POST --data @- >/dev/null
       for app in radarr sonarr; do
         key=$(cat "$CREDENTIALS_DIRECTORY/$app-api-key")
         url=$([ "$app" = radarr ] && echo ${apps.radarr.url} || echo ${apps.sonarr.url})
