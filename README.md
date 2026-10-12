@@ -29,14 +29,14 @@ Now, configure each service:
     deletes anything.
   - All of them require a login, Bazarr included: Caddy reaches them from
     localhost, so "disabled for local addresses" would mean no login at all.
-  - Recyclarr (`nixos/recyclarr.nix`) syncs one profile to both daily, "1080p,
+  - Recyclarr (`nixos/recyclarr.nix`) syncs one profile to both daily and on every deploy that changes it, "1080p,
     then 720p": 1080p first, 720p next, remuxes and 4K only when nothing else
     exists, original audio only, and TRaSH's unwanted formats blocked. Make it
     the default for new media in Radarr, Sonarr and Seerr. Older items keep
     their profiles, so nothing gets re-downloaded.
 - [Bazarr][bazarr] is configured by `bazarr-settings` (`nixos/bazarr.nix`),
-  which pushes the settings through Bazarr's API on every deploy. Change them
-  there, not in the UI. Connect Sonarr and Radarr once in the UI.
+  which pushes the settings through Bazarr's API on every deploy, including the
+  Sonarr and Radarr connections. Change them there, not in the UI.
   - One language profile for everything: English and Spanish always, Catalan
     and Japanese when the audio is in that language. Subtitle tracks already in the file count.
   - Every download is re-timed against the audio.

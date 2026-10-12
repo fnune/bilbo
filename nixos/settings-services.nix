@@ -8,6 +8,8 @@
     name,
     description,
     after,
+    softAfter ? [],
+    restartTriggers ? [],
     secrets ? [],
     runtimeInputs ? [],
     serviceConfig ? {},
@@ -38,9 +40,9 @@
   in {
     inherit description;
     wantedBy = ["multi-user.target"];
-    after = units;
+    after = units ++ map (service: "${service}.service") softAfter;
     requires = units;
-    restartTriggers = [script];
+    restartTriggers = [script] ++ restartTriggers;
     serviceConfig =
       {
         Type = "oneshot";

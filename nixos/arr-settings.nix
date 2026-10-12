@@ -127,6 +127,7 @@ in {
     name = "arr-settings";
     description = "Apply Radarr, Sonarr, Prowlarr and Seerr settings from this repository";
     after = ["radarr" "sonarr" "prowlarr" "seerr" "nzbget" "ntfy-sh"];
+    softAfter = ["recyclarr-on-change"];
     secrets = ["radarr-api-key" "sonarr-api-key" "nzbget-username" "nzbget-password" "nzbgeek-api-key"];
     text = ''
       ${lib.concatStrings (lib.mapAttrsToList (name: _: arrClient name) arrs)}

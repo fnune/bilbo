@@ -36,23 +36,37 @@
     tag = null;
   };
 
-  settings = {
-    "languages-enabled" = map (i: i.language) languageProfile.items;
-    "languages-profiles" = builtins.toJSON [languageProfile];
-    "settings-general-base_url" = baseUrl;
-    "settings-general-ip" = "127.0.0.1";
-    "settings-auth-type" = "form";
-    "settings-general-serie_default_enabled" = true;
-    "settings-general-serie_default_profile" = profileId;
-    "settings-general-movie_default_enabled" = true;
-    "settings-general-movie_default_profile" = profileId;
-    "settings-general-use_embedded_subs" = true;
-    "settings-general-ignore_pgs_subs" = false;
-    "settings-general-enabled_providers" = ["opensubtitlescom" "podnapisi" "gestdown"];
-    "settings-opensubtitlescom-use_hash" = true;
-    "settings-subsync-use_subsync" = true;
-    "settings-subsync-use_subsync_threshold" = false;
-    "settings-subsync-use_subsync_movie_threshold" = false;
+  settings =
+    arrConnection "sonarr"
+    // arrConnection "radarr"
+    // {
+      "languages-enabled" = map (i: i.language) languageProfile.items;
+      "languages-profiles" = builtins.toJSON [languageProfile];
+      "settings-general-base_url" = baseUrl;
+      "settings-general-use_sonarr" = true;
+      "settings-general-use_radarr" = true;
+      "settings-general-ip" = "127.0.0.1";
+      "settings-auth-type" = "form";
+      "settings-general-serie_default_enabled" = true;
+      "settings-general-serie_default_profile" = profileId;
+      "settings-general-movie_default_enabled" = true;
+      "settings-general-movie_default_profile" = profileId;
+      "settings-general-use_embedded_subs" = true;
+      "settings-general-ignore_pgs_subs" = false;
+      "settings-general-enabled_providers" = ["opensubtitlescom" "podnapisi" "gestdown"];
+      "settings-opensubtitlescom-use_hash" = true;
+      "settings-subsync-use_subsync" = true;
+      "settings-subsync-use_subsync_threshold" = false;
+      "settings-subsync-use_subsync_movie_threshold" = false;
+    };
+
+  arrConnection = name: let
+    server = config.services.${name}.settings.server;
+  in {
+    "settings-${name}-ip" = "127.0.0.1";
+    "settings-${name}-port" = server.port;
+    "settings-${name}-base_url" = server.urlbase;
+    "settings-${name}-ssl" = false;
   };
 
   formFields = lib.concatLists (lib.mapAttrsToList (key: value:
@@ -84,7 +98,7 @@ in {
     name = "bazarr-settings";
     description = "Apply Bazarr's settings from this repository";
     after = ["bazarr"];
-    secrets = ["opensubtitles-username" "opensubtitles-password" "bazarr-username" "bazarr-password"];
+    secrets = ["opensubtitles-username" "opensubtitles-password" "bazarr-username" "bazarr-password" "sonarr-api-key" "radarr-api-key"];
     runtimeInputs = [pkgs.yq-go];
     serviceConfig = {
       User = cfg.user;
@@ -115,7 +129,9 @@ in {
         --form "settings-opensubtitlescom-username=<$CREDENTIALS_DIRECTORY/opensubtitles-username" \
         --form "settings-opensubtitlescom-password=<$CREDENTIALS_DIRECTORY/opensubtitles-password" \
         --form "settings-auth-username=<$CREDENTIALS_DIRECTORY/bazarr-username" \
-        --form "settings-auth-password=<$CREDENTIALS_DIRECTORY/bazarr-password"
+        --form "settings-auth-password=<$CREDENTIALS_DIRECTORY/bazarr-password" \
+        --form "settings-sonarr-apikey=<$CREDENTIALS_DIRECTORY/sonarr-api-key" \
+        --form "settings-radarr-apikey=<$CREDENTIALS_DIRECTORY/radarr-api-key"
 
       assign_profile series seriesid sonarrSeriesId
       assign_profile movies radarrid radarrId
