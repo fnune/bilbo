@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  mkSettingsService,
   pkgs,
   ...
 }: let
@@ -106,6 +107,7 @@ in {
     hub = {
       enable = true;
       environment.APP_URL = "https://${beszelHostname}";
+      environmentFile = config.sops.templates."beszel-hub.env".path;
     };
     agent = {
       enable = true;
@@ -144,6 +146,53 @@ in {
       ''}";
       AmbientCapabilities = ["CAP_PERFMON"];
       CapabilityBoundingSet = ["CAP_PERFMON"];
+    };
+  };
+
+  sops = {
+    secrets = lib.genAttrs ["beszel-email" "beszel-password"] (_: {});
+    templates."beszel-hub.env".content = ''
+      BESZEL_HUB_USER_EMAIL=${config.sops.placeholder.beszel-email}
+      BESZEL_HUB_USER_PASSWORD=${config.sops.placeholder.beszel-password}
+    '';
+  };
+
+  systemd.services.beszel-hub.serviceConfig.ExecStartPost = pkgs.writeShellScript "beszel-superuser-from-sops" ''
+    ${config.services.beszel.hub.package}/bin/beszel-hub --dir ${beszelData} \
+      superuser upsert "$BESZEL_HUB_USER_EMAIL" "$BESZEL_HUB_USER_PASSWORD"
+  '';
+
+  systemd.services.beszel-settings = mkSettingsService {
+    name = "beszel-settings";
+    description = "Apply Beszel's user, notification and alert settings from this repository";
+    after = ["beszel-hub"];
+    secrets = ["beszel-email" "beszel-password"];
+    settings = {
+      url = "http://127.0.0.1:${toString config.services.beszel.hub.port}";
+      system = config.networking.hostName;
+      webhook = "ntfy://${ntfyListen}/${topic}?scheme=http";
+      alerts = [
+        {
+          name = "Status";
+          value = 0;
+          min = 2;
+        }
+        {
+          name = "Disk";
+          value = 85;
+          min = 10;
+        }
+        {
+          name = "Temperature";
+          value = 80;
+          min = 10;
+        }
+        {
+          name = "Bandwidth";
+          value = 100;
+          min = 10;
+        }
+      ];
     };
   };
 }
