@@ -82,11 +82,6 @@
   # above 0 favours huge files; 0 favours the smallest file that passes the minimum.
   smallerWithinAQuality = 0;
 in {
-  sops.secrets = {
-    radarr-api-key = {};
-    sonarr-api-key = {};
-  };
-
   services.recyclarr = {
     enable = true;
     configuration = {

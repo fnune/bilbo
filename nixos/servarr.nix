@@ -17,11 +17,26 @@
       };
     };
   };
+  # The key in sops is the source of truth, so a fresh install gets the same key the other services use.
+  apiKeyFromSops = name: {
+    environmentFiles = [config.sops.templates."${name}-api-key.env".path];
+  };
+  apiKeyEnv = name: {
+    "${name}-api-key.env".content = "${lib.toUpper name}__AUTH__APIKEY=${config.sops.placeholder."${name}-api-key"}";
+  };
 in {
   services = {
-    radarr = behindCaddy "radarr" // {group = "users";};
-    sonarr = behindCaddy "sonarr" // {group = "users";};
+    radarr = behindCaddy "radarr" // apiKeyFromSops "radarr" // {group = "users";};
+    sonarr = behindCaddy "sonarr" // apiKeyFromSops "sonarr" // {group = "users";};
     prowlarr = behindCaddy "prowlarr";
+  };
+
+  sops = {
+    secrets = {
+      radarr-api-key = {};
+      sonarr-api-key = {};
+    };
+    templates = apiKeyEnv "radarr" // apiKeyEnv "sonarr";
   };
 
   _module.args = rec {
