@@ -2,6 +2,7 @@
   config,
   lib,
   mounts,
+  pkgs,
   ...
 }: let
   stagedOn = mount: name: {
@@ -36,6 +37,15 @@
     "Category${toString index}.DestDir" = category.destDir;
   };
 
+  # Passed as command-line options these would show in `ps`, so they're written into the config file instead.
+  secretOptions = {
+    "Server1.Username" = "eweka-username";
+    "Server1.Password" = "eweka-password";
+    ControlUsername = "nzbget-username";
+    ControlPassword = "nzbget-password";
+  };
+  configFile = "/var/lib/nzbget/nzbget.conf";
+
   ownedByNzbget = category: {
     name = category.destDir;
     value.d = {
@@ -62,6 +72,22 @@ in {
         # KB per connection, the value NZBGet's docs recommend.
         WriteBuffer = 1024;
       };
+  };
+
+  sops.secrets = lib.genAttrs (builtins.attrValues secretOptions) (_: {});
+
+  systemd.services.nzbget = {
+    serviceConfig.LoadCredential = map (secret: "${secret}:${config.sops.secrets.${secret}.path}") (builtins.attrValues secretOptions);
+    preStart = lib.mkAfter ''
+      set_option() {
+        OPTION=$1 VALUE=$(cat "$CREDENTIALS_DIRECTORY/$2") ${lib.getExe pkgs.gawk} \
+          'index($0, ENVIRON["OPTION"] "=") == 1 { print ENVIRON["OPTION"] "=" ENVIRON["VALUE"]; next } { print }' \
+          ${configFile} >${configFile}.new
+        cat ${configFile}.new >${configFile}
+        rm ${configFile}.new
+      }
+      ${lib.concatStrings (lib.mapAttrsToList (option: secret: "set_option ${option} ${secret}\n") secretOptions)}
+    '';
   };
 
   systemd.tmpfiles.settings."10-nzbget" = lib.listToAttrs (map ownedByNzbget staged);

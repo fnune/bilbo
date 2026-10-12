@@ -16,15 +16,9 @@ mkdir /mnt/downloads-2t/Series
 
 Now, configure each service:
 
-- [NZBGet][nzbget]
-  - Visit [NZBGet][nzbget]—the default credentials are `nzbget`/`tegbzn6789`
-  - In Security: and change the username and password
-  - In Paths: set `MainPath` to `/mnt/downloads-1t/.nzbget`
-  - Categories and their `DestDir` are set in `nixos/nzbget.nix`
-  - In News Servers: configure your server
-    - Use port `563` for SSL
-    - Enable encryption
-    - Bump the connection limit to whatever your server allows (`50`)
+- [NZBGet][nzbget] is configured in `nixos/nzbget.nix`: paths, categories, the
+  Eweka server, and its web and Eweka logins (from sops, written into
+  `nzbget.conf` at start so they stay out of `ps`)
 - [Radarr][radarr] and [Sonarr][sonarr], and other "arr"s
   - For Radarr, go to Settings -> Profiles and set the language to "Original"
     in all profiles
@@ -49,12 +43,10 @@ Now, configure each service:
   - Bazarr is the only thing that downloads subtitles. `jellyfin-settings`
     keeps Jellyfin's own subtitle downloads off, or files pile up next to each
     episode.
-- [Prowlarr][prowlarr] holds the indexers and pushes them to Radarr and Sonarr
-  - In Indexers, add NZBGeek
-  - In Settings -> Apps, add Radarr (`http://localhost:7878/radarr`) and Sonarr
-    (`http://localhost:8989/sonarr`) with their API keys, and Prowlarr itself as
-    `http://localhost:9696/prowlarr`
-  - Then delete the NZBGeek indexer added by hand in Radarr and Sonarr, if any
+- [Prowlarr][prowlarr] holds the indexers and pushes them to Radarr and Sonarr.
+  `arr-settings` adds NZBgeek and both apps, and once Prowlarr has synced, drops
+  any `NZBgeek` indexer added by hand in Radarr or Sonarr. Create the login on
+  first visit.
 - [Calibre][calibre]
   - On first run, point it at `/mnt/downloads-1t/Books` (initialize a Calibre
     library there with `calibredb` if `metadata.db` does not yet exist)
@@ -156,6 +148,9 @@ Secrets are encrypted in `secrets/bilbo.yaml`. `sops-nix` decrypts them at boot 
 | `radarr-api-key`, `sonarr-api-key` | Recyclarr's access to Radarr and Sonarr | Settings -> General in each |
 | `opensubtitles-username`, `opensubtitles-password` | Bazarr's OpenSubtitles.com account | opensubtitles.com |
 | `bazarr-username`, `bazarr-password` | Bazarr's web login | choose one |
+| `nzbgeek-api-key` | Prowlarr's NZBgeek indexer | nzbgeek.info -> My Account |
+| `eweka-username`, `eweka-password` | NZBGet's news server login | Eweka account |
+| `nzbget-username`, `nzbget-password` | NZBGet's web login, also used by Radarr and Sonarr | choose one |
 | `jellyfin-api-key` | `jellyfin-settings`' access to Jellyfin | Dashboard -> API Keys |
 | `anthropic-api-key` | Pincho's LLM | the Anthropic console |
 | `papra-env` | Papra's environment file, see its section | generated once |
