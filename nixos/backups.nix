@@ -39,10 +39,12 @@
   freshness = {
     local = {
       stamp = "${statusDir}/mirrored-last-success";
+      unit = "borgbackup-job-mirrored.service";
       intervalDays = 1;
     };
     offsite = {
       stamp = "${statusDir}/mirrored-offsite-last-success";
+      unit = "borgbackup-offsite-mirrored.service";
       # Weekly: Deep Archive charges for deleted files as if kept 180 days.
       # https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html
       intervalDays = 7;
@@ -92,7 +94,7 @@ in {
   systemd.services.borgbackup-offsite-mirrored = {
     description = "Mirror the mirrored Borg repository to S3 Deep Archive";
     startAt = "Sun 04:00";
-    after = ["network-online.target"];
+    after = ["network-online.target" freshness.local.unit];
     wants = ["network-online.target"];
     unitConfig.RequiresMountsFor = [mirroredRepoPath];
     environment.BORG_PASSCOMMAND = "cat ${mirroredBorgPassphrasePath}";
@@ -111,6 +113,23 @@ in {
     '';
   };
   systemd.timers.borgbackup-offsite-mirrored.timerConfig.Persistent = true;
+
+  systemd.services.backup-never-run = {
+    description = "Start any backup that has never succeeded on this machine";
+    wantedBy = ["multi-user.target"];
+    after = ["network-online.target"];
+    wants = ["network-online.target"];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      units=()
+      ${lib.concatMapStrings (backup: ''
+        [ -e ${backup.stamp} ] || units+=(${backup.unit})
+      '') (builtins.attrValues freshness)}
+      if [ ''${#units[@]} -gt 0 ]; then
+        ${pkgs.systemd}/bin/systemctl start --no-block "''${units[@]}"
+      fi
+    '';
+  };
 
   systemd.services.backup-freshness = {
     description = "Check that the mirrored backup and its off-site copy succeeded recently";
