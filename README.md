@@ -4,22 +4,16 @@ My media server.
 
 ## First-time setup
 
-If you restore from Borg in step 5, skip steps 6 to 13.
+If you restore from Borg in step 5, skip steps 6 to 8.
 
 1. Install NixOS from this flake.
 2. Make the SSH host key a sops recipient. On bilbo, run `nix-shell -p ssh-to-age --run 'ssh-to-age < /etc/ssh/ssh_host_ed25519_key.pub'`. Put the output under `&bilbo` in `.sops.yaml`. Run `sops updatekeys secrets/bilbo.yaml`.
 3. Add the missing entries from the [secrets table](#secrets).
 4. Run `sudo nixos-rebuild switch --flake .#bilbo`.
-5. To restore, follow [Restoring from backups](remote/README.md#restoring-from-backups). Then go to step 14.
-6. Run `mkdir /mnt/downloads-1t/Books /mnt/downloads-1t/Movies /mnt/downloads-2t/Series`. If `Books` has no `metadata.db`, make a Calibre library there with `calibredb`.
-7. [Jellyfin][jellyfin]: make the admin user. Add the libraries Movies (`/mnt/downloads-1t/Movies`) and Series (`/mnt/downloads-2t/Series`). Make an API key in Dashboard -> API Keys. Add it to sops as `jellyfin-api-key`. Do step 4 again.
-8. [Radarr][radarr], [Sonarr][sonarr], [Prowlarr][prowlarr]: make the login on the first visit.
-9. [Seerr][seerr]: sign in as the Jellyfin admin. Set Jellyfin to `http://127.0.0.1:8096/jellyfin`. Add Radarr (`127.0.0.1:7878`, base URL `/radarr`) with `radarr-api-key`. Add Sonarr (`127.0.0.1:8989`, base URL `/sonarr`) with `sonarr-api-key`. Import the Jellyfin users that can request.
-10. In the Add New dialog of Radarr and Sonarr, select "1080p, then 720p" one time.
-11. [Calibre][calibre]: make a Kobo sync token in the user profile. On the Kobo, set `https://calibre.fnune.com/kobo/<token>`.
-12. [Beszel][beszel]: make the admin user. Add the ntfy notification and the alerts, as [Monitoring](#monitoring) shows.
-13. Do the setup in [Camera](#camera), [Frigate](#frigate), [Zigbee](#zigbee), [Home Assistant](#home-assistant) and [Papra](#papra).
-14. Start both backups: `sudo systemctl start borgbackup-job-mirrored && sudo systemctl start borgbackup-offsite-mirrored`.
+5. To restore, follow [Restoring from backups](remote/README.md#restoring-from-backups).
+6. In the Add New dialog of Radarr and Sonarr, select "1080p, then 720p" one time.
+7. [Calibre][calibre]: make a Kobo sync token in the user profile. On the Kobo, set `https://calibre.fnune.com/kobo/<token>`.
+8. Do the setup in [Camera](#camera), [Zigbee](#zigbee), [Home Assistant](#home-assistant) and [Papra](#papra).
 
 [jellyfin]: https://bilbo.fnune.com/jellyfin
 [nzbget]: https://bilbo.fnune.com/nzbget
@@ -102,14 +96,16 @@ Secrets are encrypted in `secrets/bilbo.yaml`. `sops-nix` decrypts them at boot 
 | `nzbgeek-api-key` | Prowlarr's NZBgeek indexer | nzbgeek.info -> My Account |
 | `eweka-username`, `eweka-password` | NZBGet's news server login | Eweka account |
 | `nzbget-username`, `nzbget-password` | NZBGet's web login, also used by Radarr and Sonarr | choose one |
-| `jellyfin-api-key` | `jellyfin-settings`' access to Jellyfin | Dashboard -> API Keys |
+| `jellyfin-admin-username`, `jellyfin-admin-password` | Jellyfin's admin, which also becomes Seerr's admin | choose one |
+| `servarr-username`, `servarr-password` | the login for Radarr, Sonarr and Prowlarr | choose one |
+| `beszel-email`, `beszel-password` | Beszel's admin | choose one |
 | `anthropic-api-key` | Pincho's LLM | the Anthropic console |
 | `papra-env` | Papra's environment file, see its section | generated once |
 | `mosquitto-*-password` | one MQTT password per client. Frigate's and Zigbee2MQTT's environment files use the same entries. | generated |
 | `zigbee2mqtt-frontend-auth-token` | gates the Zigbee2MQTT frontend, which can re-pair or reset devices | generated |
 | `zigbee2mqtt-network-key` | the Zigbee network key. A change means re-pairing every device. | generated once |
 | `camera-password` | the camera's password, used only by go2rtc | the camera's web UI |
-| `frigate-admin-password` | Frigate's `admin` account, which Home Assistant also uses | Frigate's web UI |
+| `frigate-admin-password` | Frigate's `admin` account, which Home Assistant also uses | choose one, at least 12 characters |
 
 To generate the random ones:
 
@@ -192,14 +188,7 @@ Two model notes, both learned the hard way:
   `yolo-generic` parser expects the classic `[1, 84, N]` layout that YOLO11
   produces.
 
-Frigate prints a generated admin password on first start:
-
-```sh
-journalctl -u frigate.service | grep 'Password:'
-```
-
-Log in at [Frigate][frigate], change it, and check inference speed on the System
-Metrics page:
+Check inference speed on the System Metrics page in [Frigate][frigate]:
 
 ```sh
 journalctl -u frigate.service | grep -i openvino
@@ -346,11 +335,7 @@ What notifies on its own (`nixos/monitoring.nix`):
 - Every fail2ban ban
 - Backups, see [Backups](#backups)
 
-[Beszel][beszel] shows disks, SMART, the mirror, temperatures, the iGPU, network and systemd services over time. Its alerts live in its database, so set them up once by hand:
-
-- Visit [Beszel][beszel] and create the admin user. Only the first user can sign up. The hub then lists bilbo on its next restart.
-- In Settings -> Notifications, add `ntfy://127.0.0.1:2586/bilbo?scheme=http`
-- In the systems table, turn on alerts: status, disk usage at 85%, temperature, and bandwidth for traffic spikes
+[Beszel][beszel] shows disks, SMART, the mirror, temperatures, the iGPU, network and systemd services over time. Its alerts (status, disk at 85%, temperature at 80 °C, bandwidth at 100 MB/s) go to ntfy (`nixos/monitoring.nix`).
 
 For downloads, Sonarr and Radarr notify on grab, import, upgrade and health issues (`nixos/arr-settings.nix`). Their calendars show what's coming next.
 
