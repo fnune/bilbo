@@ -54,6 +54,10 @@ in {
           seerrServer.enableSeasonFolders = true;
         };
       };
+      mediaManagement = {
+        downloadPropersAndRepacks = "doNotPrefer";
+        deleteEmptyFolders = true;
+      };
       nzbget = {
         host = "127.0.0.1";
         port = 6789;

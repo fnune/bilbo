@@ -27,6 +27,7 @@ def config(tmp_path: Path) -> dict[str, Any]:
             | {"seerrServer": {"enableSeasonFolders": True}},
         },
         "nzbget": {"host": "127.0.0.1", "port": 6789},
+        "mediaManagement": {"downloadPropersAndRepacks": "doNotPrefer", "deleteEmptyFolders": True},
         "ntfy": {"url": "http://ntfy", "topic": "bilbo"},
         "prowlarr": {
             "url": "http://prowlarr",
@@ -84,8 +85,12 @@ def serve_arr(http: responses.RequestsMock, name: str, fresh: bool) -> None:
     http.get(f"{api}/notification", json=[] if fresh else [{"implementation": "Ntfy"}])
     http.get(f"{api}/notification/schema", json=schema("Ntfy", "serverUrl", "topics"))
     http.post(f"{api}/notification")
-    repacks = "preferAndUpgrade" if fresh else "doNotPrefer"
-    http.get(f"{api}/config/mediamanagement", json={"id": 1, "downloadPropersAndRepacks": repacks})
+    media_management = (
+        {"id": 1, "downloadPropersAndRepacks": "preferAndUpgrade", "deleteEmptyFolders": False}
+        if fresh
+        else {"id": 1, "downloadPropersAndRepacks": "doNotPrefer", "deleteEmptyFolders": True}
+    )
+    http.get(f"{api}/config/mediamanagement", json=media_management)
     http.put(f"{api}/config/mediamanagement/1")
     profiles = [{"id": 1, "name": "Any"}] + ([] if fresh else [{"id": 9, "name": PROFILE}])
     http.get(f"{api}/qualityprofile", json=profiles)

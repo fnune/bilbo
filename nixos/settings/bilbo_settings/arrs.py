@@ -109,11 +109,9 @@ def apply_arr(api: Api, name: str, arr: dict[str, Any], config: dict[str, Any]) 
         )
 
     media_management = api.get("/config/mediamanagement")
-    if media_management["downloadPropersAndRepacks"] != "doNotPrefer":
-        api.put(
-            f"/config/mediamanagement/{media_management['id']}",
-            json=media_management | {"downloadPropersAndRepacks": "doNotPrefer"},
-        )
+    wanted = media_management | config["mediaManagement"]
+    if wanted != media_management:
+        api.put(f"/config/mediamanagement/{media_management['id']}", json=wanted)
 
 
 def prowlarr_api_key(config_file: str) -> str:
