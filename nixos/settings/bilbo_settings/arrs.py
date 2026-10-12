@@ -9,7 +9,6 @@ SEERR_JELLYFIN = 2
 
 
 def apply(config: dict[str, Any]) -> None:
-    login = (credential("servarr-username"), credential("servarr-password"))
     arrs = {
         name: Api(f"{arr['url']}/api/v3", {"X-Api-Key": credential(f"{name}-api-key")})
         for name, arr in config["arrs"].items()
@@ -19,7 +18,7 @@ def apply(config: dict[str, Any]) -> None:
 
     for name, arr in config["arrs"].items():
         wait_until_up(f"{arr['url']}/ping")
-        apply_arr(arrs[name], arr, config, login)
+        apply_arr(arrs[name], name, arr, config)
         connect_seerr(seerr, arrs[name], name, arr, config["seerr"]["profile"])
 
     prowlarr_config = config["prowlarr"]
@@ -27,15 +26,16 @@ def apply(config: dict[str, Any]) -> None:
         f"{prowlarr_config['url']}/api/v1", {"X-Api-Key": prowlarr_api_key(prowlarr_config["configFile"])}
     )
     wait_until_up(f"{prowlarr_config['url']}/ping")
-    apply_prowlarr(prowlarr, prowlarr_config, config["arrs"], login)
+    apply_prowlarr(prowlarr, prowlarr_config, config["arrs"])
     for name in config["arrs"]:
         drop_hand_added_indexer(arrs[name], prowlarr_config["indexer"])
 
     finish_seerr_setup(seerr, config["seerr"])
 
 
-def ensure_login(api: Api, login: tuple[str, str]) -> None:
-    username, password = login
+def ensure_login(api: Api, app: str) -> None:
+    username = credential(f"{app}-username")
+    password = credential(f"{app}-password")
     host = api.get("/config/host")
     if host["username"] == username:
         return
@@ -63,8 +63,8 @@ def from_schema(
     return schema | properties
 
 
-def apply_arr(api: Api, arr: dict[str, Any], config: dict[str, Any], login: tuple[str, str]) -> None:
-    ensure_login(api, login)
+def apply_arr(api: Api, name: str, arr: dict[str, Any], config: dict[str, Any]) -> None:
+    ensure_login(api, name)
 
     if not has(api.get("/rootfolder"), path=arr["rootFolder"]):
         api.post("/rootfolder", json={"path": arr["rootFolder"]})
@@ -121,10 +121,8 @@ def prowlarr_api_key(config_file: str) -> str:
     return config.split("<ApiKey>", 1)[1].split("</ApiKey>", 1)[0]
 
 
-def apply_prowlarr(
-    prowlarr: Api, config: dict[str, Any], arrs: dict[str, Any], login: tuple[str, str]
-) -> None:
-    ensure_login(prowlarr, login)
+def apply_prowlarr(prowlarr: Api, config: dict[str, Any], arrs: dict[str, Any]) -> None:
+    ensure_login(prowlarr, "prowlarr")
 
     indexer = config["indexer"]
     if not has(prowlarr.get("/indexer"), name=indexer):

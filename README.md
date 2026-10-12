@@ -97,7 +97,7 @@ Secrets are encrypted in `secrets/bilbo.yaml`. `sops-nix` decrypts them at boot 
 | `eweka-username`, `eweka-password` | NZBGet's news server login | Eweka account |
 | `nzbget-username`, `nzbget-password` | NZBGet's web login, also used by Radarr and Sonarr | choose one |
 | `jellyfin-admin-username`, `jellyfin-admin-password` | Jellyfin's admin, which also becomes Seerr's admin | choose one |
-| `servarr-username`, `servarr-password` | the login for Radarr, Sonarr and Prowlarr | choose one |
+| `radarr-username`, `radarr-password`, and the same for `sonarr` and `prowlarr` | each app's web login | the current one, or choose one |
 | `beszel-email`, `beszel-password` | Beszel's admin | choose one |
 | `anthropic-api-key` | Pincho's LLM | the Anthropic console |
 | `papra-env` | Papra's environment file, see its section | generated once |

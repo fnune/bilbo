@@ -18,19 +18,20 @@
     }
     // extra;
 
-  secrets = [
-    "radarr-api-key"
-    "sonarr-api-key"
-    "servarr-username"
-    "servarr-password"
-    "nzbget-username"
-    "nzbget-password"
-    "nzbgeek-api-key"
-    "jellyfin-admin-username"
-    "jellyfin-admin-password"
-  ];
+  logins = lib.concatMap (app: ["${app}-username" "${app}-password"]) ["radarr" "sonarr" "prowlarr"];
+  ownSecrets = ["nzbgeek-api-key"] ++ logins;
+  secrets =
+    ownSecrets
+    ++ [
+      "radarr-api-key"
+      "sonarr-api-key"
+      "nzbget-username"
+      "nzbget-password"
+      "jellyfin-admin-username"
+      "jellyfin-admin-password"
+    ];
 in {
-  sops.secrets = lib.genAttrs ["nzbgeek-api-key" "servarr-username" "servarr-password"] (_: {});
+  sops.secrets = lib.genAttrs ownSecrets (_: {});
 
   systemd.services.arr-settings = mkSettingsService {
     name = "arr-settings";

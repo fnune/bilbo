@@ -46,8 +46,12 @@ def config(tmp_path: Path) -> dict[str, Any]:
 @pytest.fixture
 def secrets(credentials: Callable[..., None]) -> None:
     credentials(
-        servarr_username="admin",
-        servarr_password="secret",
+        radarr_username="admin",
+        radarr_password="secret",
+        sonarr_username="admin",
+        sonarr_password="secret",
+        prowlarr_username="admin",
+        prowlarr_password="secret",
         radarr_api_key="radarr-key",
         sonarr_api_key="sonarr-key",
         nzbget_username="nzbget",
