@@ -10,10 +10,17 @@
 
   api = "http://127.0.0.1:8096/jellyfin";
 
-  # Everything plays in its original audio, so English subtitles always show.
-  userSubtitles = {
+  # Original audio, English subtitles unless it's in Spanish. Jellyfin has no
+  # "original language", so Spanish as the audio preference only decides when
+  # subtitles show; the file's default track (the original) is what plays.
+  userPlayback = {
+    SubtitleMode = "Smart";
     SubtitleLanguagePreference = "eng";
-    SubtitleMode = "Always";
+    AudioLanguagePreference = "spa";
+    PlayDefaultAudioTrack = true;
+    RememberAudioSelections = true;
+    RememberSubtitleSelections = true;
+    EnableNextEpisodeAutoPlay = false;
   };
   # Bazarr is the only subtitle downloader; Jellyfin's search piles up out-of-sync copies.
   librarySubtitles = {
@@ -43,7 +50,7 @@
       jellyfin ${api}/Users | jq -c '.[] | {id: .Id, configuration: .Configuration}' |
         while read -r u; do
           id=$(jq -r .id <<<"$u")
-          jq -c '.configuration * ${builtins.toJSON userSubtitles}' <<<"$u" |
+          jq -c '.configuration * ${builtins.toJSON userPlayback}' <<<"$u" |
             jellyfin --request POST --data @- "${api}/Users/Configuration?userId=$id"
         done
 

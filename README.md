@@ -67,8 +67,9 @@ Now, configure each service:
   - Create a media library for Series in `/mnt/downloads-2t/Series`
   - Create an API key under Dashboard -> API Keys and store it as
     `jellyfin-api-key` in sops. `jellyfin-settings` (`nixos/jellyfin.nix`) uses
-    it on every deploy to set English subtitles, always shown, for every user,
-    and to keep subtitle downloads off in every library.
+    it on every deploy to set every user's playback (original audio, English
+    subtitles unless the audio is Spanish, no next-episode autoplay), to keep
+    subtitle downloads off in every library, and to trust Caddy as the proxy.
 - [Seerr][seerr]
   - Sign in with the Jellyfin admin account and point it at Jellyfin on
     `http://localhost:8096/jellyfin`
