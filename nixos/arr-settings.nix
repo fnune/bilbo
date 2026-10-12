@@ -77,6 +77,13 @@
               call "$key" ${app.url}/downloadclient --request POST --data @-
           fi
 
+          # The quality profile's repack scores decide, as TRaSH recommends.
+          call "$key" ${app.url}/config/mediamanagement |
+            jq -c 'select(.downloadPropersAndRepacks != "doNotPrefer") | .downloadPropersAndRepacks = "doNotPrefer"' |
+            while read -r config; do
+              call "$key" "${app.url}/config/mediamanagement/$(jq -r .id <<<"$config")" --request PUT --data "$config"
+            done
+
           if ! call "$key" ${app.url}/notification | jq -e 'any(.[]; .implementation == "Ntfy")' >/dev/null; then
             call "$key" ${app.url}/notification/schema |
               jq '
