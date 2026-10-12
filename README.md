@@ -28,7 +28,13 @@ Now, configure each service:
 - [Radarr][radarr] and [Sonarr][sonarr], and other "arr"s
   - For Radarr, go to Settings -> Profiles and set the language to "Original"
     in all profiles
-  - For both, go to Settings -> Download Clients and add NZBGet
+  - `arr-settings` (`nixos/arr-settings.nix`) adds what's missing on every
+    deploy: the root folder, NZBGet as download client (its login is read
+    from `nzbget.conf`) and an ntfy connection. It also makes "1080p, then
+    720p" Seerr's default profile once Recyclarr has created it. It never
+    deletes anything.
+  - All of them require a login, Bazarr included: Caddy reaches them from
+    localhost, so "disabled for local addresses" would mean no login at all.
   - Recyclarr (`nixos/recyclarr.nix`) syncs one profile to both daily, "1080p,
     then 720p": 1080p first, 720p next, remuxes and 4K only when nothing else
     exists, original audio only, and TRaSH's unwanted formats blocked. Make it
@@ -148,6 +154,7 @@ Secrets are encrypted in `secrets/bilbo.yaml`. `sops-nix` decrypts them at boot 
 | `borg-passphrase`, `rclone-conf`, `borg-s3-bucket-name` | the off-site backup | `pulumi stack output` in `remote/` |
 | `radarr-api-key`, `sonarr-api-key` | Recyclarr's access to Radarr and Sonarr | Settings -> General in each |
 | `opensubtitles-username`, `opensubtitles-password` | Bazarr's OpenSubtitles.com account | opensubtitles.com |
+| `bazarr-username`, `bazarr-password` | Bazarr's web login | choose one |
 | `jellyfin-api-key` | `jellyfin-settings`' access to Jellyfin | Dashboard -> API Keys |
 | `anthropic-api-key` | Pincho's LLM | the Anthropic console |
 | `papra-env` | Papra's environment file, see its section | generated once |
@@ -398,7 +405,7 @@ What notifies on its own (`nixos/monitoring.nix`):
 - In Settings -> Notifications, add `ntfy://127.0.0.1:2586/bilbo?scheme=http`
 - In the systems table, turn on alerts: status, disk usage at 85%, temperature, and bandwidth for traffic spikes
 
-For downloads, add an ntfy connection in Sonarr and Radarr (Settings -> Connect -> ntfy) with server `http://127.0.0.1:2586` and topic `bilbo`, on grab, import and health issues. Their calendars show what's coming next.
+For downloads, Sonarr and Radarr notify on grab, import, upgrade and health issues (`nixos/arr-settings.nix`). Their calendars show what's coming next.
 
 [ntfy]: https://notify.fnune.com
 [beszel]: https://health.fnune.com

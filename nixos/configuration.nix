@@ -102,6 +102,7 @@
   system.stateVersion = "23.05";
 
   imports = [
+    ./arr-settings.nix
     ./backups.nix
     ./bazarr.nix
     ./caddy.nix
