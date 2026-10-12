@@ -124,6 +124,7 @@
     ./servarr.nix
     ./settings-services.nix
     ./smb-jahreskarte.nix
+    ./tools.nix
     ./wireguard.nix
     ./zigbee2mqtt.nix
   ];

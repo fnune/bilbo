@@ -7,7 +7,7 @@ import responses
 
 @pytest.fixture(autouse=True)
 def no_waiting(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("bilbo_settings.api.time.sleep", lambda _: None)
+    monkeypatch.setattr("bilbo_tools.api.time.sleep", lambda _: None)
 
 
 @pytest.fixture

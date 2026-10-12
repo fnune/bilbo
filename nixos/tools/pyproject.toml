@@ -1,11 +1,11 @@
 [project]
-name = "bilbo-settings"
+name = "bilbo-tools"
 version = "1.0.0"
 requires-python = ">=3.12"
 dependencies = ["pyyaml", "requests"]
 
 [project.scripts]
-bilbo-settings = "bilbo_settings.__main__:main"
+bilbo-tools = "bilbo_tools.__main__:main"
 
 [build-system]
 requires = ["setuptools"]

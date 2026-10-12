@@ -15,7 +15,7 @@ APPLY = {
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Push bilbo's settings into its apps through their APIs.")
+    parser = argparse.ArgumentParser(description="Bilbo's maintenance tools.")
     parser.add_argument("app", choices=APPLY)
     parser.add_argument("config", type=Path)
     arguments = parser.parse_args()

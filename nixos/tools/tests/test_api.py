@@ -1,7 +1,7 @@
 import pytest
 import responses
 
-from bilbo_settings.api import Api, has, wait_until_up
+from bilbo_tools.api import Api, has, wait_until_up
 
 
 def test_waits_through_server_errors(http: responses.RequestsMock) -> None:

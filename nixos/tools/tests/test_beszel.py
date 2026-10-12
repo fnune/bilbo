@@ -3,7 +3,7 @@ from collections.abc import Callable
 
 import responses
 
-from bilbo_settings import beszel
+from bilbo_tools import beszel
 
 from .conftest import writes
 

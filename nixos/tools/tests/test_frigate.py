@@ -2,7 +2,7 @@ from collections.abc import Callable
 
 import responses
 
-from bilbo_settings import frigate
+from bilbo_tools import frigate
 
 from .conftest import writes
 

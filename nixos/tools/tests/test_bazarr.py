@@ -4,7 +4,7 @@ from urllib.parse import parse_qs
 
 import responses
 
-from bilbo_settings import bazarr
+from bilbo_tools import bazarr
 
 URL = "http://bazarr/api"
 

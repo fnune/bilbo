@@ -3,7 +3,7 @@ from collections.abc import Callable
 
 import responses
 
-from bilbo_settings import jellyfin
+from bilbo_tools import jellyfin
 
 from .conftest import writes
 

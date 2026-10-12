@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 import responses
 
-from bilbo_settings import arrs
+from bilbo_tools import arrs
 
 from .conftest import writes
 
