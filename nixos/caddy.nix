@@ -222,7 +222,8 @@ in {
     globalConfig = ''
       crowdsec {
         api_url ${crowdsec.lapiUrl}
-        api_key {$CROWDSEC_API_KEY}
+        # A placeholder keeps Caddy starting while the bouncer is unregistered; it then lets traffic through.
+        api_key {$CROWDSEC_API_KEY:unregistered}
       }
     '';
     virtualHosts = {

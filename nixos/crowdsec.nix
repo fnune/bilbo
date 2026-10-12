@@ -6,11 +6,14 @@
   ...
 }: let
   cfg = config.services.crowdsec;
-  stateDir = "/var/lib/crowdsec";
+  stateDir = "/var/lib/crowdsec/state";
+  lapiCredentials = "${stateDir}/lapi-credentials.yaml";
+  capiCredentials = "${stateDir}/capi-credentials.yaml";
   lapiUrl = "http://${cfg.settings.general.api.server.listen_uri}";
   bouncerName = "caddy";
   bouncerEnvDir = "/var/lib/crowdsec-caddy-bouncer";
   bouncerEnv = "${bouncerEnvDir}/env";
+  caddyNeedsRestart = "${bouncerEnvDir}/caddy-needs-restart";
   # The module's wrapper points cscli at the generated config; the bare binary looks in /etc.
   cscli = lib.findFirst (p: lib.getName p == "cscli") null config.environment.systemPackages;
 in {
@@ -47,13 +50,16 @@ in {
     };
     settings = {
       general.api.server.enable = true;
-      lapi.credentialsFile = "${stateDir}/lapi-credentials.yaml";
+      lapi.credentialsFile = lapiCredentials;
       # Registering with the central API is what pulls the community blocklist.
-      capi.credentialsFile = "${stateDir}/capi-credentials.yaml";
+      capi.credentialsFile = capiCredentials;
     };
   };
 
   systemd.services.crowdsec.serviceConfig.SupplementaryGroups = [config.services.caddy.group];
+
+  # cscli refuses to start while a credentials file is missing, and the setup that fills them runs cscli.
+  systemd.tmpfiles.rules = map (file: "f ${file} 0600 ${cfg.user} ${cfg.group} -") [lapiCredentials capiCredentials];
 
   # Caddy only needs the key, so the bouncer registers itself and hands it over in a file.
   systemd.services.crowdsec-caddy-bouncer-register = {
@@ -69,6 +75,15 @@ in {
       Group = cfg.group;
       StateDirectory = "crowdsec-caddy-bouncer";
       UMask = "0077";
+      # CrowdSec can take a while on first start, and Caddy runs without the key until this succeeds.
+      Restart = "on-failure";
+      RestartSec = 30;
+      ExecStartPost = "+${pkgs.writeShellScript "caddy-reload-bouncer-key" ''
+        if [ -e ${caddyNeedsRestart} ]; then
+          rm ${caddyNeedsRestart}
+          ${pkgs.systemd}/bin/systemctl try-restart --no-block caddy.service
+        fi
+      ''}";
     };
     script = ''
       cscli=${lib.getExe cscli}
@@ -77,6 +92,7 @@ in {
       else
         key=$($cscli bouncers add --output raw -- ${bouncerName})
         echo "CROWDSEC_API_KEY=$key" > ${bouncerEnv}
+        touch ${caddyNeedsRestart}
       fi
     '';
   };
