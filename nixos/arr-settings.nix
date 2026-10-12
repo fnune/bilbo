@@ -110,15 +110,15 @@
         ${name} "/config/mediamanagement/$(jq -r .id <<<"$settings")" --request PUT --data "$settings"
       done
 
-    profileId=$(${name} /qualityprofile | jq -r '.[] | select(.name == "${seerrProfile}") | .id')
-    if [ -n "$profileId" ]; then
-      seerr /settings/${name} |
-        jq -c --argjson id "$profileId" '.[] | select(.isDefault and .activeProfileId != $id)
-          | .activeProfileId = $id | .activeProfileName = "${seerrProfile}"' |
-        while read -r server; do
-          seerr "/settings/${name}/$(jq -r .id <<<"$server")" --request PUT --data "$(jq -c 'del(.id)' <<<"$server")"
-        done
-    fi
+    profileId=$(${name} /qualityprofile | jq '[.[] | select(.name == "${seerrProfile}") | .id] | first')
+    seerr /settings/${name} |
+      jq -c --argjson profileId "$profileId" '.[] | select(.isDefault) | . as $current
+        | .hostname = "127.0.0.1"
+        | if $profileId then .activeProfileId = $profileId | .activeProfileName = "${seerrProfile}" else . end
+        | select(. != $current)' |
+      while read -r server; do
+        seerr "/settings/${name}/$(jq -r .id <<<"$server")" --request PUT --data "$(jq -c 'del(.id)' <<<"$server")"
+      done
   '';
 in {
   sops.secrets.nzbgeek-api-key = {};
