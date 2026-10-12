@@ -72,6 +72,7 @@
 
   arrSettings = name: arr: ''
     wait_until_up ${servarrUrl name}/ping
+    ensure_login ${name}
 
     if missing ${name} /rootfolder '.path == "${arr.rootFolder}"'; then
       jq -n '{path: "${arr.rootFolder}"}' | ${name} /rootfolder --request POST --data @-
@@ -122,14 +123,14 @@
       done
   '';
 in {
-  sops.secrets.nzbgeek-api-key = {};
+  sops.secrets = lib.genAttrs ["nzbgeek-api-key" "servarr-username" "servarr-password"] (_: {});
 
   systemd.services.arr-settings = mkSettingsService {
     name = "arr-settings";
     description = "Apply Radarr, Sonarr, Prowlarr and Seerr settings from this repository";
     after = ["radarr" "sonarr" "prowlarr" "seerr" "nzbget" "ntfy-sh"];
     softAfter = ["recyclarr-on-change"];
-    secrets = ["radarr-api-key" "sonarr-api-key" "nzbget-username" "nzbget-password" "nzbgeek-api-key"];
+    secrets = ["radarr-api-key" "sonarr-api-key" "nzbget-username" "nzbget-password" "nzbgeek-api-key" "servarr-username" "servarr-password"];
     text = ''
       ${lib.concatStrings (lib.mapAttrsToList (name: _: arrClient name) arrs)}
 
@@ -138,6 +139,17 @@ in {
         shift
         curl --silent --show-error --fail-with-body --header "X-Api-Key: $(jq -r .main.apiKey ${seerr.configDir}/settings.json)" \
           --header "Content-Type: application/json" "$@" "http://127.0.0.1:${toString seerr.port}/api/v1$path"
+      }
+
+      ensure_login() {
+        "$1" /config/host |
+          jq -c --arg user "$(credential servarr-username)" --arg password "$(credential servarr-password)" '
+            select(.username != $user)
+            | .username = $user | .password = $password | .passwordConfirmation = $password
+            | .authenticationMethod = "forms" | .authenticationRequired = "enabled"' |
+          while read -r host; do
+            "$1" "/config/host/$(jq -r .id <<<"$host")" --request PUT --data "$host" >/dev/null
+          done
       }
 
       missing() {
@@ -158,6 +170,7 @@ in {
       }
 
       wait_until_up ${servarrUrl "prowlarr"}/ping
+      ensure_login prowlarr
 
       if missing prowlarr /indexer '.name == "${handAddedIndexer}"'; then
         prowlarr /indexer/schema |
