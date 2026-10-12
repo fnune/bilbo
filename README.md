@@ -91,7 +91,7 @@ Secrets are encrypted in `secrets/bilbo.yaml`. `sops-nix` decrypts them at boot 
 | `wireguard-private-key` | bilbo's WireGuard key | `wg genkey` |
 | `borg-passphrase`, `rclone-conf`, `borg-s3-bucket-name` | the off-site backup | `pulumi stack output` in `remote/` |
 | `radarr-api-key`, `sonarr-api-key` | Radarr's and Sonarr's own API keys, which everything else uses to reach them | any 32 hex characters: `openssl rand -hex 16` |
-| `opensubtitles-username`, `opensubtitles-password` | Bazarr's OpenSubtitles.com account | opensubtitles.com |
+| `opensubtitles-username`, `opensubtitles-password` | Bazarr's OpenSubtitles.com account, by username, not email | opensubtitles.com |
 | `bazarr-username`, `bazarr-password` | Bazarr's web login | choose one |
 | `nzbgeek-api-key` | Prowlarr's NZBgeek indexer | nzbgeek.info -> My Account |
 | `eweka-username`, `eweka-password` | NZBGet's news server login | Eweka account |
