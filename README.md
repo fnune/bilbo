@@ -34,6 +34,14 @@ Now, configure each service:
     exists, original audio only, and TRaSH's unwanted formats blocked. Make it
     the default for new media in Radarr, Sonarr and Seerr. Older items keep
     their profiles, so nothing gets re-downloaded.
+- [Bazarr][bazarr] is configured by `bazarr-settings` (`nixos/bazarr.nix`),
+  which pushes the settings through Bazarr's API on every deploy. Change them
+  there, not in the UI. Connect Sonarr and Radarr once in the UI.
+  - One language profile for everything: English and Spanish always, Catalan
+    and Japanese when the audio is in that language. Subtitle tracks already in the file count.
+  - Every download is re-timed against the audio.
+  - Bazarr is the only thing that downloads subtitles. Keep subtitle downloads
+    off in Jellyfin, or files pile up next to each episode.
 - [Prowlarr][prowlarr] holds the indexers and pushes them to Radarr and Sonarr
   - In Indexers, add NZBGeek
   - In Settings -> Apps, add Radarr (`http://localhost:7878/radarr`) and Sonarr
@@ -63,6 +71,7 @@ Now, configure each service:
 [radarr]: https://bilbo.fnune.com/radarr
 [sonarr]: https://bilbo.fnune.com/sonarr
 [prowlarr]: https://bilbo.fnune.com/prowlarr
+[bazarr]: https://bilbo.fnune.com/bazarr
 [calibre]: https://bilbo.fnune.com/calibre
 [frigate]: https://frigate.fnune.com
 [home-assistant]: https://home.fnune.com
@@ -133,6 +142,7 @@ Secrets are encrypted in `secrets/bilbo.yaml`. `sops-nix` decrypts them at boot 
 | `wireguard-private-key` | bilbo's WireGuard key | `wg genkey` |
 | `borg-passphrase`, `rclone-conf`, `borg-s3-bucket-name` | the off-site backup | `pulumi stack output` in `remote/` |
 | `radarr-api-key`, `sonarr-api-key` | Recyclarr's access to Radarr and Sonarr | Settings -> General in each |
+| `opensubtitles-username`, `opensubtitles-password` | Bazarr's OpenSubtitles.com account | opensubtitles.com |
 | `anthropic-api-key` | Pincho's LLM | the Anthropic console |
 | `papra-env` | Papra's environment file, see its section | generated once |
 | `mosquitto-*-password` | one MQTT password per client. Frigate's and Zigbee2MQTT's environment files use the same entries. | generated |
