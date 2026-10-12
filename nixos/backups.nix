@@ -17,6 +17,7 @@
     bazarr.dataDir
     # DynamicUser keeps the real directory behind a symlink, which Borg would store as just the link.
     "/var/lib/private/prowlarr"
+    config.services.seerr.configDir
   ];
   rebuildableOnTheirOwn = [
     jellyfin.logDir
