@@ -1,23 +1,46 @@
 {
   config,
+  lib,
   pkgs,
   ...
 }: let
   mirroredRepoPath = "/mnt/downloads-2t/Backups/borg/mirrored";
+  inherit (config.services) jellyfin radarr sonarr bazarr;
   backedUpPaths = [
     "/mnt/mirrored"
     config.services.home-assistant.configDir
     config.services.zigbee2mqtt.dataDir
     "/var/lib/pincho"
+    jellyfin.dataDir
+    radarr.dataDir
+    sonarr.dataDir
+    bazarr.dataDir
+  ];
+  rebuildableOnTheirOwn = [
+    jellyfin.logDir
+    "${radarr.dataDir}/logs"
+    "${radarr.dataDir}/MediaCover"
+    "${sonarr.dataDir}/logs"
+    "${sonarr.dataDir}/MediaCover"
+    "${bazarr.dataDir}/log"
   ];
   mirroredBucketNamePath = config.sops.secrets.borg-s3-bucket-name.path;
   mirroredBorgPassphrasePath = config.sops.secrets.borg-passphrase.path;
   mirroredRcloneConfPath = config.sops.secrets.rclone-conf.path;
 
   statusDir = "/var/lib/backup-status";
-  lastSuccess = "${statusDir}/mirrored-last-success";
-  backupIntervalDays = 7;
-  maxAgeDays = backupIntervalDays + 1;
+  freshness = {
+    local = {
+      stamp = "${statusDir}/mirrored-last-success";
+      intervalDays = 1;
+    };
+    # Deep Archive bills deleted objects for 180 days, so syncing the repository
+    # after every daily run would pay for every compacted segment many times.
+    offsite = {
+      stamp = "${statusDir}/mirrored-offsite-last-success";
+      intervalDays = 7;
+    };
+  };
 in {
   sops.secrets = {
     borg-passphrase = {};
@@ -29,10 +52,12 @@ in {
     jobs = {
       mirrored = {
         paths = backedUpPaths;
+        exclude = rebuildableOnTheirOwn;
         repo = mirroredRepoPath;
-        startAt = "weekly";
+        startAt = "daily";
         inhibitsSleep = false;
         compression = "auto,lzma";
+        extraArgs = ["--lock-wait" "21600"];
         extraCreateArgs = ["--stats" "--progress"];
         group = "users";
         encryption = {
@@ -46,13 +71,8 @@ in {
           yearly = 3;
         };
         postHook = ''
-          BUCKET_NAME=$(cat ${mirroredBucketNamePath})
-          ${pkgs.rclone}/bin/rclone sync ${mirroredRepoPath} aws-glacier:$BUCKET_NAME/mirrored \
-            --config ${mirroredRcloneConfPath} \
-            --progress \
-            --stats 1m
           if [ "$exitStatus" = 0 ]; then
-            touch ${lastSuccess}
+            touch ${freshness.local.stamp}
           fi
         '';
         readWritePaths = [statusDir];
@@ -62,15 +82,48 @@ in {
 
   systemd.tmpfiles.rules = ["d ${statusDir} 0755 root root -"];
 
+  systemd.services.borgbackup-offsite-mirrored = {
+    description = "Mirror the mirrored Borg repository to S3 Deep Archive";
+    startAt = "Sun 04:00";
+    after = ["network-online.target"];
+    wants = ["network-online.target"];
+    unitConfig.RequiresMountsFor = [mirroredRepoPath];
+    environment.BORG_PASSCOMMAND = "cat ${mirroredBorgPassphrasePath}";
+    serviceConfig = {
+      Type = "oneshot";
+      CPUSchedulingPolicy = "idle";
+      IOSchedulingClass = "idle";
+    };
+    # The lock keeps a daily run from changing segments halfway through the upload.
+    script = ''
+      BUCKET_NAME=$(cat ${mirroredBucketNamePath})
+      ${pkgs.borgbackup}/bin/borg with-lock --lock-wait 21600 ${mirroredRepoPath} \
+        ${pkgs.rclone}/bin/rclone sync ${mirroredRepoPath} "aws-glacier:$BUCKET_NAME/mirrored" \
+          --config ${mirroredRcloneConfPath} \
+          --stats 1m
+      touch ${freshness.offsite.stamp}
+    '';
+  };
+  systemd.timers.borgbackup-offsite-mirrored.timerConfig.Persistent = true;
+
   systemd.services.backup-freshness = {
-    description = "Check that the mirrored backup succeeded recently";
+    description = "Check that the mirrored backup and its off-site copy succeeded recently";
     startAt = "daily";
     serviceConfig.Type = "oneshot";
-    script = ''
-      if [ -z "$(${pkgs.findutils}/bin/find ${lastSuccess} -mtime -${toString maxAgeDays} 2>/dev/null)" ]; then
-        echo "No successful backup of /mnt/mirrored in the last ${toString maxAgeDays} days."
-        exit 1
-      fi
-    '';
+    script =
+      lib.concatMapStrings ({
+        name,
+        value,
+      }: let
+        maxAgeDays = toString (value.intervalDays + 1);
+      in ''
+        if [ -z "$(${pkgs.findutils}/bin/find ${value.stamp} -mtime -${maxAgeDays} 2>/dev/null)" ]; then
+          echo "No successful ${name} backup of the mirrored repository in the last ${maxAgeDays} days."
+          stale=1
+        fi
+      '') (lib.attrsToList freshness)
+      + ''
+        exit ''${stale:-0}
+      '';
   };
 }
