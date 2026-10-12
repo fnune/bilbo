@@ -3,6 +3,7 @@ import os
 import random
 import subprocess
 from collections.abc import Callable, Sequence
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +12,7 @@ from .api import credential
 Run = Callable[..., subprocess.CompletedProcess]
 
 FILES_TO_COMPARE = 3
+MTIME_TOLERANCE_SECONDS = 0.001
 
 
 def run_command(arguments: Sequence[str], **kwargs: Any) -> subprocess.CompletedProcess:
@@ -19,6 +21,13 @@ def run_command(arguments: Sequence[str], **kwargs: Any) -> subprocess.Completed
 
 def borg_environment() -> dict[str, str]:
     return os.environ | {"BORG_PASSPHRASE": credential("borg-passphrase")}
+
+
+def unchanged_since_backup(original: Path, archived_mtime: str) -> bool:
+    if not original.is_file():
+        return False
+    archived = datetime.fromisoformat(archived_mtime).timestamp()
+    return abs(original.stat().st_mtime - archived) < MTIME_TOLERANCE_SECONDS
 
 
 def check_local(config: dict[str, Any], run: Run = run_command) -> None:
@@ -39,7 +48,7 @@ def check_local(config: dict[str, Any], run: Run = run_command) -> None:
             borg,
             "list",
             "--format",
-            "{type} {size} {path}{NL}",
+            "{type} {size} {isomtime} {path}{NL}",
             *lock_wait,
             f"{repository}::{archive}",
             config["samplePath"],
@@ -49,15 +58,15 @@ def check_local(config: dict[str, Any], run: Run = run_command) -> None:
         text=True,
     ).stdout
     candidates = [
-        path
-        for kind, size, path in (line.split(" ", 2) for line in listing.splitlines())
+        (path, mtime)
+        for kind, size, mtime, path in (line.split(" ", 3) for line in listing.splitlines())
         if kind == "-" and int(size) <= config["maxFileBytes"]
     ]
 
     compared = []
-    for path in random.sample(candidates, len(candidates)):
+    for path, mtime in random.sample(candidates, len(candidates)):
         original = Path(config["root"]) / path
-        if not original.is_file():
+        if not unchanged_since_backup(original, mtime):
             continue
         restored = run(
             [borg, "extract", "--stdout", *lock_wait, f"{repository}::{archive}", path],

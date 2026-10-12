@@ -1,6 +1,8 @@
 import json
+import os
 import subprocess
 from collections.abc import Callable, Sequence
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +27,17 @@ def secrets(credentials: Callable[..., None], tmp_path: Path) -> None:
     credentials(borg_passphrase="secret", borg_s3_bucket_name="bucket", rclone_conf="[remote]")
 
 
+BACKED_UP_AT = "2026-10-12T11:53:29.123456"
+
+
+def write_original(root: Path, content: bytes, modified: str = BACKED_UP_AT) -> None:
+    original = root / "photos" / "a.jpg"
+    original.parent.mkdir(exist_ok=True)
+    original.write_bytes(content)
+    timestamp = datetime.fromisoformat(modified).timestamp()
+    os.utime(original, (timestamp, timestamp))
+
+
 def local_config(**overrides: Any) -> dict[str, Any]:
     return {
         "borg": "borg",
@@ -40,13 +53,12 @@ def local_config(**overrides: Any) -> dict[str, Any]:
 def test_local_check_verifies_the_repository_and_compares_restored_files(
     secrets: None, tmp_path: Path
 ) -> None:
-    original = tmp_path / "photos" / "a.jpg"
-    original.parent.mkdir()
-    original.write_bytes(b"pixels")
+    write_original(tmp_path, b"pixels")
     run = FakeRun(
         {
             "--short": "archive-1\n",
-            "--format": "- 6 photos/a.jpg\n- 5000 photos/huge.mov\nd 0 photos\n",
+            "--format": f"- 6 {BACKED_UP_AT} photos/a.jpg\n- 5000 {BACKED_UP_AT} photos/huge.mov\n"
+            f"d 0 {BACKED_UP_AT} photos\n",
             "extract": b"pixels",
         }
     )
@@ -60,14 +72,25 @@ def test_local_check_verifies_the_repository_and_compares_restored_files(
 
 
 def test_local_check_fails_when_a_restored_file_differs(secrets: None, tmp_path: Path) -> None:
-    original = tmp_path / "photos" / "a.jpg"
-    original.parent.mkdir()
-    original.write_bytes(b"pixels")
-    run = FakeRun({"--short": "archive-1\n", "--format": "- 6 photos/a.jpg\n", "extract": b"broken"})
+    write_original(tmp_path, b"pixels")
+    run = FakeRun(
+        {"--short": "archive-1\n", "--format": f"- 6 {BACKED_UP_AT} photos/a.jpg\n", "extract": b"broken"}
+    )
 
     with pytest.raises(ValueError, match="differs"):
         restore.check_local(local_config(root=str(tmp_path)), run=run)
     assert not any("verified" in " ".join(call) for call in run.calls)
+
+
+def test_local_check_skips_files_changed_since_the_backup(secrets: None, tmp_path: Path) -> None:
+    write_original(tmp_path, b"rewritten", modified="2026-10-12T15:00:00")
+    run = FakeRun(
+        {"--short": "archive-1\n", "--format": f"- 6 {BACKED_UP_AT} photos/a.jpg\n", "extract": b"pixels"}
+    )
+
+    with pytest.raises(LookupError, match="could be compared"):
+        restore.check_local(local_config(root=str(tmp_path)), run=run)
+    assert not any(call[1] == "extract" for call in run.calls)
 
 
 def test_the_remote_sample_stays_within_budget() -> None:
