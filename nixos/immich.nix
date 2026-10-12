@@ -10,5 +10,11 @@
       user = "immich";
       name = "immich";
     };
+    # Only what differs from Immich's defaults. This makes the admin settings page read-only.
+    settings = {
+      # Share links are built from this; photos.fnune.com is the public proxy.
+      server.externalDomain = "https://photos.fnune.com";
+      storageTemplate.enabled = true;
+    };
   };
 }
