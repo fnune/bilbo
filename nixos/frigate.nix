@@ -1,5 +1,6 @@
 {
   config,
+  mkSettingsService,
   pkgs,
   ...
 }: let
@@ -187,4 +188,25 @@ in {
   };
 
   systemd.services.go2rtc.serviceConfig.EnvironmentFile = [config.sops.templates."go2rtc.env".path];
+
+  systemd.services.frigate-settings = let
+    internalApi = "http://127.0.0.1:5000/api";
+  in
+    mkSettingsService {
+      name = "frigate-settings";
+      description = "Set Frigate's admin password from sops";
+      after = ["frigate"];
+      secrets = ["frigate-admin-password"];
+      text = ''
+        password=$(credential frigate-admin-password)
+        wait_until_up ${internalApi}/version
+
+        if ! jq -n --arg password "$password" '{user: "admin", password: $password}' |
+          curl --silent --fail --output /dev/null --header "Content-Type: application/json" --data @- ${internalApi}/login; then
+          jq -n --arg password "$password" '{password: $password}' |
+            curl --silent --show-error --fail-with-body --header "Content-Type: application/json" \
+              --request PUT --data @- ${internalApi}/users/admin/password
+        fi
+      '';
+    };
 }
