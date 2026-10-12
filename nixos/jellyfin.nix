@@ -21,11 +21,9 @@
   };
 
   userPlayback = {
-    SubtitleMode = "Smart";
+    SubtitleMode = "Always";
     SubtitleLanguagePreference = "eng";
-    # Jellyfin has no "original language". Spanish here only means "no subtitles for Spanish audio";
-    # PlayDefaultAudioTrack keeps the file's own audio, which is the original.
-    AudioLanguagePreference = "spa";
+    AudioLanguagePreference = "";
     PlayDefaultAudioTrack = true;
     RememberAudioSelections = true;
     RememberSubtitleSelections = true;
