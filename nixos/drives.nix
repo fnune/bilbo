@@ -13,6 +13,8 @@
   surveillance-storage = "${downloads-2t-mount}/frigate";
   document-storage = "${mirrored-storage-mount}/papra";
 
+  archive = "${mirrored-storage-mount}/archive";
+
   libraries = {
     movies = "${downloads-1t-mount}/Movies";
     series = "${downloads-2t-mount}/Series";
@@ -50,7 +52,7 @@ in {
     inherit libraries;
   };
 
-  systemd.tmpfiles.rules = map (library: "d ${library} 0775 fausto users -") (builtins.attrValues libraries);
+  systemd.tmpfiles.rules = map (folder: "d ${folder} 0775 fausto users -") (builtins.attrValues libraries ++ [archive]);
 
   boot.swraid.mdadmConf = "PROGRAM ${mdadmEvent}";
 
