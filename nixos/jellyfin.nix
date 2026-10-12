@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  libraries,
   mkSettingsService,
   mounts,
   ...
@@ -9,6 +10,18 @@
   hardwareTranscodingGroups = ["render" "video"];
 
   api = "http://127.0.0.1:8096/jellyfin";
+  client = ''MediaBrowser Client="bilbo", Device="bilbo", DeviceId="jellyfin-settings", Version="1"'';
+
+  jellyfinLibraries = {
+    Movies = {
+      collectionType = "movies";
+      path = libraries.movies;
+    };
+    Series = {
+      collectionType = "tvshows";
+      path = libraries.series;
+    };
+  };
 
   userPlayback = {
     SubtitleMode = "Smart";
@@ -64,23 +77,53 @@ in {
     DeviceAllow = ["char-drm rw"];
   };
 
-  sops.secrets.jellyfin-api-key = {};
+  sops.secrets = lib.genAttrs ["jellyfin-admin-username" "jellyfin-admin-password"] (_: {});
 
   systemd.services.jellyfin-settings = mkSettingsService {
     name = "jellyfin-settings";
     description = "Apply Jellyfin's user and library settings from this repository";
     after = ["jellyfin"];
-    secrets = ["jellyfin-api-key"];
+    secrets = ["jellyfin-admin-username" "jellyfin-admin-password"];
     serviceConfig.DynamicUser = true;
     text = ''
-      jellyfin() {
+      client=${lib.escapeShellArg client}
+      admin=$(jq -n --arg name "$(credential jellyfin-admin-username)" --arg password "$(credential jellyfin-admin-password)" \
+        '{Name: $name, Password: $password}')
+
+      anonymous() {
         local path=$1
         shift
-        curl --silent --show-error --fail-with-body --header "Authorization: MediaBrowser Token=\"$(credential jellyfin-api-key)\"" \
+        curl --silent --show-error --fail-with-body --header "Authorization: $client" \
           --header "Content-Type: application/json" "$@" "${api}$path"
       }
 
       wait_until_up ${api}/System/Info/Public
+
+      if anonymous /System/Info/Public | jq -e '.StartupWizardCompleted | not' >/dev/null; then
+        anonymous /Startup/Configuration --request POST \
+          --data '{"UICulture": "en-US", "MetadataCountryCode": "DE", "PreferredMetadataLanguage": "en"}'
+        anonymous /Startup/User >/dev/null
+        anonymous /Startup/User --request POST --data "$admin"
+        anonymous /Startup/Complete --request POST
+      fi
+
+      token=$(jq '{Username: .Name, Pw: .Password}' <<<"$admin" |
+        anonymous /Users/AuthenticateByName --request POST --data @- | jq -r .AccessToken)
+
+      jellyfin() {
+        local path=$1
+        shift
+        curl --silent --show-error --fail-with-body --header "Authorization: $client, Token=\"$token\"" \
+          --header "Content-Type: application/json" "$@" "${api}$path"
+      }
+
+      ${lib.concatStrings (lib.mapAttrsToList (name: library: ''
+          if ! jellyfin /Library/VirtualFolders | jq -e 'any(.[]; .Locations | index("${library.path}"))' >/dev/null; then
+            jellyfin "/Library/VirtualFolders?name=${name}&collectionType=${library.collectionType}&paths=${library.path}&refreshLibrary=true" \
+              --request POST --data '{"LibraryOptions": {}}'
+          fi
+        '')
+        jellyfinLibraries)}
 
       jellyfin /Users | jq -c '.[] | {id: .Id, configuration: (.Configuration * ${builtins.toJSON userPlayback})}' |
         while read -r user; do
