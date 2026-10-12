@@ -323,6 +323,8 @@ For files kept only for safekeeping, copy them into `/mnt/mirrored/archive` with
 
 The Borg job in `nixos/backups.nix` runs daily over `/mnt/mirrored`, Home Assistant's and Zigbee2MQTT's state, Pincho's data, and the Jellyfin, Radarr, Sonarr, Bazarr, Prowlarr and Seerr state (users, watch history, quality profiles; logs and cover art are left out). On Sundays `borgbackup-offsite-mirrored` mirrors the repository to S3 Deep Archive with `rclone sync`, holding Borg's lock so a daily run cannot change it mid-upload. It stays weekly because Deep Archive bills deleted objects for 180 days. The bucket keeps deleted and overwritten objects as noncurrent versions for 180 days (`remote/aws/backups.ts`), so a damaged local repository does not destroy the off-site copy on the next run. Restoring is documented in `remote/README.md`.
 
+Restores are tested on a schedule, at idle priority. On the 2nd of each month, `backup-restore-check-local` runs `borg check --verify-data` and compares a few restored photos with the originals. Each quarter, `backup-restore-start-remote` thaws a random 10 GB of the off-site repository (Bulk tier, about $0.03, inside the free monthly egress) and `backup-restore-check-remote` compares it byte for byte with the local copy three days later. Each sends "verified" to ntfy when it passes.
+
 A run that fails, including a failed S3 upload, notifies like any other failed unit. `backup-freshness` checks daily that the last local run is less than 2 days old and the last upload less than 8, which catches a timer that stopped firing. It also fails until the first successful run of each after deploying, so start them with `systemctl start borgbackup-job-mirrored borgbackup-offsite-mirrored`.
 
 ## Monitoring

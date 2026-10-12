@@ -1,6 +1,8 @@
 {
+  bilboToolsCommand,
   config,
   lib,
+  notify,
   pkgs,
   ...
 }: let
@@ -35,7 +37,7 @@
   mirroredRcloneConfPath = config.sops.secrets.rclone-conf.path;
 
   statusDir = "/var/lib/backup-status";
-  lockWaitSeconds = toString (6 * 60 * 60);
+  lockWaitSeconds = 6 * 60 * 60;
   freshness = {
     local = {
       stamp = "${statusDir}/mirrored-last-success";
@@ -50,6 +52,33 @@
       intervalDays = 7;
     };
   };
+  restoreTest = {
+    description,
+    startAt,
+    command,
+    secrets,
+    settings,
+  }: {
+    inherit description startAt;
+    after = ["network-online.target"];
+    wants = ["network-online.target"];
+    unitConfig.RequiresMountsFor = [mirroredRepoPath];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = bilboToolsCommand command settings;
+      LoadCredential = map (secret: "${secret}:${config.sops.secrets.${secret}.path}") secrets;
+      Nice = 10;
+      CPUSchedulingPolicy = "idle";
+      IOSchedulingClass = "idle";
+    };
+  };
+  remoteSample = {
+    rclone = lib.getExe pkgs.rclone;
+    remote = "aws-glacier";
+    prefix = "mirrored";
+    sampleFile = "${statusDir}/restore-sample";
+  };
+  quarterly = day: "*-01,04,07,10-${day} 10:00:00";
 in {
   sops.secrets = {
     borg-passphrase = {};
@@ -66,7 +95,7 @@ in {
         startAt = "daily";
         inhibitsSleep = false;
         compression = "auto,lzma";
-        extraArgs = ["--lock-wait" lockWaitSeconds];
+        extraArgs = ["--lock-wait" (toString lockWaitSeconds)];
         extraCreateArgs = ["--stats" "--progress"];
         group = "users";
         encryption = {
@@ -105,14 +134,13 @@ in {
     };
     script = ''
       BUCKET_NAME=$(cat ${mirroredBucketNamePath})
-      ${pkgs.borgbackup}/bin/borg with-lock --lock-wait ${lockWaitSeconds} ${mirroredRepoPath} \
+      ${pkgs.borgbackup}/bin/borg with-lock --lock-wait ${toString lockWaitSeconds} ${mirroredRepoPath} \
         ${pkgs.rclone}/bin/rclone sync ${mirroredRepoPath} "aws-glacier:$BUCKET_NAME/mirrored" \
           --config ${mirroredRcloneConfPath} \
           --stats 1m
       touch ${freshness.offsite.stamp}
     '';
   };
-  systemd.timers.borgbackup-offsite-mirrored.timerConfig.Persistent = true;
 
   systemd.services.backup-never-run = {
     description = "Start any backup that has never succeeded on this machine";
@@ -149,4 +177,50 @@ in {
         exit ''${stale:-0}
       '';
   };
+
+  systemd.services.backup-restore-check-local = restoreTest {
+    description = "Verify the local Borg repository and restore a few files from it";
+    startAt = "*-*-02 10:00:00";
+    command = "restore-check-local";
+    secrets = ["borg-passphrase"];
+    settings = {
+      borg = lib.getExe' pkgs.borgbackup "borg";
+      repository = mirroredRepoPath;
+      inherit lockWaitSeconds;
+      samplePath = "mnt/mirrored/immich/upload";
+      maxFileBytes = 200 * 1000 * 1000;
+      notify = lib.getExe notify;
+      root = "/";
+    };
+  };
+
+  systemd.services.backup-restore-start-remote = restoreTest {
+    description = "Thaw a random sample of the off-site repository from Deep Archive";
+    startAt = quarterly "08";
+    command = "restore-start-remote";
+    secrets = ["borg-s3-bucket-name" "rclone-conf"];
+    settings =
+      remoteSample
+      // {
+        sampleBytes = 10 * 1000 * 1000 * 1000;
+        availableDays = 7;
+      };
+  };
+
+  systemd.services.backup-restore-check-remote = restoreTest {
+    description = "Compare the thawed off-site sample with the local repository";
+    startAt = quarterly "11";
+    command = "restore-check-remote";
+    secrets = ["borg-s3-bucket-name" "rclone-conf"];
+    settings =
+      remoteSample
+      // {
+        repository = mirroredRepoPath;
+        notify = lib.getExe notify;
+      };
+  };
+
+  systemd.timers = lib.genAttrs ["borgbackup-offsite-mirrored" "backup-restore-check-local" "backup-restore-start-remote" "backup-restore-check-remote"] (_: {
+    timerConfig.Persistent = true;
+  });
 }
