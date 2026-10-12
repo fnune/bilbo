@@ -19,19 +19,11 @@
   categories =
     staged
     ++ [
-      # NZBGet skips categories with an empty name; nzbget.conf still has these two slots.
-      unused
-      unused
       {
         name = "Books";
         destDir = libraries.books;
       }
     ];
-
-  unused = {
-    name = "";
-    destDir = "";
-  };
 
   categorySettings = index: category: {
     "Category${toString index}.Name" = category.name;
@@ -80,14 +72,20 @@ in {
   systemd.services.nzbget = {
     serviceConfig.LoadCredential = map (secret: "${secret}:${config.sops.secrets.${secret}.path}") (builtins.attrValues secretOptions);
     preStart = lib.mkAfter ''
-      set_option() {
-        OPTION=$1 VALUE=$(cat "$CREDENTIALS_DIRECTORY/$2") ${lib.getExe pkgs.gawk} \
-          'index($0, ENVIRON["OPTION"] "=") == 1 { print ENVIRON["OPTION"] "=" ENVIRON["VALUE"]; next } { print }' \
-          ${configFile} >${configFile}.new
+      rewrite_config() {
+        ${lib.getExe pkgs.gawk} "$@" ${configFile} >${configFile}.new
         cat ${configFile}.new >${configFile}
         rm ${configFile}.new
       }
+
+      set_option() {
+        OPTION=$1 VALUE=$(cat "$CREDENTIALS_DIRECTORY/$2") rewrite_config \
+          'index($0, ENVIRON["OPTION"] "=") == 1 { print ENVIRON["OPTION"] "=" ENVIRON["VALUE"]; next } { print }'
+      }
+
       ${lib.concatStrings (lib.mapAttrsToList (option: secret: "set_option ${option} ${secret}\n") secretOptions)}
+      rewrite_config -v last=${toString (builtins.length categories)} \
+        'match($0, /^Category([0-9]+)\./, slot) && slot[1] + 0 > last { next } { print }'
     '';
   };
 
