@@ -11,10 +11,11 @@
     src = ./settings;
     build-system = [pkgs.python3Packages.setuptools];
     dependencies = with pkgs.python3Packages; [pyyaml requests];
-    nativeCheckInputs = [pkgs.ruff];
+    nativeCheckInputs = [pkgs.ruff] ++ (with pkgs.python3Packages; [pytest responses]);
     checkPhase = ''
       ruff check .
       ruff format --check .
+      pytest
     '';
     meta.mainProgram = "bilbo-settings";
   };
