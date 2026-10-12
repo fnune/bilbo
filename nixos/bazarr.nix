@@ -52,7 +52,7 @@
       "settings-general-movie_default_profile" = profileId;
       "settings-general-use_embedded_subs" = true;
       "settings-general-ignore_pgs_subs" = false;
-      "settings-general-enabled_providers" = ["opensubtitlescom" "podnapisi" "gestdown"];
+      "settings-general-enabled_providers" = ["opensubtitlescom" "gestdown" "subf2m" "yifysubtitles" "subtitulamostv" "tvsubtitles"];
       "settings-opensubtitlescom-use_hash" = true;
       "settings-subsync-use_subsync" = true;
       "settings-subsync-use_subsync_threshold" = false;
