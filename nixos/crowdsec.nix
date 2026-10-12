@@ -14,6 +14,7 @@
   bouncerEnvDir = "/var/lib/crowdsec-caddy-bouncer";
   bouncerEnv = "${bouncerEnvDir}/env";
   caddyNeedsRestart = "${bouncerEnvDir}/caddy-needs-restart";
+  # The module's cscli wrapper knows where the config is; the bare binary looks in /etc.
   cscli = lib.findFirst (p: lib.getName p == "cscli") null config.environment.systemPackages;
 in {
   _module.args.crowdsec = {inherit lapiUrl bouncerEnv;};
@@ -56,6 +57,8 @@ in {
 
   systemd.services.crowdsec.serviceConfig.SupplementaryGroups = [config.services.caddy.group];
 
+  # cscli won't run without the central API credentials file, so it must exist (empty) first.
+  # The local one is the opposite: the setup creates it only when missing.
   systemd.tmpfiles.rules = ["f ${capiCredentials} 0600 ${cfg.user} ${cfg.group} -"];
   systemd.services.crowdsec-drop-empty-lapi-credentials = {
     description = "Let CrowdSec recreate empty local API credentials";

@@ -13,6 +13,8 @@
   userPlayback = {
     SubtitleMode = "Smart";
     SubtitleLanguagePreference = "eng";
+    # Jellyfin has no "original language". Spanish here only means "no subtitles for Spanish audio";
+    # PlayDefaultAudioTrack keeps the file's own audio, which is the original.
     AudioLanguagePreference = "spa";
     PlayDefaultAudioTrack = true;
     RememberAudioSelections = true;
@@ -37,6 +39,8 @@ in {
     forceEncodingConfig = true;
     transcoding = {
       enableHardwareEncoding = true;
+      # What this Celeron J4125 decodes in hardware, per vainfo. It can't decode AV1.
+      # https://jellyfin.org/docs/general/post-install/transcoding/hardware-acceleration/intel
       hardwareDecodingCodecs = {
         h264 = true;
         hevc = true;
@@ -53,6 +57,7 @@ in {
   users.users.${user}.extraGroups = hardwareTranscodingGroups;
 
   systemd.services.jellyfin.serviceConfig = {
+    # MemoryDenyWriteExecute stays off: .NET compiles code at runtime.
     ProtectSystem = lib.mkForce "strict";
     ReadWritePaths = [dataDir cacheDir mounts.downloads-1t mounts.downloads-2t];
     ProtectHome = true;

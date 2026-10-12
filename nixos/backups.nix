@@ -15,6 +15,8 @@
     radarr.dataDir
     sonarr.dataDir
     bazarr.dataDir
+    # Prowlarr uses DynamicUser, so /var/lib/prowlarr is a symlink, which Borg would back up as just a link.
+    # https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html#DynamicUser=
     "/var/lib/private/prowlarr"
     config.services.seerr.configDir
   ];
@@ -41,6 +43,8 @@
     };
     offsite = {
       stamp = "${statusDir}/mirrored-offsite-last-success";
+      # Weekly: Deep Archive charges for deleted files as if kept 180 days.
+      # https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html
       intervalDays = 7;
     };
   };

@@ -15,6 +15,7 @@ in {
     inherit port;
   };
 
+  # MemoryDenyWriteExecute stays off: Node compiles code at runtime.
   systemd.services.immich-public-proxy.serviceConfig = {
     LockPersonality = true;
     ProcSubset = "pid";

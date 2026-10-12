@@ -10,6 +10,7 @@
         urlbase = "/${name}";
         bindaddress = "127.0.0.1";
       };
+      # Caddy connects from localhost, so "no login for local addresses" would mean no login at all.
       auth = {
         method = "Forms";
         required = "Enabled";

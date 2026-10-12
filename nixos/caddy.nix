@@ -192,10 +192,12 @@ in {
     };
   in {
     enable = true;
+    # nixpkgs' install check can't find plugins that live in a subfolder of their repo, like the bouncer.
     package = (pkgs.caddy.withPlugins {
       plugins = [
         "github.com/caddy-dns/cloudflare@v0.2.4"
         "github.com/hslatman/caddy-crowdsec-bouncer/http@v0.9.2"
+        # The bouncer's own ipstore version doesn't build with the one Caddy pulls in.
         "github.com/hslatman/ipstore@v0.5.0"
       ];
       hash = "sha256-7nQ2ikk0ugapEp0NdLZqGbQlxfSZRO7pAV2UAIy2RwE=";
@@ -203,6 +205,8 @@ in {
     globalConfig = ''
       crowdsec {
         api_url ${crowdsec.lapiUrl}
+        # Caddy won't start with an empty key, so the default keeps every site up until the bouncer registers.
+        # https://caddyserver.com/docs/caddyfile/concepts#environment-variables
         api_key {$CROWDSEC_API_KEY:unregistered}
       }
     '';

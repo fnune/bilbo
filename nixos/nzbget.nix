@@ -17,6 +17,7 @@
   categories =
     staged
     ++ [
+      # NZBGet skips categories with an empty name; nzbget.conf still has these two slots.
       unused
       unused
       {
@@ -56,7 +57,9 @@ in {
         "Server1.Host" = "news.eweka.nl";
         "Server1.Connections" = 50;
         DirectUnpack = "yes";
+        # MB. NZBGet's docs (in nzbget.conf) say 50 MB is plenty with DirectWrite, which is on.
         ArticleCache = 100;
+        # KB per connection, the value NZBGet's docs recommend.
         WriteBuffer = 1024;
       };
   };

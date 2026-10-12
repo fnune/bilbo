@@ -76,6 +76,8 @@
     "Repack3" = "44e7c4de10ae50265753082e5dc76047";
   };
 
+  # Ties go to the size closest to "preferred". TRaSH's ranges reach 2000 MB/min, so any ratio
+  # above 0 favours huge files; 0 favours the smallest file that passes the minimum.
   smallerWithinAQuality = 0;
 in {
   sops.secrets = {
