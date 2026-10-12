@@ -94,12 +94,12 @@ in {
         fi
       ''}";
     };
+    path = [cscli pkgs.jq];
     script = ''
-      cscli=${lib.getExe cscli}
-      if $cscli bouncers list --output json | ${lib.getExe pkgs.jq} -e 'any(.[]; .name == "${bouncerName}")' >/dev/null; then
+      if cscli bouncers list --output json | jq -e 'any(.[]; .name == "${bouncerName}")' >/dev/null; then
         [ -s ${bouncerEnv} ] || { echo "Bouncer ${bouncerName} is registered but ${bouncerEnv} is missing; delete it with cscli bouncers delete ${bouncerName}."; exit 1; }
       else
-        key=$($cscli bouncers add --output raw -- ${bouncerName})
+        key=$(cscli bouncers add --output raw -- ${bouncerName})
         echo "CROWDSEC_API_KEY=$key" > ${bouncerEnv}
         touch ${caddyNeedsRestart}
       fi

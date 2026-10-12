@@ -34,6 +34,8 @@
   mirroredRcloneConfPath = config.sops.secrets.rclone-conf.path;
 
   statusDir = "/var/lib/backup-status";
+  # Both the daily run and the weekly upload wait this long for the other to finish.
+  lockWaitSeconds = toString (6 * 60 * 60);
   freshness = {
     local = {
       stamp = "${statusDir}/mirrored-last-success";
@@ -62,7 +64,7 @@ in {
         startAt = "daily";
         inhibitsSleep = false;
         compression = "auto,lzma";
-        extraArgs = ["--lock-wait" "21600"];
+        extraArgs = ["--lock-wait" lockWaitSeconds];
         extraCreateArgs = ["--stats" "--progress"];
         group = "users";
         encryption = {
@@ -102,7 +104,7 @@ in {
     # The lock keeps a daily run from changing segments halfway through the upload.
     script = ''
       BUCKET_NAME=$(cat ${mirroredBucketNamePath})
-      ${pkgs.borgbackup}/bin/borg with-lock --lock-wait 21600 ${mirroredRepoPath} \
+      ${pkgs.borgbackup}/bin/borg with-lock --lock-wait ${lockWaitSeconds} ${mirroredRepoPath} \
         ${pkgs.rclone}/bin/rclone sync ${mirroredRepoPath} "aws-glacier:$BUCKET_NAME/mirrored" \
           --config ${mirroredRcloneConfPath} \
           --stats 1m
@@ -116,17 +118,15 @@ in {
     startAt = "daily";
     serviceConfig.Type = "oneshot";
     script =
-      lib.concatMapStrings ({
-        name,
-        value,
-      }: let
-        maxAgeDays = toString (value.intervalDays + 1);
-      in ''
-        if [ -z "$(${pkgs.findutils}/bin/find ${value.stamp} -mtime -${maxAgeDays} 2>/dev/null)" ]; then
-          echo "No successful ${name} backup of the mirrored repository in the last ${maxAgeDays} days."
-          stale=1
-        fi
-      '') (lib.attrsToList freshness)
+      lib.concatStrings (lib.mapAttrsToList (name: backup: let
+          maxAgeDays = toString (backup.intervalDays + 1);
+        in ''
+          if [ -z "$(${pkgs.findutils}/bin/find ${backup.stamp} -mtime -${maxAgeDays} 2>/dev/null)" ]; then
+            echo "No successful ${name} backup of the mirrored repository in the last ${maxAgeDays} days."
+            stale=1
+          fi
+        '')
+        freshness)
       + ''
         exit ''${stale:-0}
       '';
