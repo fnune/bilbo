@@ -40,8 +40,9 @@ Now, configure each service:
   - One language profile for everything: English and Spanish always, Catalan
     and Japanese when the audio is in that language. Subtitle tracks already in the file count.
   - Every download is re-timed against the audio.
-  - Bazarr is the only thing that downloads subtitles. Keep subtitle downloads
-    off in Jellyfin, or files pile up next to each episode.
+  - Bazarr is the only thing that downloads subtitles. `jellyfin-settings`
+    keeps Jellyfin's own subtitle downloads off, or files pile up next to each
+    episode.
 - [Prowlarr][prowlarr] holds the indexers and pushes them to Radarr and Sonarr
   - In Indexers, add NZBGeek
   - In Settings -> Apps, add Radarr (`http://localhost:7878/radarr`) and Sonarr
@@ -58,6 +59,10 @@ Now, configure each service:
   - Visit [Jellyfin][jellyfin] and create the admin user
   - Create a media library for Movies in `/mnt/downloads-1t/Movies`
   - Create a media library for Series in `/mnt/downloads-2t/Series`
+  - Create an API key under Dashboard -> API Keys and store it as
+    `jellyfin-api-key` in sops. `jellyfin-settings` (`nixos/jellyfin.nix`) uses
+    it on every deploy to set English subtitles, always shown, for every user,
+    and to keep subtitle downloads off in every library.
 - [Seerr][seerr]
   - Sign in with the Jellyfin admin account and point it at Jellyfin on
     `http://localhost:8096/jellyfin`
@@ -143,6 +148,7 @@ Secrets are encrypted in `secrets/bilbo.yaml`. `sops-nix` decrypts them at boot 
 | `borg-passphrase`, `rclone-conf`, `borg-s3-bucket-name` | the off-site backup | `pulumi stack output` in `remote/` |
 | `radarr-api-key`, `sonarr-api-key` | Recyclarr's access to Radarr and Sonarr | Settings -> General in each |
 | `opensubtitles-username`, `opensubtitles-password` | Bazarr's OpenSubtitles.com account | opensubtitles.com |
+| `jellyfin-api-key` | `jellyfin-settings`' access to Jellyfin | Dashboard -> API Keys |
 | `anthropic-api-key` | Pincho's LLM | the Anthropic console |
 | `papra-env` | Papra's environment file, see its section | generated once |
 | `mosquitto-*-password` | one MQTT password per client. Frigate's and Zigbee2MQTT's environment files use the same entries. | generated |
