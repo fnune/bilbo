@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>bilbo</title>
+  <style>
+    :root {
+      --bg: #f7f4ee;
+      --fg: #2b2925;
+      --muted: #77716a;
+      --rule: #e2ddd3;
+      --link: #2f5d50;
+      --hover: #f0ebe1;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1b1a18;
+        --fg: #e6e1d8;
+        --muted: #9a938a;
+        --rule: #33302c;
+        --link: #8fc4b0;
+        --hover: #25231f;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    main {
+      max-width: 40rem;
+      margin: 0 auto;
+      padding: 3rem 1rem 4rem;
+    }
+
+    header {
+      margin-bottom: 2.5rem;
+    }
+
+    h1 {
+      margin: 0;
+      font: 600 1.75rem/1.2 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      letter-spacing: -0.02em;
+    }
+
+    section {
+      margin-bottom: 2rem;
+    }
+
+    h2 {
+      margin: 0 0 0.5rem;
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid var(--rule);
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    li a {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0 0.75rem;
+      margin: 0 -0.5rem;
+      padding: 0.4rem 0.5rem;
+      border-radius: 4px;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    li a:hover,
+    li a:focus-visible {
+      background: var(--hover);
+    }
+
+    li a:focus-visible {
+      outline: 2px solid var(--link);
+      outline-offset: -2px;
+    }
+
+    .name {
+      min-width: 9rem;
+      color: var(--link);
+      font-weight: 600;
+    }
+
+    .what {
+      flex: 1 1 14rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>bilbo</h1>
+    </header>
+
+    <section>
+      <h2>Watch and request</h2>
+      <ul>
+        <li><a href="/jellyfin/"><span class="name">Jellyfin</span><span class="what">Films and series, on any screen.</span></a></li>
+        <li><a href="https://requests.fnune.com"><span class="name">Seerr</span><span class="what">Ask for something new to watch.</span></a></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Media management</h2>
+      <ul>
+        <li><a href="/radarr/"><span class="name">Radarr</span><span class="what">Finds and organizes films.</span></a></li>
+        <li><a href="/sonarr/"><span class="name">Sonarr</span><span class="what">Finds and organizes series.</span></a></li>
+        <li><a href="/bazarr/"><span class="name">Bazarr</span><span class="what">Fetches subtitles.</span></a></li>
+        <li><a href="/prowlarr/"><span class="name">Prowlarr</span><span class="what">Keeps the indexers in one place.</span></a></li>
+        <li><a href="/nzbget/"><span class="name">NZBGet</span><span class="what">Downloads from Usenet.</span></a></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Library</h2>
+      <ul>
+        <li><a href="https://immich.fnune.com"><span class="name">Immich</span><span class="what">Photos and videos from our phones.</span></a></li>
+        <li><a href="/calibre/"><span class="name">Calibre</span><span class="what">Books to read or send to the e-reader.</span></a></li>
+        <li><a href="https://docs.fnune.com"><span class="name">Papra</span><span class="what">Scanned letters, contracts and receipts.</span></a></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Home</h2>
+      <ul>
+        <li><a href="https://home.fnune.com"><span class="name">Home Assistant</span><span class="what">Lights, sensors and automations.</span></a></li>
+        <li><a href="https://frigate.fnune.com"><span class="name">Frigate</span><span class="what">Camera recordings and detections.</span></a></li>
+        <li><a href="/zigbee2mqtt/"><span class="name">Zigbee2MQTT</span><span class="what">Pairs and inspects Zigbee devices.</span></a></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Server</h2>
+      <ul>
+        <li><a href="https://health.fnune.com"><span class="name">Beszel</span><span class="what">CPU, memory, disks and temperatures.</span></a></li>
+        <li><a href="https://notify.fnune.com"><span class="name">ntfy</span><span class="what">Alerts the server sends to our phones.</span></a></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Apps</h2>
+      <ul>
+        <li><a href="/pincho/"><span class="name">Pincho</span><span class="what">Insulin dose calculator.</span></a></li>
+        <li><a href="/smb/"><span class="name">Museum map</span><span class="what">The museums on the annual pass, on a map.</span></a></li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

@@ -76,6 +76,8 @@ from the internet.
 
 The dyndns timers in `nixos/caddy.nix` keep the public records on the household address. Pulumi owns the private records (`remote/cloudflare/dns.ts`).
 
+`bilbo.fnune.com/` serves a start page linking every service. It is hand-written HTML in `nixos/start-page/index.html`; add a link there when adding a service.
+
 To add a private service, add a subpath to `adminSubpaths` in `nixos/caddy.nix`. To add a public one, add a hostname to `public` with its own site block, and decide what the internet may see.
 
 #### WireGuard

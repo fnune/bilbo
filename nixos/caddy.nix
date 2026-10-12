@@ -154,6 +154,11 @@ in {
       reverse_proxy /smb/* localhost:8799
       reverse_proxy /smb localhost:8799
 
+      handle / {
+        root * ${./start-page}
+        file_server
+      }
+
       respond 404
     '';
     # route keeps the written order; Caddy would otherwise run respond and abort after reverse_proxy
