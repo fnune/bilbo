@@ -117,6 +117,7 @@
     ./nzbget.nix
     ./papra.nix
     ./pincho.nix
+    ./prowlarr.nix
     ./radarr.nix
     ./secrets.nix
     ./seerr.nix

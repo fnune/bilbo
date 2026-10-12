@@ -28,9 +28,13 @@ Now, configure each service:
 - [Radarr][radarr] and [Sonarr][sonarr], and other "arr"s
   - For Radarr, go to Settings -> Profiles and set the language to "Original"
     in all profiles
-  - For both:
-    - Go to Settings -> Indexers and add NZBGeek
-    - Go to Settings -> Download Clients and add NZBGet
+  - For both, go to Settings -> Download Clients and add NZBGet
+- [Prowlarr][prowlarr] holds the indexers and pushes them to Radarr and Sonarr
+  - In Indexers, add NZBGeek
+  - In Settings -> Apps, add Radarr (`http://localhost:7878/radarr`) and Sonarr
+    (`http://localhost:8989/sonarr`) with their API keys, and Prowlarr itself as
+    `http://localhost:9696/prowlarr`
+  - Then delete the NZBGeek indexer added by hand in Radarr and Sonarr, if any
 - [Calibre][calibre]
   - On first run, point it at `/mnt/downloads-1t/Books` (initialize a Calibre
     library there with `calibredb` if `metadata.db` does not yet exist)
@@ -53,6 +57,7 @@ Now, configure each service:
 [nzbget]: https://bilbo.fnune.com/nzbget
 [radarr]: https://bilbo.fnune.com/radarr
 [sonarr]: https://bilbo.fnune.com/sonarr
+[prowlarr]: https://bilbo.fnune.com/prowlarr
 [calibre]: https://bilbo.fnune.com/calibre
 [frigate]: https://frigate.fnune.com
 [home-assistant]: https://home.fnune.com
@@ -347,7 +352,7 @@ Both are served under `bilbo.fnune.com` and have no login of their own; the tunn
 
 ### Backups
 
-The Borg job in `nixos/backups.nix` runs daily over `/mnt/mirrored`, Home Assistant's and Zigbee2MQTT's state, Pincho's data, and the Jellyfin, Radarr, Sonarr and Bazarr state (users, watch history, quality profiles; logs and cover art are left out). On Sundays `borgbackup-offsite-mirrored` mirrors the repository to S3 Deep Archive with `rclone sync`, holding Borg's lock so a daily run cannot change it mid-upload. It stays weekly because Deep Archive bills deleted objects for 180 days. The bucket keeps deleted and overwritten objects as noncurrent versions for 180 days (`remote/aws/backups.ts`), so a damaged local repository does not destroy the off-site copy on the next run. Restoring is documented in `remote/README.md`.
+The Borg job in `nixos/backups.nix` runs daily over `/mnt/mirrored`, Home Assistant's and Zigbee2MQTT's state, Pincho's data, and the Jellyfin, Radarr, Sonarr, Bazarr and Prowlarr state (users, watch history, quality profiles; logs and cover art are left out). On Sundays `borgbackup-offsite-mirrored` mirrors the repository to S3 Deep Archive with `rclone sync`, holding Borg's lock so a daily run cannot change it mid-upload. It stays weekly because Deep Archive bills deleted objects for 180 days. The bucket keeps deleted and overwritten objects as noncurrent versions for 180 days (`remote/aws/backups.ts`), so a damaged local repository does not destroy the off-site copy on the next run. Restoring is documented in `remote/README.md`.
 
 A run that fails, including a failed S3 upload, notifies like any other failed unit. `backup-freshness` checks daily that the last local run is less than 2 days old and the last upload less than 8, which catches a timer that stopped firing. It also fails until the first successful run of each after deploying, so start them with `systemctl start borgbackup-job-mirrored borgbackup-offsite-mirrored`.
 

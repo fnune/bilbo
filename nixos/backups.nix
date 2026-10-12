@@ -15,6 +15,8 @@
     radarr.dataDir
     sonarr.dataDir
     bazarr.dataDir
+    # DynamicUser keeps the real directory behind a symlink, which Borg would store as just the link.
+    "/var/lib/private/prowlarr"
   ];
   rebuildableOnTheirOwn = [
     jellyfin.logDir
@@ -23,6 +25,7 @@
     "${sonarr.dataDir}/logs"
     "${sonarr.dataDir}/MediaCover"
     "${bazarr.dataDir}/log"
+    "/var/lib/private/prowlarr/logs"
   ];
   mirroredBucketNamePath = config.sops.secrets.borg-s3-bucket-name.path;
   mirroredBorgPassphrasePath = config.sops.secrets.borg-passphrase.path;

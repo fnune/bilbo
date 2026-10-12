@@ -83,6 +83,7 @@
   beszelPort = toString config.services.beszel.hub.port;
   ntfyListen = config.services.ntfy-sh.settings.listen-http;
   seerrPort = toString config.services.seerr.port;
+  prowlarrPort = toString config.services.prowlarr.settings.server.port;
 in {
   networking.firewall = {
     allowedTCPPorts = [443];
@@ -140,6 +141,9 @@ in {
 
       reverse_proxy /bazarr/* 127.0.0.1:6767
       reverse_proxy /bazarr 127.0.0.1:6767
+
+      reverse_proxy /prowlarr/* 127.0.0.1:${prowlarrPort}
+      reverse_proxy /prowlarr 127.0.0.1:${prowlarrPort}
 
       ${calibreAtSubpath}
 
