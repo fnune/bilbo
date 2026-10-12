@@ -19,16 +19,18 @@
     }
     // extra;
   profileId = 1;
+  english = item 1 "en" {};
   languageProfile = {
     inherit profileId;
     name = "English, Spanish, and the original if Catalan or Japanese";
     items = [
-      (item 1 "en" {})
+      english
       (item 2 "es" {})
       (item 3 "ca" onlyWhenAudioIsThatLanguage)
       (item 4 "ja" onlyWhenAudioIsThatLanguage)
     ];
-    cutoff = null;
+    # Once English is found, Bazarr stops searching for the other languages.
+    cutoff = english.id;
     mustContain = [];
     mustNotContain = [];
     originalFormat = null;
