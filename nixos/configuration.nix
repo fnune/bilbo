@@ -74,6 +74,7 @@
   # ssh-copy-id -i ~/.ssh/id_ed25519.pub fausto@bilbo-ip
   services.openssh = {
     enable = true;
+    openFirewall = false;
     settings = {
       PermitRootLogin = "no";
       PasswordAuthentication = false;
@@ -81,8 +82,19 @@
       AllowUsers = ["fausto"];
     };
   };
-  networking.firewall.allowedTCPPorts = [22 22100];
-  networking.firewall.allowedUDPPorts = [22100 21127];
+  networking.firewall = let
+    # My own Syncthing (kyaraben-syncthing, a user service) on non-default ports.
+    syncthingSync = 22100;
+    syncthingLocalDiscovery = 21127;
+    ssh = {allowedTCPPorts = [22];};
+  in {
+    allowedTCPPorts = [syncthingSync];
+    allowedUDPPorts = [syncthingSync syncthingLocalDiscovery];
+    interfaces = {
+      eno1 = ssh;
+      wg0 = ssh;
+    };
+  };
 
   security.sudo.extraConfig = "Defaults pwfeedback";
   security.sudo.execWheelOnly = true;
