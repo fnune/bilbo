@@ -76,7 +76,7 @@ in {
       jellyfin() {
         local path=$1
         shift
-        curl --silent --show-error --fail --header "Authorization: MediaBrowser Token=\"$(credential jellyfin-api-key)\"" \
+        curl --silent --show-error --fail-with-body --header "Authorization: MediaBrowser Token=\"$(credential jellyfin-api-key)\"" \
           --header "Content-Type: application/json" "$@" "${api}$path"
       }
 

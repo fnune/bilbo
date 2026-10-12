@@ -94,7 +94,7 @@ in {
       bazarr() {
         local path=$1
         shift
-        curl --silent --show-error --fail --header "X-API-KEY: $(yq .auth.apikey ${cfg.dataDir}/config/config.yaml)" \
+        curl --silent --show-error --fail-with-body --header "X-API-KEY: $(yq .auth.apikey ${cfg.dataDir}/config/config.yaml)" \
           "$@" "${api}$path"
       }
 

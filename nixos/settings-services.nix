@@ -21,8 +21,10 @@
           credential() { cat "$CREDENTIALS_DIRECTORY/$1"; }
 
           wait_until_up() {
+            local status
             for _ in $(seq 60); do
-              curl --silent --output /dev/null "$1" && return 0
+              status=$(curl --silent --output /dev/null --write-out '%{http_code}' "$1" || true)
+              [ "$status" != 000 ] && [ "$status" -lt 500 ] && return 0
               sleep 2
             done
             echo "$1 did not answer within two minutes" >&2

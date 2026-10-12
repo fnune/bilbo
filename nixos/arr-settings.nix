@@ -39,7 +39,7 @@
     ${name}() {
       local path=$1
       shift
-      curl --silent --show-error --fail --header "X-Api-Key: $(credential ${name}-api-key)" \
+      curl --silent --show-error --fail-with-body --header "X-Api-Key: $(credential ${name}-api-key)" \
         --header "Content-Type: application/json" "$@" "${servarrUrl name}/api/v3$path"
     }
   '';
@@ -91,7 +91,7 @@
         jq -c --argjson id "$profileId" '.[] | select(.isDefault and .activeProfileId != $id)
           | .activeProfileId = $id | .activeProfileName = "${seerrProfile}"' |
         while read -r server; do
-          seerr "/settings/${name}/$(jq -r .id <<<"$server")" --request PUT --data "$server"
+          seerr "/settings/${name}/$(jq -r .id <<<"$server")" --request PUT --data "$(jq -c 'del(.id)' <<<"$server")"
         done
     fi
   '';
@@ -107,7 +107,7 @@ in {
       seerr() {
         local path=$1
         shift
-        curl --silent --show-error --fail --header "X-Api-Key: $(jq -r .main.apiKey ${seerr.configDir}/settings.json)" \
+        curl --silent --show-error --fail-with-body --header "X-Api-Key: $(jq -r .main.apiKey ${seerr.configDir}/settings.json)" \
           --header "Content-Type: application/json" "$@" "http://127.0.0.1:${toString seerr.port}/api/v1$path"
       }
 
@@ -119,8 +119,7 @@ in {
       nzbgetPassword=$(sed -n 's/^ControlPassword=//p' ${nzbget.conf})
 
       wait_until_up http://127.0.0.1:${toString seerr.port}/api/v1/status
-      seerr /settings/main | jq -c '. * ${builtins.toJSON seerrMain}' |
-        seerr /settings/main --request POST --data @- >/dev/null
+      seerr /settings/main --request POST --data ${lib.escapeShellArg (builtins.toJSON seerrMain)} >/dev/null
 
       ${lib.concatStrings (lib.mapAttrsToList arrSettings arrs)}
     '';
