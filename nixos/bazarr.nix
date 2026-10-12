@@ -2,7 +2,6 @@
   config,
   lib,
   mkSettingsService,
-  pkgs,
   ...
 }: let
   cfg = config.services.bazarr;
@@ -36,7 +35,7 @@
     tag = null;
   };
 
-  settings =
+  formSettings =
     arrConnection "sonarr"
     // arrConnection "radarr"
     // {
@@ -69,25 +68,27 @@
     "settings-${name}-ssl" = false;
   };
 
-  formFields = lib.concatLists (lib.mapAttrsToList (key: value:
-    map (v: "--form-string ${lib.escapeShellArg "${key}=${
-      if builtins.isBool v
-      then lib.boolToString v
-      else toString v
-    }"}") (lib.toList value))
-  settings);
+  secretFields = {
+    settings-opensubtitlescom-username = "opensubtitles-username";
+    settings-opensubtitlescom-password = "opensubtitles-password";
+    settings-auth-username = "bazarr-username";
+    settings-auth-password = "bazarr-password";
+    settings-sonarr-apikey = "sonarr-api-key";
+    settings-radarr-apikey = "radarr-api-key";
+  };
+
+  formValue = value:
+    if builtins.isBool value
+    then lib.boolToString value
+    else toString value;
+  formFields = lib.concatLists (lib.mapAttrsToList (key: value: map (item: [key (formValue item)]) (lib.toList value)) formSettings);
 in {
   services.bazarr = {
     enable = true;
     group = "users";
   };
 
-  sops.secrets = {
-    opensubtitles-username = {};
-    opensubtitles-password = {};
-    bazarr-username = {};
-    bazarr-password = {};
-  };
+  sops.secrets = lib.genAttrs ["opensubtitles-username" "opensubtitles-password" "bazarr-username" "bazarr-password"] (_: {});
 
   systemd.services.bazarr.serviceConfig = {
     Nice = 10;
@@ -98,43 +99,17 @@ in {
     name = "bazarr-settings";
     description = "Apply Bazarr's settings from this repository";
     after = ["bazarr"];
-    secrets = ["opensubtitles-username" "opensubtitles-password" "bazarr-username" "bazarr-password" "sonarr-api-key" "radarr-api-key"];
-    runtimeInputs = [pkgs.yq-go];
+    secrets = builtins.attrValues secretFields;
     serviceConfig = {
       User = cfg.user;
       Group = cfg.group;
     };
-    text = ''
-      bazarr() {
-        local path=$1
-        shift
-        curl --silent --show-error --fail-with-body --header "X-API-KEY: $(yq .auth.apikey ${cfg.dataDir}/config/config.yaml)" \
-          "$@" "${api}$path"
-      }
-
-      assign_profile() {
-        local args=()
-        while read -r id; do
-          args+=(--data-urlencode "$2=$id" --data-urlencode "profileid=${toString profileId}")
-        done < <(bazarr "/$1" | jq -r ".data[] | select(.profileId != ${toString profileId}) | .$3")
-        if [ ''${#args[@]} -gt 0 ]; then
-          bazarr "/$1" --request POST "''${args[@]}"
-        fi
-      }
-
-      wait_until_up ${api}
-
-      bazarr /system/settings --request POST \
-        ${lib.concatStringsSep " \\\n  " formFields} \
-        --form "settings-opensubtitlescom-username=<$CREDENTIALS_DIRECTORY/opensubtitles-username" \
-        --form "settings-opensubtitlescom-password=<$CREDENTIALS_DIRECTORY/opensubtitles-password" \
-        --form "settings-auth-username=<$CREDENTIALS_DIRECTORY/bazarr-username" \
-        --form "settings-auth-password=<$CREDENTIALS_DIRECTORY/bazarr-password" \
-        --form "settings-sonarr-apikey=<$CREDENTIALS_DIRECTORY/sonarr-api-key" \
-        --form "settings-radarr-apikey=<$CREDENTIALS_DIRECTORY/radarr-api-key"
-
-      assign_profile series seriesid sonarrSeriesId
-      assign_profile movies radarrid radarrId
-    '';
+    settings = {
+      inherit profileId;
+      url = api;
+      configFile = "${cfg.dataDir}/config/config.yaml";
+      fields = formFields;
+      inherit secretFields;
+    };
   };
 }

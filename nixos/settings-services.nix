@@ -3,51 +3,46 @@
   lib,
   pkgs,
   ...
-}: {
+}: let
+  bilboSettings = pkgs.python3Packages.buildPythonApplication {
+    pname = "bilbo-settings";
+    version = "1.0.0";
+    pyproject = true;
+    src = ./settings;
+    build-system = [pkgs.python3Packages.setuptools];
+    dependencies = with pkgs.python3Packages; [pyyaml requests];
+    nativeCheckInputs = [pkgs.ruff];
+    checkPhase = ''
+      ruff check .
+      ruff format --check .
+    '';
+    meta.mainProgram = "bilbo-settings";
+  };
+in {
   _module.args.mkSettingsService = {
     name,
     description,
     after,
+    settings,
+    app ? lib.removeSuffix "-settings" name,
     softAfter ? [],
     restartTriggers ? [],
     secrets ? [],
-    runtimeInputs ? [],
     serviceConfig ? {},
-    text,
   }: let
-    script = pkgs.writeShellApplication {
-      name = "${name}-apply";
-      runtimeInputs = [pkgs.curl pkgs.jq] ++ runtimeInputs;
-      text =
-        ''
-          credential() { cat "$CREDENTIALS_DIRECTORY/$1"; }
-
-          wait_until_up() {
-            local status
-            for _ in $(seq 60); do
-              status=$(curl --silent --output /dev/null --write-out '%{http_code}' "$1" || true)
-              [ "$status" != 000 ] && [ "$status" -lt 500 ] && return 0
-              sleep 2
-            done
-            echo "$1 did not answer within two minutes" >&2
-            return 1
-          }
-
-        ''
-        + text;
-    };
     units = map (service: "${service}.service") after;
+    settingsFile = pkgs.writeText "${name}.json" (builtins.toJSON settings);
   in {
     inherit description;
     wantedBy = ["multi-user.target"];
     after = units ++ map (service: "${service}.service") softAfter;
     requires = units;
-    restartTriggers = [script] ++ restartTriggers;
+    restartTriggers = [bilboSettings settingsFile] ++ restartTriggers;
     serviceConfig =
       {
         Type = "oneshot";
         RemainAfterExit = true;
-        ExecStart = lib.getExe script;
+        ExecStart = "${lib.getExe bilboSettings} ${app} ${settingsFile}";
         LoadCredential = map (secret: "${secret}:${config.sops.secrets.${secret}.path}") secrets;
       }
       // serviceConfig;

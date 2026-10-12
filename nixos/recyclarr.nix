@@ -121,14 +121,13 @@ in {
   # The timer alone would leave a changed profile unsynced until the next night.
   systemd.services.recyclarr-on-change = mkSettingsService {
     name = "recyclarr-on-change";
+    app = "recyclarr";
     description = "Sync Recyclarr right after its configuration changes";
     after = ["radarr" "sonarr"];
     restartTriggers = [config.systemd.services.recyclarr.preStart];
-    runtimeInputs = [pkgs.systemd];
-    text = ''
-      wait_until_up ${servarrUrl "radarr"}/ping
-      wait_until_up ${servarrUrl "sonarr"}/ping
-      systemctl start recyclarr.service
-    '';
+    settings = {
+      waitFor = map (name: "${servarrUrl name}/ping") ["radarr" "sonarr"];
+      systemctl = "${pkgs.systemd}/bin/systemctl";
+    };
   };
 }
