@@ -19,6 +19,10 @@
   librarySubtitles = {
     SubtitleDownloadLanguages = [];
   };
+  # Caddy connects from localhost; trusting it lets Jellyfin see real client addresses.
+  network = {
+    KnownProxies = ["127.0.0.1"];
+  };
 
   applySettings = pkgs.writeShellApplication {
     name = "jellyfin-apply-settings";
@@ -43,6 +47,9 @@
             jellyfin --request POST --data @- "${api}/Users/Configuration?userId=$id"
         done
 
+      jellyfin ${api}/System/Configuration/network | jq -c '. * ${builtins.toJSON network}' |
+        jellyfin --request POST --data @- ${api}/System/Configuration/network
+
       jellyfin ${api}/Library/VirtualFolders | jq -c '.[] | {Id: .ItemId, LibraryOptions: (.LibraryOptions * ${builtins.toJSON librarySubtitles})}' |
         while read -r library; do
           jellyfin --request POST --data "$library" ${api}/Library/VirtualFolders/LibraryOptions
@@ -53,6 +60,28 @@ in {
   services.jellyfin = {
     enable = true;
     group = "users";
+    hardwareAcceleration = {
+      enable = true;
+      type = "vaapi";
+      device = "/dev/dri/renderD128";
+    };
+    # The UI's transcoding page stops mattering: this overwrites encoding.xml on every start.
+    forceEncodingConfig = true;
+    transcoding = {
+      enableHardwareEncoding = true;
+      # The J4125 (Gemini Lake) decodes these in hardware, per vainfo; it can't decode AV1.
+      hardwareDecodingCodecs = {
+        h264 = true;
+        hevc = true;
+        hevc10bit = true;
+        mpeg2 = true;
+        vc1 = true;
+        vp8 = true;
+        vp9 = true;
+      };
+      enableToneMapping = false;
+      deleteSegments = false;
+    };
   };
 
   users.users.${user}.extraGroups = hardwareTranscodingGroups;
