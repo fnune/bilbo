@@ -58,8 +58,17 @@ in {
 
   systemd.services.crowdsec.serviceConfig.SupplementaryGroups = [config.services.caddy.group];
 
-  # cscli refuses to start while a credentials file is missing, and the setup that fills them runs cscli.
-  systemd.tmpfiles.rules = map (file: "f ${file} 0600 ${cfg.user} ${cfg.group} -") [lapiCredentials capiCredentials];
+  # cscli refuses to run while the central API credentials file is missing, and
+  # registering is what fills it. The local one is the opposite: the setup only
+  # creates it when absent, and refuses to overwrite an empty one.
+  systemd.tmpfiles.rules = ["f ${capiCredentials} 0600 ${cfg.user} ${cfg.group} -"];
+  systemd.services.crowdsec-drop-empty-lapi-credentials = {
+    description = "Let CrowdSec recreate empty local API credentials";
+    before = ["crowdsec.service"];
+    requiredBy = ["crowdsec.service"];
+    serviceConfig.Type = "oneshot";
+    script = "[ -s ${lapiCredentials} ] || rm -f ${lapiCredentials}";
+  };
 
   # Caddy only needs the key, so the bouncer registers itself and hands it over in a file.
   systemd.services.crowdsec-caddy-bouncer-register = {
