@@ -10,9 +10,6 @@
 
   api = "http://127.0.0.1:8096/jellyfin";
 
-  # Original audio, English subtitles unless it's in Spanish. Jellyfin has no
-  # "original language", so Spanish as the audio preference only decides when
-  # subtitles show; the file's default track (the original) is what plays.
   userPlayback = {
     SubtitleMode = "Smart";
     SubtitleLanguagePreference = "eng";
@@ -22,11 +19,9 @@
     RememberSubtitleSelections = true;
     EnableNextEpisodeAutoPlay = false;
   };
-  # Bazarr is the only subtitle downloader; Jellyfin's search piles up out-of-sync copies.
   librarySubtitles = {
     SubtitleDownloadLanguages = [];
   };
-  # Caddy connects from localhost; trusting it lets Jellyfin see real client addresses.
   network = {
     KnownProxies = ["127.0.0.1"];
   };
@@ -39,11 +34,9 @@ in {
       type = "vaapi";
       device = "/dev/dri/renderD128";
     };
-    # The UI's transcoding page stops mattering: this overwrites encoding.xml on every start.
     forceEncodingConfig = true;
     transcoding = {
       enableHardwareEncoding = true;
-      # The J4125 (Gemini Lake) decodes these in hardware, per vainfo; it can't decode AV1.
       hardwareDecodingCodecs = {
         h264 = true;
         hevc = true;
@@ -59,10 +52,8 @@ in {
 
   users.users.${user}.extraGroups = hardwareTranscodingGroups;
 
-  # MemoryDenyWriteExecute stays off for the .NET JIT, and ~@resources for its runtime's affinity and priority calls.
   systemd.services.jellyfin.serviceConfig = {
     ProtectSystem = lib.mkForce "strict";
-    # Jellyfin can save artwork and metadata next to the media, and delete it.
     ReadWritePaths = [dataDir cacheDir mounts.downloads-1t mounts.downloads-2t];
     ProtectHome = true;
     DeviceAllow = ["char-drm rw"];
@@ -77,7 +68,7 @@ in {
     secrets = ["jellyfin-api-key"];
     serviceConfig.DynamicUser = true;
     text = ''
-      jellyfin() { # path [curl args...]
+      jellyfin() {
         local path=$1
         shift
         curl --silent --show-error --fail --header "Authorization: MediaBrowser Token=\"$(credential jellyfin-api-key)\"" \

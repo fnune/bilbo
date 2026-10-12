@@ -14,7 +14,6 @@
   bouncerEnvDir = "/var/lib/crowdsec-caddy-bouncer";
   bouncerEnv = "${bouncerEnvDir}/env";
   caddyNeedsRestart = "${bouncerEnvDir}/caddy-needs-restart";
-  # The module's wrapper points cscli at the generated config; the bare binary looks in /etc.
   cscli = lib.findFirst (p: lib.getName p == "cscli") null config.environment.systemPackages;
 in {
   _module.args.crowdsec = {inherit lapiUrl bouncerEnv;};
@@ -51,16 +50,12 @@ in {
     settings = {
       general.api.server.enable = true;
       lapi.credentialsFile = lapiCredentials;
-      # Registering with the central API is what pulls the community blocklist.
       capi.credentialsFile = capiCredentials;
     };
   };
 
   systemd.services.crowdsec.serviceConfig.SupplementaryGroups = [config.services.caddy.group];
 
-  # cscli refuses to run while the central API credentials file is missing, and
-  # registering is what fills it. The local one is the opposite: the setup only
-  # creates it when absent, and refuses to overwrite an empty one.
   systemd.tmpfiles.rules = ["f ${capiCredentials} 0600 ${cfg.user} ${cfg.group} -"];
   systemd.services.crowdsec-drop-empty-lapi-credentials = {
     description = "Let CrowdSec recreate empty local API credentials";
@@ -70,7 +65,6 @@ in {
     script = "[ -s ${lapiCredentials} ] || rm -f ${lapiCredentials}";
   };
 
-  # Caddy only needs the key, so the bouncer registers itself and hands it over in a file.
   systemd.services.crowdsec-caddy-bouncer-register = {
     description = "Register Caddy as a CrowdSec bouncer";
     wantedBy = ["multi-user.target"];
@@ -84,7 +78,6 @@ in {
       Group = cfg.group;
       StateDirectory = "crowdsec-caddy-bouncer";
       UMask = "0077";
-      # CrowdSec can take a while on first start, and Caddy runs without the key until this succeeds.
       Restart = "on-failure";
       RestartSec = 30;
       ExecStartPost = "+${pkgs.writeShellScript "caddy-reload-bouncer-key" ''

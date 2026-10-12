@@ -15,7 +15,6 @@ in {
     inherit port;
   };
 
-  # MemoryDenyWriteExecute stays off for the V8 JIT.
   systemd.services.immich-public-proxy.serviceConfig = {
     LockPersonality = true;
     ProcSubset = "pid";

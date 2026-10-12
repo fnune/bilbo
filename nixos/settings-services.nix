@@ -4,8 +4,6 @@
   pkgs,
   ...
 }: {
-  # Apps whose settings live in their own database get a oneshot that pushes
-  # the repository's values through the app's API after every start.
   _module.args.mkSettingsService = {
     name,
     description,
@@ -22,7 +20,7 @@
         ''
           credential() { cat "$CREDENTIALS_DIRECTORY/$1"; }
 
-          wait_until_up() { # url
+          wait_until_up() {
             for _ in $(seq 60); do
               curl --silent --output /dev/null "$1" && return 0
               sleep 2

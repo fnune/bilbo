@@ -7,15 +7,12 @@
   cfg = config.services.calibre-web;
   appDb = "/var/lib/${cfg.dataDir}/app.db";
 
-  # The Kobo sync on calibre.fnune.com needs these; the module has no options for them.
   settings = {
     config_kobo_sync = 1;
     config_kobo_proxy = 1;
-    # Kobo sync links are built from this; Caddy serves on 443.
     config_external_port = 443;
   };
   applySettings = pkgs.writeShellScript "calibre-web-apply-settings" ''
-    # On a fresh install the database doesn't exist yet; the next start applies these.
     [ -f ${appDb} ] || exit 0
     ${lib.getExe pkgs.sqlite} ${appDb} "update settings set ${
       lib.concatStringsSep ", " (lib.mapAttrsToList (k: v: "${k} = ${toString v}") settings)
@@ -52,7 +49,6 @@ in {
 
   systemd.services.calibre-web = {
     restartTriggers = [applySettings];
-    # UMask stays at the default so books added here remain readable outside the users group.
     serviceConfig.PrivateUsers = true;
   };
 }

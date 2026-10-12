@@ -15,7 +15,6 @@
     radarr.dataDir
     sonarr.dataDir
     bazarr.dataDir
-    # DynamicUser keeps the real directory behind a symlink, which Borg would store as just the link.
     "/var/lib/private/prowlarr"
     config.services.seerr.configDir
   ];
@@ -34,15 +33,12 @@
   mirroredRcloneConfPath = config.sops.secrets.rclone-conf.path;
 
   statusDir = "/var/lib/backup-status";
-  # Both the daily run and the weekly upload wait this long for the other to finish.
   lockWaitSeconds = toString (6 * 60 * 60);
   freshness = {
     local = {
       stamp = "${statusDir}/mirrored-last-success";
       intervalDays = 1;
     };
-    # Deep Archive bills deleted objects for 180 days, so syncing the repository
-    # after every daily run would pay for every compacted segment many times.
     offsite = {
       stamp = "${statusDir}/mirrored-offsite-last-success";
       intervalDays = 7;
@@ -101,7 +97,6 @@ in {
       CPUSchedulingPolicy = "idle";
       IOSchedulingClass = "idle";
     };
-    # The lock keeps a daily run from changing segments halfway through the upload.
     script = ''
       BUCKET_NAME=$(cat ${mirroredBucketNamePath})
       ${pkgs.borgbackup}/bin/borg with-lock --lock-wait ${lockWaitSeconds} ${mirroredRepoPath} \

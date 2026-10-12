@@ -83,7 +83,6 @@
     };
   };
   networking.firewall = let
-    # My own Syncthing (kyaraben-syncthing, a user service) on non-default ports.
     syncthingSync = 22100;
     syncthingLocalDiscovery = 21127;
     ssh = {allowedTCPPorts = [22];};

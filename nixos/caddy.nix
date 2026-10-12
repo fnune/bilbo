@@ -91,7 +91,6 @@
 in {
   _module.args.caddyPublicLogs = publicLogs;
 
-  # CrowdSec reads these through the caddy group; tmpfiles fixes files Caddy created before.
   systemd.tmpfiles.rules = map (log: "z ${log} 0640 caddy caddy -") publicLogs;
 
   networking.firewall = {
@@ -193,12 +192,10 @@ in {
     };
   in {
     enable = true;
-    # The install check looks for each plugin's module path in the build info, and the bouncer lives in a subdirectory of its module.
     package = (pkgs.caddy.withPlugins {
       plugins = [
         "github.com/caddy-dns/cloudflare@v0.2.4"
         "github.com/hslatman/caddy-crowdsec-bouncer/http@v0.9.2"
-        # The bouncer's v0.3.0 pin of ipstore does not build against the bart version Caddy pulls in.
         "github.com/hslatman/ipstore@v0.5.0"
       ];
       hash = "sha256-7nQ2ikk0ugapEp0NdLZqGbQlxfSZRO7pAV2UAIy2RwE=";
@@ -206,7 +203,6 @@ in {
     globalConfig = ''
       crowdsec {
         api_url ${crowdsec.lapiUrl}
-        # A placeholder keeps Caddy starting while the bouncer is unregistered; it then lets traffic through.
         api_key {$CROWDSEC_API_KEY:unregistered}
       }
     '';

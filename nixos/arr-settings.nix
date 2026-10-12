@@ -29,17 +29,14 @@
     port = 6789;
   };
 
-  # Seerr's default for new requests; left alone until Recyclarr has created it.
   seerrProfile = "1080p, then 720p";
   seerrMain = {
-    # Links in notifications and emails are built from this.
     applicationUrl = "https://requests.fnune.com";
-    # Everyone signs in with their Jellyfin account.
     localLogin = false;
   };
 
   arrClient = name: ''
-    ${name}() { # path [curl args...]
+    ${name}() {
       local path=$1
       shift
       curl --silent --show-error --fail --header "X-Api-Key: $(credential ${name}-api-key)" \
@@ -82,7 +79,6 @@
         ${name} /notification --request POST --data @-
     fi
 
-    # The quality profile's repack scores decide, as TRaSH recommends.
     ${name} /config/mediamanagement |
       jq -c 'select(.downloadPropersAndRepacks != "doNotPrefer") | .downloadPropersAndRepacks = "doNotPrefer"' |
       while read -r settings; do
@@ -108,18 +104,17 @@ in {
     text = ''
       ${lib.concatStrings (lib.mapAttrsToList (name: _: arrClient name) arrs)}
 
-      seerr() { # path [curl args...]
+      seerr() {
         local path=$1
         shift
         curl --silent --show-error --fail --header "X-Api-Key: $(jq -r .main.apiKey ${seerr.configDir}/settings.json)" \
           --header "Content-Type: application/json" "$@" "http://127.0.0.1:${toString seerr.port}/api/v1$path"
       }
 
-      missing() { # client path jq-predicate
+      missing() {
         ! "$1" "$2" | jq -e "any(.[]; $3)" >/dev/null
       }
 
-      # NZBGet's login lives only in its own config file.
       nzbgetUser=$(sed -n 's/^ControlUsername=//p' ${nzbget.conf})
       nzbgetPassword=$(sed -n 's/^ControlPassword=//p' ${nzbget.conf})
 

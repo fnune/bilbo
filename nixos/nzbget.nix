@@ -17,7 +17,6 @@
   categories =
     staged
     ++ [
-      # NZBGet skips a category with an empty name; nzbget.conf still defines these two slots.
       unused
       unused
       {
@@ -47,7 +46,6 @@ in {
   services.nzbget = {
     enable = true;
     group = "users";
-    # Logins stay in nzbget.conf: these become command-line arguments, visible in `ps`.
     settings =
       lib.mergeAttrsList (lib.imap1 categorySettings categories)
       // {
@@ -57,11 +55,8 @@ in {
         "Server1.Name" = "Eweka";
         "Server1.Host" = "news.eweka.nl";
         "Server1.Connections" = 50;
-        # Unpacks while downloading, so imports start sooner.
         DirectUnpack = "yes";
-        # MB. With DirectWrite on (nzbget.conf), NZBGet's docs say even 50 MB is effective.
         ArticleCache = 100;
-        # KB per connection; the value NZBGet's docs recommend.
         WriteBuffer = 1024;
       };
   };
