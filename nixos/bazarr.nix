@@ -111,6 +111,12 @@ in {
     bazarr-password = {};
   };
 
+  # Subtitle syncs read whole video files; let playback and Frigate go first.
+  systemd.services.bazarr.serviceConfig = {
+    Nice = 10;
+    IOSchedulingClass = "idle";
+  };
+
   systemd.services.bazarr-settings = {
     description = "Apply Bazarr's settings from this repository";
     wantedBy = ["multi-user.target"];
