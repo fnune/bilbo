@@ -119,6 +119,7 @@
     ./pincho.nix
     ./prowlarr.nix
     ./radarr.nix
+    ./recyclarr.nix
     ./secrets.nix
     ./seerr.nix
     ./smb-jahreskarte.nix

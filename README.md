@@ -29,6 +29,11 @@ Now, configure each service:
   - For Radarr, go to Settings -> Profiles and set the language to "Original"
     in all profiles
   - For both, go to Settings -> Download Clients and add NZBGet
+  - Recyclarr (`nixos/recyclarr.nix`) syncs one profile to both daily, "1080p,
+    then 720p": 1080p first, 720p next, remuxes and 4K only when nothing else
+    exists, original audio only, and TRaSH's unwanted formats blocked. Make it
+    the default for new media in Radarr, Sonarr and Seerr. Older items keep
+    their profiles, so nothing gets re-downloaded.
 - [Prowlarr][prowlarr] holds the indexers and pushes them to Radarr and Sonarr
   - In Indexers, add NZBGeek
   - In Settings -> Apps, add Radarr (`http://localhost:7878/radarr`) and Sonarr
@@ -125,6 +130,7 @@ Secrets are encrypted in `secrets/bilbo.yaml`. `sops-nix` decrypts them at boot 
 | `cloudflare-dns-token` | DNS write on the zone, for dyndns and the certificate challenge | `pulumi stack output bilboDnsTokenValue --show-secrets` in `remote/` |
 | `wireguard-private-key` | bilbo's WireGuard key | `wg genkey` |
 | `borg-passphrase`, `rclone-conf`, `borg-s3-bucket-name` | the off-site backup | `pulumi stack output` in `remote/` |
+| `radarr-api-key`, `sonarr-api-key` | Recyclarr's access to Radarr and Sonarr | Settings -> General in each |
 | `anthropic-api-key` | Pincho's LLM | the Anthropic console |
 | `papra-env` | Papra's environment file, see its section | generated once |
 | `mosquitto-*-password` | one MQTT password per client. Frigate's and Zigbee2MQTT's environment files use the same entries. | generated |
