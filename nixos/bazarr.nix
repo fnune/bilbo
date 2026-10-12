@@ -29,7 +29,6 @@
       (item 3 "ca" onlyWhenAudioIsThatLanguage)
       (item 4 "ja" onlyWhenAudioIsThatLanguage)
     ];
-    # Once English is found, Bazarr stops searching for the other languages.
     cutoff = english.id;
     mustContain = [];
     mustNotContain = [];
