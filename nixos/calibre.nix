@@ -7,26 +7,18 @@
   cfg = config.services.calibre-web;
   appDb = "/var/lib/${cfg.dataDir}/app.db";
 
-  # Settings the module has no option for. The Kobo sync on calibre.fnune.com depends on the first three.
+  # The Kobo sync on calibre.fnune.com needs these; the module has no options for them.
   settings = {
     config_kobo_sync = 1;
     config_kobo_proxy = 1;
     # Kobo sync links are built from this; Caddy serves on 443.
     config_external_port = 443;
-    config_upload_formats = "pdf,epub,azw3,fb2,html,cbr,wav,flac,odt,prc,mobi,txt,azw,ogg,docx,cbt,lit,mp4,cb7,djvu,djv,kepub,m4b,doc,cbz,rtf,m4a,mp3,opus";
-    config_embed_metadata = 1;
-    config_public_reg = 0;
-    config_anonbrowse = 0;
   };
-  sqlValue = v:
-    if builtins.isInt v
-    then toString v
-    else "'${v}'";
   applySettings = pkgs.writeShellScript "calibre-web-apply-settings" ''
     # On a fresh install the database doesn't exist yet; the next start applies these.
     [ -f ${appDb} ] || exit 0
     ${lib.getExe pkgs.sqlite} ${appDb} "update settings set ${
-      lib.concatStringsSep ", " (lib.mapAttrsToList (k: v: "${k} = ${sqlValue v}") settings)
+      lib.concatStringsSep ", " (lib.mapAttrsToList (k: v: "${k} = ${toString v}") settings)
     }"
   '';
 in {
