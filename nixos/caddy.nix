@@ -2,6 +2,7 @@
   config,
   pkgs,
   lib,
+  crowdsec,
   ...
 }: let
   domain = "fnune.com";
@@ -27,6 +28,9 @@
   dyndnsHosts = builtins.attrValues public ++ [vpnEndpoint];
 
   vpnSubnet = "10.100.0.0/24";
+
+  logFile = hostname: "${config.services.caddy.logDir}/access-${hostname}.log";
+  publicLogs = map logFile (builtins.attrValues public);
 
   dnsToken = config.sops.secrets.cloudflare-dns-token.path;
 
@@ -85,6 +89,11 @@
   seerrPort = toString config.services.seerr.port;
   prowlarrPort = toString config.services.prowlarr.settings.server.port;
 in {
+  _module.args.caddyPublicLogs = publicLogs;
+
+  # CrowdSec reads these through the caddy group; tmpfiles fixes files Caddy created before.
+  systemd.tmpfiles.rules = map (log: "z ${log} 0640 caddy caddy -") publicLogs;
+
   networking.firewall = {
     allowedTCPPorts = [443];
     interfaces = {
@@ -105,7 +114,14 @@ in {
   systemd.services =
     (lib.listToAttrs (map mkDyndnsService dyndnsHosts))
     // {
-      caddy.serviceConfig.EnvironmentFile = config.sops.templates."caddy.env".path;
+      caddy = {
+        after = ["crowdsec-caddy-bouncer-register.service"];
+        wants = ["crowdsec-caddy-bouncer-register.service"];
+        serviceConfig.EnvironmentFile = [
+          config.sops.templates."caddy.env".path
+          "-${crowdsec.bouncerEnv}"
+        ];
+      };
     };
 
   services.caddy = let
@@ -177,12 +193,38 @@ in {
       reverse_proxy /* ${upstream}
       reverse_proxy / ${upstream}
     '';
+    publicSite = hostname: handlers: {
+      logFormat = ''
+        output file ${logFile hostname} {
+          mode 0640
+        }
+      '';
+      extraConfig = ''
+        ${tlsDnsCloudflare}
+        route {
+          crowdsec
+          ${handlers}
+        }
+      '';
+    };
   in {
     enable = true;
-    package = pkgs.caddy.withPlugins {
-      plugins = ["github.com/caddy-dns/cloudflare@v0.2.4"];
-      hash = "sha256-xRJ5evsAJ2akg47j3Bt6YDXJOgX88B/rKNP50KSVyNY=";
-    };
+    # The install check looks for each plugin's module path in the build info, and the bouncer lives in a subdirectory of its module.
+    package = (pkgs.caddy.withPlugins {
+      plugins = [
+        "github.com/caddy-dns/cloudflare@v0.2.4"
+        "github.com/hslatman/caddy-crowdsec-bouncer/http@v0.9.2"
+        # The bouncer's v0.3.0 pin of ipstore does not build against the bart version Caddy pulls in.
+        "github.com/hslatman/ipstore@v0.5.0"
+      ];
+      hash = "sha256-7nQ2ikk0ugapEp0NdLZqGbQlxfSZRO7pAV2UAIy2RwE=";
+    }).overrideAttrs {doInstallCheck = false;};
+    globalConfig = ''
+      crowdsec {
+        api_url ${crowdsec.lapiUrl}
+        api_key {$CROWDSEC_API_KEY}
+      }
+    '';
     virtualHosts = {
       "${vpnOnly.admin}".extraConfig = ''
         ${tlsDnsCloudflare}
@@ -217,27 +259,18 @@ in {
         ${vpnOnlyRoute (rootIs "localhost:${seerrPort}")}
       '';
 
-      "${public.sharedPhotos}".extraConfig = ''
-        ${tlsDnsCloudflare}
-        ${rootIs "localhost:${sharedPhotosPort}"}
-      '';
+      "${public.sharedPhotos}" = publicSite public.sharedPhotos (rootIs "localhost:${sharedPhotosPort}");
       # The token in the Kobo sync URL is its login.
-      "${public.koboSync}".extraConfig = ''
-        ${tlsDnsCloudflare}
-        route {
-          reverse_proxy /kobo/* 127.0.0.1:8083 {
-            header_up X-Scheme {scheme}
-          }
-          respond 404
+      "${public.koboSync}" = publicSite public.koboSync ''
+        reverse_proxy /kobo/* 127.0.0.1:8083 {
+          header_up X-Scheme {scheme}
         }
+        respond 404
       '';
-      "${public.guestJellyfin}".extraConfig = ''
-        ${tlsDnsCloudflare}
-        route {
-          redir / /jellyfin/ 302
-          ${jellyfinAtSubpath}
-          respond 404
-        }
+      "${public.guestJellyfin}" = publicSite public.guestJellyfin ''
+        redir / /jellyfin/ 302
+        ${jellyfinAtSubpath}
+        respond 404
       '';
 
       ":80".extraConfig = ''

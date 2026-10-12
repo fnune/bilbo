@@ -106,6 +106,7 @@
     ./bazarr.nix
     ./caddy.nix
     ./calibre.nix
+    ./crowdsec.nix
     ./fail2ban.nix
     ./frigate.nix
     ./home-assistant.nix

@@ -84,6 +84,8 @@ from the internet.
 | `watch.fnune.com` | guests with a Jellyfin account | Jellyfin at `/jellyfin` |
 | `http://192.168.178.36/...` | the LAN and the TV | plain HTTP, same subpaths as `bilbo.fnune.com` |
 
+The public hostnames sit behind CrowdSec (`nixos/crowdsec.nix`). It reads their Caddy logs, and Caddy's bouncer refuses IPs it has banned, plus those on the community blocklist. LAN and VPN addresses are never banned. `sudo cscli decisions list` shows active bans, `sudo cscli decisions delete --ip <ip>` lifts one. If CrowdSec is down, the bouncer lets traffic through.
+
 The dyndns timers in `nixos/caddy.nix` keep the public records on the household address. Pulumi owns the private records (`remote/cloudflare/dns.ts`).
 
 `bilbo.fnune.com/` serves a start page linking every service. It is hand-written HTML in `nixos/start-page/index.html`; add a link there when adding a service.
