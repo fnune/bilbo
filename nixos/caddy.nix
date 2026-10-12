@@ -3,6 +3,7 @@
   pkgs,
   lib,
   crowdsec,
+  servarrAddress,
   ...
 }: let
   domain = "fnune.com";
@@ -87,7 +88,6 @@
   beszelPort = toString config.services.beszel.hub.port;
   ntfyListen = config.services.ntfy-sh.settings.listen-http;
   seerrPort = toString config.services.seerr.port;
-  prowlarrPort = toString config.services.prowlarr.settings.server.port;
 in {
   _module.args.caddyPublicLogs = publicLogs;
 
@@ -141,38 +141,22 @@ in {
         header_up X-Forwarded-Host {host}
       }
     '';
-    jellyfinAtSubpath = ''
-      reverse_proxy /jellyfin/* localhost:8096
-      reverse_proxy /jellyfin localhost:8096
+    atSubpath = path: upstream: ''
+      reverse_proxy /${path}/* ${upstream}
+      reverse_proxy /${path} ${upstream}
     '';
+    jellyfinAtSubpath = atSubpath "jellyfin" "localhost:8096";
     adminSubpaths = ''
-      reverse_proxy /nzbget/* localhost:6789
-      reverse_proxy /nzbget localhost:6789
-
-      reverse_proxy /radarr/* localhost:7878
-      reverse_proxy /radarr localhost:7878
-
-      reverse_proxy /sonarr/* localhost:8989
-      reverse_proxy /sonarr localhost:8989
-
-      reverse_proxy /bazarr/* 127.0.0.1:6767
-      reverse_proxy /bazarr 127.0.0.1:6767
-
-      reverse_proxy /prowlarr/* 127.0.0.1:${prowlarrPort}
-      reverse_proxy /prowlarr 127.0.0.1:${prowlarrPort}
-
+      ${atSubpath "nzbget" "localhost:6789"}
+      ${atSubpath "radarr" (servarrAddress "radarr")}
+      ${atSubpath "sonarr" (servarrAddress "sonarr")}
+      ${atSubpath "prowlarr" (servarrAddress "prowlarr")}
+      ${atSubpath "bazarr" "127.0.0.1:${toString config.services.bazarr.listenPort}"}
       ${calibreAtSubpath}
-
       ${jellyfinAtSubpath}
-
-      reverse_proxy /pincho/* localhost:3210
-      reverse_proxy /pincho localhost:3210
-
-      reverse_proxy /zigbee2mqtt/* localhost:8085
-      reverse_proxy /zigbee2mqtt localhost:8085
-
-      reverse_proxy /smb/* localhost:8799
-      reverse_proxy /smb localhost:8799
+      ${atSubpath "pincho" "localhost:3210"}
+      ${atSubpath "zigbee2mqtt" "localhost:8085"}
+      ${atSubpath "smb" "localhost:8799"}
 
       handle / {
         root * ${./start-page}

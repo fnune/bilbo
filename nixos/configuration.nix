@@ -119,13 +119,12 @@
     ./nzbget.nix
     ./papra.nix
     ./pincho.nix
-    ./prowlarr.nix
-    ./radarr.nix
     ./recyclarr.nix
     ./secrets.nix
     ./seerr.nix
+    ./servarr.nix
+    ./settings-services.nix
     ./smb-jahreskarte.nix
-    ./sonarr.nix
     ./wireguard.nix
     ./zigbee2mqtt.nix
   ];

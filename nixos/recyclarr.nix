@@ -1,5 +1,8 @@
-{config, ...}: let
-  inherit (config.services) radarr sonarr;
+{
+  config,
+  servarrUrl,
+  ...
+}: let
   apiKey = name: {_secret = config.sops.secrets."${name}-api-key".path;};
 
   # A distant 1080p TV: 1080p is the target, 720p is fine, anything bigger is a last resort.
@@ -92,7 +95,7 @@ in {
     enable = true;
     configuration = {
       radarr.movies = {
-        base_url = "http://127.0.0.1:${toString radarr.settings.server.port}${radarr.settings.server.urlbase}";
+        base_url = servarrUrl "radarr";
         api_key = apiKey "radarr";
         quality_definition = {
           type = "movie";
@@ -107,7 +110,7 @@ in {
         custom_formats = [radarrFormats];
       };
       sonarr.series = {
-        base_url = "http://127.0.0.1:${toString sonarr.settings.server.port}${sonarr.settings.server.urlbase}";
+        base_url = servarrUrl "sonarr";
         api_key = apiKey "sonarr";
         quality_definition = {
           type = "series";
