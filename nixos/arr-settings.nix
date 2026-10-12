@@ -14,12 +14,14 @@
       rootFolder = libraries.movies;
       categoryField = "movieCategory";
       category = "Movies";
+      seerrServer.minimumAvailability = "released";
     };
     sonarr = {
       implementation = "Sonarr";
       rootFolder = libraries.series;
       categoryField = "tvCategory";
       category = "Series";
+      seerrServer.enableSeasonFolders = true;
     };
   };
 
@@ -31,6 +33,8 @@
   prowlarrConfig = "/var/lib/private/prowlarr/config.xml";
 
   seerrProfile = "1080p, then 720p";
+  seerrNotConfigured = 4;
+  seerrJellyfin = 2;
   seerrMain = {
     applicationUrl = "https://requests.fnune.com";
     localLogin = false;
@@ -112,6 +116,20 @@
         ${name} "/config/mediamanagement/$(jq -r .id <<<"$settings")" --request PUT --data "$settings"
       done
 
+    if missing seerr /settings/${name} true; then
+      ${name} /qualityprofile |
+        jq --arg key "$(credential ${name}-api-key)" '
+          (map(select(.name == "${seerrProfile}")) + .)[0] as $profile
+          | {
+              name: "${arr.implementation}", hostname: "127.0.0.1",
+              port: ${toString config.services.${name}.settings.server.port},
+              baseUrl: "${config.services.${name}.settings.server.urlbase}", useSsl: false, apiKey: $key,
+              activeProfileId: $profile.id, activeProfileName: $profile.name, activeDirectory: "${arr.rootFolder}",
+              is4k: false, isDefault: true, syncEnabled: true, preventSearch: false, tags: []
+            } + ${builtins.toJSON arr.seerrServer}' |
+        seerr /settings/${name} --request POST --data @- >/dev/null
+    fi
+
     profileId=$(${name} /qualityprofile | jq '[.[] | select(.name == "${seerrProfile}") | .id] | first')
     seerr /settings/${name} |
       jq -c --argjson profileId "$profileId" '.[] | select(.isDefault) | . as $current
@@ -129,8 +147,8 @@ in {
     name = "arr-settings";
     description = "Apply Radarr, Sonarr, Prowlarr and Seerr settings from this repository";
     after = ["radarr" "sonarr" "prowlarr" "seerr" "nzbget" "ntfy-sh"];
-    softAfter = ["recyclarr-on-change"];
-    secrets = ["radarr-api-key" "sonarr-api-key" "nzbget-username" "nzbget-password" "nzbgeek-api-key" "servarr-username" "servarr-password"];
+    softAfter = ["recyclarr-on-change" "jellyfin-settings"];
+    secrets = ["radarr-api-key" "sonarr-api-key" "nzbget-username" "nzbget-password" "nzbgeek-api-key" "servarr-username" "servarr-password" "jellyfin-admin-username" "jellyfin-admin-password"];
     text = ''
       ${lib.concatStrings (lib.mapAttrsToList (name: _: arrClient name) arrs)}
 
@@ -158,9 +176,26 @@ in {
 
 
       wait_until_up http://127.0.0.1:${toString seerr.port}/api/v1/status
+      seerrPublic() { curl --silent --show-error --fail-with-body "http://127.0.0.1:${toString seerr.port}/api/v1/settings/public"; }
+
+      if seerrPublic | jq -e '.mediaServerType == ${toString seerrNotConfigured}' >/dev/null; then
+        jq -n --arg username "$(credential jellyfin-admin-username)" --arg password "$(credential jellyfin-admin-password)" '{
+          username: $username, password: $password, serverType: ${toString seerrJellyfin},
+          hostname: "127.0.0.1", port: 8096, urlBase: "/jellyfin", useSsl: false
+        }' | curl --silent --show-error --fail-with-body --header "Content-Type: application/json" \
+          --data @- "http://127.0.0.1:${toString seerr.port}/api/v1/auth/jellyfin" >/dev/null
+        libraryIds=$(seerr "/settings/jellyfin/library?sync=true" | jq -r 'map(.id) | join(",")')
+        seerr "/settings/jellyfin/library?enable=$libraryIds" >/dev/null
+      fi
       seerr /settings/main --request POST --data ${lib.escapeShellArg (builtins.toJSON seerrMain)} >/dev/null
 
       ${lib.concatStrings (lib.mapAttrsToList arrSettings arrs)}
+
+      if seerrPublic | jq -e '.initialized | not' >/dev/null; then
+        seerr /settings/jellyfin/users | jq '{jellyfinUserIds: map(.id)}' |
+          seerr /user/import-from-jellyfin --request POST --data @- >/dev/null
+        seerr /settings/initialize --request POST >/dev/null
+      fi
 
       prowlarr() {
         local path=$1
