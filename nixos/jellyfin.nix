@@ -1,8 +1,8 @@
 {
   config,
   lib,
+  mkSettingsService,
   mounts,
-  pkgs,
   ...
 }: let
   inherit (config.services.jellyfin) user dataDir cacheDir;
@@ -29,39 +29,6 @@
   # Caddy connects from localhost; trusting it lets Jellyfin see real client addresses.
   network = {
     KnownProxies = ["127.0.0.1"];
-  };
-
-  applySettings = pkgs.writeShellApplication {
-    name = "jellyfin-apply-settings";
-    runtimeInputs = with pkgs; [curl jq];
-    text = ''
-      token=$(cat "$CREDENTIALS_DIRECTORY/jellyfin-api-key")
-      jellyfin() {
-        curl --silent --show-error --fail \
-          --header "Authorization: MediaBrowser Token=\"$token\"" \
-          --header "Content-Type: application/json" "$@"
-      }
-
-      for _ in $(seq 60); do
-        curl --silent --fail ${api}/System/Info/Public >/dev/null && break
-        sleep 2
-      done
-
-      jellyfin ${api}/Users | jq -c '.[] | {id: .Id, configuration: .Configuration}' |
-        while read -r u; do
-          id=$(jq -r .id <<<"$u")
-          jq -c '.configuration * ${builtins.toJSON userPlayback}' <<<"$u" |
-            jellyfin --request POST --data @- "${api}/Users/Configuration?userId=$id"
-        done
-
-      jellyfin ${api}/System/Configuration/network | jq -c '. * ${builtins.toJSON network}' |
-        jellyfin --request POST --data @- ${api}/System/Configuration/network
-
-      jellyfin ${api}/Library/VirtualFolders | jq -c '.[] | {Id: .ItemId, LibraryOptions: (.LibraryOptions * ${builtins.toJSON librarySubtitles})}' |
-        while read -r library; do
-          jellyfin --request POST --data "$library" ${api}/Library/VirtualFolders/LibraryOptions
-        done
-    '';
   };
 in {
   services.jellyfin = {
@@ -103,18 +70,35 @@ in {
 
   sops.secrets.jellyfin-api-key = {};
 
-  systemd.services.jellyfin-settings = {
+  systemd.services.jellyfin-settings = mkSettingsService {
+    name = "jellyfin-settings";
     description = "Apply Jellyfin's user and library settings from this repository";
-    wantedBy = ["multi-user.target"];
-    after = ["jellyfin.service"];
-    requires = ["jellyfin.service"];
-    restartTriggers = [applySettings];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      DynamicUser = true;
-      ExecStart = lib.getExe applySettings;
-      LoadCredential = ["jellyfin-api-key:${config.sops.secrets.jellyfin-api-key.path}"];
-    };
+    after = ["jellyfin"];
+    secrets = ["jellyfin-api-key"];
+    serviceConfig.DynamicUser = true;
+    text = ''
+      jellyfin() { # path [curl args...]
+        local path=$1
+        shift
+        curl --silent --show-error --fail --header "Authorization: MediaBrowser Token=\"$(credential jellyfin-api-key)\"" \
+          --header "Content-Type: application/json" "$@" "${api}$path"
+      }
+
+      wait_until_up ${api}/System/Info/Public
+
+      jellyfin /Users | jq -c '.[] | {id: .Id, configuration: (.Configuration * ${builtins.toJSON userPlayback})}' |
+        while read -r user; do
+          jq -c .configuration <<<"$user" |
+            jellyfin "/Users/Configuration?userId=$(jq -r .id <<<"$user")" --request POST --data @-
+        done
+
+      jellyfin /System/Configuration/network | jq -c '. * ${builtins.toJSON network}' |
+        jellyfin /System/Configuration/network --request POST --data @-
+
+      jellyfin /Library/VirtualFolders | jq -c '.[] | {Id: .ItemId, LibraryOptions: (.LibraryOptions * ${builtins.toJSON librarySubtitles})}' |
+        while read -r library; do
+          jellyfin /Library/VirtualFolders/LibraryOptions --request POST --data "$library"
+        done
+    '';
   };
 }

@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  mkSettingsService,
   pkgs,
   ...
 }: let
@@ -65,39 +66,6 @@
       else toString v
     }"}") (lib.toList value))
   settings);
-
-  applySettings = pkgs.writeShellApplication {
-    name = "bazarr-apply-settings";
-    runtimeInputs = with pkgs; [curl jq yq-go];
-    text = ''
-      key=$(yq '.auth.apikey' ${cfg.dataDir}/config/config.yaml)
-      bazarr() { curl --silent --show-error --fail --header "X-API-KEY: $key" "$@"; }
-
-      for _ in $(seq 60); do
-        bazarr ${api}/system/status >/dev/null 2>&1 && break
-        sleep 2
-      done
-
-      bazarr --request POST ${api}/system/settings \
-        ${lib.concatStringsSep " \\\n  " formFields} \
-        --form "settings-opensubtitlescom-username=<$CREDENTIALS_DIRECTORY/opensubtitles-username" \
-        --form "settings-opensubtitlescom-password=<$CREDENTIALS_DIRECTORY/opensubtitles-password" \
-        --form "settings-auth-username=<$CREDENTIALS_DIRECTORY/bazarr-username" \
-        --form "settings-auth-password=<$CREDENTIALS_DIRECTORY/bazarr-password"
-
-      # Every series and movie gets the one profile, including those added before it existed.
-      for kind in series:seriesid:sonarrSeriesId movies:radarrid:radarrId; do
-        IFS=: read -r endpoint idField jsonId <<<"$kind"
-        args=()
-        while read -r id; do
-          args+=(--data-urlencode "$idField=$id" --data-urlencode "profileid=${toString profileId}")
-        done < <(bazarr "${api}/$endpoint" | jq -r ".data[] | select(.profileId != ${toString profileId}) | .$jsonId")
-        if [ ''${#args[@]} -gt 0 ]; then
-          bazarr --request POST "${api}/$endpoint" "''${args[@]}"
-        fi
-      done
-    '';
-  };
 in {
   services.bazarr = {
     enable = true;
@@ -117,24 +85,46 @@ in {
     IOSchedulingClass = "idle";
   };
 
-  systemd.services.bazarr-settings = {
+  systemd.services.bazarr-settings = mkSettingsService {
+    name = "bazarr-settings";
     description = "Apply Bazarr's settings from this repository";
-    wantedBy = ["multi-user.target"];
-    after = ["bazarr.service"];
-    requires = ["bazarr.service"];
-    restartTriggers = [applySettings];
+    after = ["bazarr"];
+    secrets = ["opensubtitles-username" "opensubtitles-password" "bazarr-username" "bazarr-password"];
+    runtimeInputs = [pkgs.yq-go];
     serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
       User = cfg.user;
       Group = cfg.group;
-      ExecStart = lib.getExe applySettings;
-      LoadCredential = [
-        "opensubtitles-username:${config.sops.secrets.opensubtitles-username.path}"
-        "opensubtitles-password:${config.sops.secrets.opensubtitles-password.path}"
-        "bazarr-username:${config.sops.secrets.bazarr-username.path}"
-        "bazarr-password:${config.sops.secrets.bazarr-password.path}"
-      ];
     };
+    text = ''
+      bazarr() { # path [curl args...]
+        local path=$1
+        shift
+        curl --silent --show-error --fail --header "X-API-KEY: $(yq .auth.apikey ${cfg.dataDir}/config/config.yaml)" \
+          "$@" "${api}$path"
+      }
+
+      assign_profile() { # endpoint id-parameter id-field
+        local args=()
+        while read -r id; do
+          args+=(--data-urlencode "$2=$id" --data-urlencode "profileid=${toString profileId}")
+        done < <(bazarr "/$1" | jq -r ".data[] | select(.profileId != ${toString profileId}) | .$3")
+        if [ ''${#args[@]} -gt 0 ]; then
+          bazarr "/$1" --request POST "''${args[@]}"
+        fi
+      }
+
+      wait_until_up ${api}
+
+      bazarr /system/settings --request POST \
+        ${lib.concatStringsSep " \\\n  " formFields} \
+        --form "settings-opensubtitlescom-username=<$CREDENTIALS_DIRECTORY/opensubtitles-username" \
+        --form "settings-opensubtitlescom-password=<$CREDENTIALS_DIRECTORY/opensubtitles-password" \
+        --form "settings-auth-username=<$CREDENTIALS_DIRECTORY/bazarr-username" \
+        --form "settings-auth-password=<$CREDENTIALS_DIRECTORY/bazarr-password"
+
+      # Every series and movie gets the one profile, including those added before it existed.
+      assign_profile series seriesid sonarrSeriesId
+      assign_profile movies radarrid radarrId
+    '';
   };
 }
