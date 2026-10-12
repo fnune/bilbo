@@ -188,7 +188,7 @@ in {
       borg = lib.getExe' pkgs.borgbackup "borg";
       repository = mirroredRepoPath;
       inherit lockWaitSeconds;
-      samplePath = "mnt/mirrored/immich/upload";
+      samplePath = "mnt/mirrored/immich/library";
       maxFileBytes = 200 * 1000 * 1000;
       notify = lib.getExe notify;
       root = "/";
