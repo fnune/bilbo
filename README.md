@@ -4,71 +4,22 @@ My media server.
 
 ## First-time setup
 
-### Services
+If you restore from Borg in step 5, skip steps 6 to 13.
 
-Before starting, run:
-
-```sh
-mkdir /mnt/downloads-1t/Books
-mkdir /mnt/downloads-1t/Movies
-mkdir /mnt/downloads-2t/Series
-```
-
-Now, configure each service:
-
-- [NZBGet][nzbget] is configured in `nixos/nzbget.nix`: paths, categories, the
-  Eweka server, and its web and Eweka logins (from sops, written into
-  `nzbget.conf` at start so they stay out of `ps`)
-- [Radarr][radarr] and [Sonarr][sonarr], and other "arr"s
-  - For Radarr, go to Settings -> Profiles and set the language to "Original"
-    in all profiles
-  - `arr-settings` (`nixos/arr-settings.nix`) adds what's missing on every
-    deploy: the root folder, NZBGet as download client (its login is read
-    from `nzbget.conf`) and an ntfy connection. It also makes "1080p, then
-    720p" Seerr's default profile once Recyclarr has created it. It never
-    deletes anything.
-  - All of them require a login, Bazarr included: Caddy reaches them from
-    localhost, so "disabled for local addresses" would mean no login at all.
-  - Recyclarr (`nixos/recyclarr.nix`) syncs one profile to both daily and on every deploy that changes it, "1080p,
-    then 720p": 1080p first, 720p next, remuxes and 4K only when nothing else
-    exists, original audio only, and TRaSH's unwanted formats blocked. Make it
-    the default for new media in Radarr, Sonarr and Seerr. Older items keep
-    their profiles, so nothing gets re-downloaded.
-- [Bazarr][bazarr] is configured by `bazarr-settings` (`nixos/bazarr.nix`),
-  which pushes the settings through Bazarr's API on every deploy, including the
-  Sonarr and Radarr connections. Change them there, not in the UI.
-  - One language profile for everything: English and Spanish always, Catalan
-    and Japanese when the audio is in that language. Subtitle tracks already in the file count.
-  - Every download is re-timed against the audio.
-  - Bazarr is the only thing that downloads subtitles. `jellyfin-settings`
-    keeps Jellyfin's own subtitle downloads off, or files pile up next to each
-    episode.
-- [Prowlarr][prowlarr] holds the indexers and pushes them to Radarr and Sonarr.
-  `arr-settings` adds NZBgeek and both apps, and once Prowlarr has synced, drops
-  any `NZBgeek` indexer added by hand in Radarr or Sonarr. Create the login on
-  first visit.
-- [Calibre][calibre]
-  - On first run, point it at `/mnt/downloads-1t/Books` (initialize a Calibre
-    library there with `calibredb` if `metadata.db` does not yet exist)
-  - The Kobo syncs through `https://calibre.fnune.com/kobo/<token>`, the only
-    path that hostname serves to the internet. Generate the token under the
-    user's profile in calibre-web.
-- [Jellyfin][jellyfin]
-  - Visit [Jellyfin][jellyfin] and create the admin user
-  - Create a media library for Movies in `/mnt/downloads-1t/Movies`
-  - Create a media library for Series in `/mnt/downloads-2t/Series`
-  - Create an API key under Dashboard -> API Keys and store it as
-    `jellyfin-api-key` in sops. `jellyfin-settings` (`nixos/jellyfin.nix`) uses
-    it on every deploy to set every user's playback (original audio, English
-    subtitles unless the audio is Spanish, no next-episode autoplay), to keep
-    subtitle downloads off in every library, and to trust Caddy as the proxy.
-- [Seerr][seerr]
-  - Sign in with the Jellyfin admin account and point it at Jellyfin on
-    `http://localhost:8096/jellyfin`
-  - Add Radarr on `localhost:7878` with base URL `/radarr`, and Sonarr on
-    `localhost:8989` with base URL `/sonarr`, using their API keys from Settings
-    -> General
-  - In Users, import the Jellyfin users who may request
+1. Install NixOS from this flake.
+2. Make the SSH host key a sops recipient. On bilbo, run `nix-shell -p ssh-to-age --run 'ssh-to-age < /etc/ssh/ssh_host_ed25519_key.pub'`. Put the output under `&bilbo` in `.sops.yaml`. Run `sops updatekeys secrets/bilbo.yaml`.
+3. Add the missing entries from the [secrets table](#secrets).
+4. Run `sudo nixos-rebuild switch --flake .#bilbo`.
+5. To restore, follow [Restoring from backups](remote/README.md#restoring-from-backups). Then go to step 14.
+6. Run `mkdir /mnt/downloads-1t/Books /mnt/downloads-1t/Movies /mnt/downloads-2t/Series`. If `Books` has no `metadata.db`, make a Calibre library there with `calibredb`.
+7. [Jellyfin][jellyfin]: make the admin user. Add the libraries Movies (`/mnt/downloads-1t/Movies`) and Series (`/mnt/downloads-2t/Series`). Make an API key in Dashboard -> API Keys. Add it to sops as `jellyfin-api-key`. Do step 4 again.
+8. [Radarr][radarr], [Sonarr][sonarr], [Prowlarr][prowlarr]: make the login on the first visit.
+9. [Seerr][seerr]: sign in as the Jellyfin admin. Set Jellyfin to `http://127.0.0.1:8096/jellyfin`. Add Radarr (`127.0.0.1:7878`, base URL `/radarr`) with `radarr-api-key`. Add Sonarr (`127.0.0.1:8989`, base URL `/sonarr`) with `sonarr-api-key`. Import the Jellyfin users that can request.
+10. In the Add New dialog of Radarr and Sonarr, select "1080p, then 720p" one time.
+11. [Calibre][calibre]: make a Kobo sync token in the user profile. On the Kobo, set `https://calibre.fnune.com/kobo/<token>`.
+12. [Beszel][beszel]: make the admin user. Add the ntfy notification and the alerts, as [Monitoring](#monitoring) shows.
+13. Do the setup in [Camera](#camera), [Frigate](#frigate), [Zigbee](#zigbee), [Home Assistant](#home-assistant) and [Papra](#papra).
+14. Start both backups: `sudo systemctl start borgbackup-job-mirrored && sudo systemctl start borgbackup-offsite-mirrored`.
 
 [jellyfin]: https://bilbo.fnune.com/jellyfin
 [nzbget]: https://bilbo.fnune.com/nzbget
@@ -83,7 +34,7 @@ Now, configure each service:
 [zigbee2mqtt]: https://bilbo.fnune.com/zigbee2mqtt
 [seerr]: https://requests.fnune.com
 
-### Network
+## Network
 
 Caddy serves every hostname on 443 with a Let's Encrypt certificate. The DNS
 challenge issues the certificates, so a hostname does not need to be reachable
@@ -105,7 +56,7 @@ The dyndns timers in `nixos/caddy.nix` keep the public records on the household 
 
 To add a private service, add a subpath to `adminSubpaths` in `nixos/caddy.nix`. To add a public one, add a hostname to `public` with its own site block, and decide what the internet may see.
 
-#### WireGuard
+### WireGuard
 
 Your devices reach bilbo through WireGuard. The endpoint is `wireguard.fnune.com:51820`, forwarded on the router. The private hostnames resolve everywhere but connect only through the tunnel, so apps use one URL at home and away.
 
@@ -132,7 +83,7 @@ Only traffic for bilbo enters the tunnel, so it can stay on. The `DNS` line is n
 
 On melian and feanor, `home-manager` creates the NetworkManager connection and prints the public key (`modules/system/wireguard.nix` in `home.nix`).
 
-### Secrets
+## Secrets
 
 Secrets are encrypted in `secrets/bilbo.yaml`. `sops-nix` decrypts them at boot with bilbo's SSH host key. Nothing is placed on the machine by hand.
 
@@ -145,7 +96,7 @@ Secrets are encrypted in `secrets/bilbo.yaml`. `sops-nix` decrypts them at boot 
 | `cloudflare-dns-token` | DNS write on the zone, for dyndns and the certificate challenge | `pulumi stack output bilboDnsTokenValue --show-secrets` in `remote/` |
 | `wireguard-private-key` | bilbo's WireGuard key | `wg genkey` |
 | `borg-passphrase`, `rclone-conf`, `borg-s3-bucket-name` | the off-site backup | `pulumi stack output` in `remote/` |
-| `radarr-api-key`, `sonarr-api-key` | Recyclarr's access to Radarr and Sonarr | Settings -> General in each |
+| `radarr-api-key`, `sonarr-api-key` | Radarr's and Sonarr's own API keys, which everything else uses to reach them | any 32 hex characters: `openssl rand -hex 16` |
 | `opensubtitles-username`, `opensubtitles-password` | Bazarr's OpenSubtitles.com account | opensubtitles.com |
 | `bazarr-username`, `bazarr-password` | Bazarr's web login | choose one |
 | `nzbgeek-api-key` | Prowlarr's NZBgeek indexer | nzbgeek.info -> My Account |
@@ -173,7 +124,7 @@ go2rtc is the only service that opens the camera. Frigate reads both streams fro
 
 Frigate keeps review state per user. The unreviewed list in Home Assistant agrees with Frigate only if Home Assistant asks as the same account.
 
-### Camera
+## Camera
 
 Anpviz IPC-D3243W-S at `192.168.178.109`, on OEM Hikvision-lineage firmware.
 
@@ -211,7 +162,7 @@ In the FritzBox, which has no VLANs:
 
 No port forward to the camera.
 
-### Frigate
+## Frigate
 
 Frigate has its own hostname because subpath proxying breaks its websockets and
 service worker. The NixOS module force-enables nginx and builds its own vhost, so
@@ -268,7 +219,7 @@ chown every clip to `fausto` on each boot.
 Draw motion masks in the Frigate UI once there is real footage. They matter more
 than compute for detection accuracy.
 
-### Zigbee
+## Zigbee
 
 Plug the ZBDongle-P into a USB 2.0 port using an extension cable, never directly
 into the chassis or a USB 3.0 port, whose 2.4 GHz noise wrecks the Zigbee mesh.
@@ -297,7 +248,7 @@ For the Innr bulbs:
 - Set power-on behaviour to `previous`, so an outage does not bring the bulbs
   back at full-brightness cold white.
 
-### Home Assistant
+## Home Assistant
 
 [Home Assistant][home-assistant] owns the lighting. Its base configuration is
 declarative. Automations, scenes and scripts are
@@ -317,11 +268,11 @@ Frigate's own web push can be switched at runtime by publishing to
 `frigate/notifications/set`, so an automation can silence it while you are home
 rather than duplicating notifications in Home Assistant.
 
-### Papra
+## Papra
 
 [Papra][papra] is the document archive, reachable over the VPN only like the other private hostnames. Its data lives in `/mnt/mirrored/papra`.
 
-#### Keys
+### Keys
 
 > [!CAUTION]
 > Losing `DOCUMENT_STORAGE_DOCUMENT_KEY_ENCRYPTION_KEYS` or `DATABASE_ENCRYPTION_KEY` loses every document, backups included. The `papra-env` entry in `secrets/bilbo.yaml` is in this repository, but keep a copy in Bitwarden and update it there after any change.
@@ -340,7 +291,7 @@ hex() { head -c "$1" /dev/urandom | od -An -tx1 | tr -d ' \n'; }
 
 To rotate the document key, append a new version (`1:<old>,2:<new>`) and keep the old one.
 
-#### First-time setup
+### First-time setup
 
 1. Generate `papra-env` and save a copy to Bitwarden.
 2. Rebuild.
@@ -352,23 +303,23 @@ To rotate the document key, append a new version (`1:<old>,2:<new>`) and keep th
 
 Email verification is required because Papra does not fully enforce closed registration: unverified accounts cannot sign in. Password reset links land in the journal too.
 
-#### API clients
+### API clients
 
 Clients reach the API over the VPN with a Papra API key; nothing else stands in front of it.
 
-#### Auto-tagging
+### Auto-tagging
 
 AI runs on Claude Haiku. Enable it per organization under Settings -> Auto tagging. Turn off "Create new tags" once the tags are settled, and give each tag a description, which is what steers the model.
 
-#### Ingestion folder
+### Ingestion folder
 
 Off for now. `INGESTION_FOLDER_IS_ENABLED` makes Papra import files dropped into `<root>/<organization id>/`, for example Syncthing scans from a phone.
 
-#### Backups
+### Backups
 
 Borg covers `/mnt/mirrored/papra/documents` and `db-snapshot`, a copy of the database taken with Papra briefly stopped. The live `db` is excluded. The keys are in `secrets/bilbo.yaml` and in Bitwarden.
 
-### Pincho and the museum map
+## Pincho and the museum map
 
 Two small apps of my own run as system services with their own users.
 
@@ -377,13 +328,13 @@ Two small apps of my own run as system services with their own users.
 
 Both are served under `bilbo.fnune.com` and have no login of their own; the tunnel is the gate.
 
-### Backups
+## Backups
 
 The Borg job in `nixos/backups.nix` runs daily over `/mnt/mirrored`, Home Assistant's and Zigbee2MQTT's state, Pincho's data, and the Jellyfin, Radarr, Sonarr, Bazarr, Prowlarr and Seerr state (users, watch history, quality profiles; logs and cover art are left out). On Sundays `borgbackup-offsite-mirrored` mirrors the repository to S3 Deep Archive with `rclone sync`, holding Borg's lock so a daily run cannot change it mid-upload. It stays weekly because Deep Archive bills deleted objects for 180 days. The bucket keeps deleted and overwritten objects as noncurrent versions for 180 days (`remote/aws/backups.ts`), so a damaged local repository does not destroy the off-site copy on the next run. Restoring is documented in `remote/README.md`.
 
 A run that fails, including a failed S3 upload, notifies like any other failed unit. `backup-freshness` checks daily that the last local run is less than 2 days old and the last upload less than 8, which catches a timer that stopped firing. It also fails until the first successful run of each after deploying, so start them with `systemctl start borgbackup-job-mirrored borgbackup-offsite-mirrored`.
 
-### Monitoring
+## Monitoring
 
 Alerts go to ntfy at [notify.fnune.com][ntfy], topic `bilbo`, over the VPN only. Subscribe to it in the ntfy app with that server. Notifications arrive only while the tunnel is up. `notify TITLE MESSAGE [PRIORITY]` posts to it from the host.
 
