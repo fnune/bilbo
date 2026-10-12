@@ -51,6 +51,7 @@ in {
   # gets restored.
   services.borgbackup.jobs.mirrored = {
     exclude = [databaseDirectory];
+    readWritePaths = [storage];
     preHook = ''
       (
         trap 'systemctl start papra.service' EXIT
