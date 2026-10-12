@@ -94,6 +94,7 @@ in {
         repo = mirroredRepoPath;
         startAt = "daily";
         inhibitsSleep = false;
+        persistentTimer = true;
         compression = "auto,lzma";
         extraArgs = ["--lock-wait" (toString lockWaitSeconds)];
         extraCreateArgs = ["--stats" "--progress"];
