@@ -17,19 +17,19 @@
   categories =
     staged
     ++ [
-      {
-        name = "Music";
-        destDir = "";
-      }
-      {
-        name = "Software";
-        destDir = "";
-      }
+      # NZBGet skips a category with an empty name; nzbget.conf still defines these two slots.
+      unused
+      unused
       {
         name = "Books";
         destDir = "${mounts.downloads-1t}/Books";
       }
     ];
+
+  unused = {
+    name = "";
+    destDir = "";
+  };
 
   categorySettings = index: category: {
     "Category${toString index}.Name" = category.name;
@@ -56,10 +56,13 @@ in {
         FormAuth = "yes";
         "Server1.Name" = "Eweka";
         "Server1.Host" = "news.eweka.nl";
-        "Server1.Port" = 563;
-        "Server1.Encryption" = "yes";
-        "Server1.CertVerification" = "Strict";
         "Server1.Connections" = 50;
+        # Unpacks while downloading, so imports start sooner.
+        DirectUnpack = "yes";
+        # MB. With DirectWrite on (nzbget.conf), NZBGet's docs say even 50 MB is effective.
+        ArticleCache = 100;
+        # KB per connection; the value NZBGet's docs recommend.
+        WriteBuffer = 1024;
       };
   };
 
