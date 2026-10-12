@@ -28,7 +28,7 @@ pulumi stack output bucketRcloneConfig --show-secrets | sops set ../secrets/bilb
 ```
 
 Run `pulumi up` before `nixos-rebuild` when both change. The private DNS records
-point at bilbo's WireGuard address; the dyndns timers on bilbo own the public
+point at bilbo's WireGuard address; the `dyndns` service on bilbo owns the public
 ones and must not manage the same names.
 
 ## Accessing the output

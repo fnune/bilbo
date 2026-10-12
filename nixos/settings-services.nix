@@ -1,8 +1,7 @@
 {
-  bilboTools,
+  bilboToolsCommand,
   config,
   lib,
-  pkgs,
   ...
 }: {
   _module.args.mkSettingsService = {
@@ -17,18 +16,18 @@
     serviceConfig ? {},
   }: let
     units = map (service: "${service}.service") after;
-    settingsFile = pkgs.writeText "${name}.json" (builtins.toJSON settings);
+    command = bilboToolsCommand app settings;
   in {
     inherit description;
     wantedBy = ["multi-user.target"];
     after = units ++ map (service: "${service}.service") softAfter;
     requires = units;
-    restartTriggers = [bilboTools settingsFile] ++ restartTriggers;
+    restartTriggers = [command] ++ restartTriggers;
     serviceConfig =
       {
         Type = "oneshot";
         RemainAfterExit = true;
-        ExecStart = "${lib.getExe bilboTools} ${app} ${settingsFile}";
+        ExecStart = command;
         LoadCredential = map (secret: "${secret}:${config.sops.secrets.${secret}.path}") secrets;
       }
       // serviceConfig;

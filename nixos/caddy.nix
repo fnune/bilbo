@@ -1,4 +1,5 @@
 {
+  bilboToolsCommand,
   config,
   pkgs,
   lib,
@@ -33,55 +34,6 @@
   logFile = hostname: "${config.services.caddy.logDir}/access-${hostname}.log";
   publicLogs = map logFile (builtins.attrValues public);
 
-  dnsToken = config.sops.secrets.cloudflare-dns-token.path;
-
-  mkDyndns = hostname: let
-    slug = lib.replaceStrings ["."] ["-"] hostname;
-  in
-    pkgs.writeShellApplication {
-      name = "dyndns-${slug}";
-      runtimeInputs = with pkgs; [curl jq];
-      text = ''
-        TOKEN=$(cat ${dnsToken})
-        IP=$(curl -sf https://api.ipify.org)
-
-        ZONE_ID=$(curl -sf -H "Authorization: Bearer $TOKEN" \
-          "https://api.cloudflare.com/client/v4/zones?name=${domain}" | jq -r '.result[0].id')
-
-        RECORD=$(curl -sf -H "Authorization: Bearer $TOKEN" \
-          "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?name=${hostname}&type=A")
-
-        RECORD_ID=$(echo "$RECORD" | jq -r '.result[0].id')
-
-        if [ "$RECORD_ID" = "null" ]; then
-          curl -sf -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-            -d "{\"type\":\"A\",\"name\":\"${hostname}\",\"content\":\"$IP\",\"proxied\":false}" \
-            "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records"
-        else
-          curl -sf -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-            -d "{\"type\":\"A\",\"name\":\"${hostname}\",\"content\":\"$IP\",\"proxied\":false}" \
-            "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID"
-        fi
-      '';
-    };
-
-  mkDyndnsService = hostname: let
-    slug = lib.replaceStrings ["."] ["-"] hostname;
-    app = mkDyndns hostname;
-  in {
-    name = "dyndns-${slug}";
-    value = {
-      description = "Update Cloudflare DNS for ${hostname} (DNS-only, no proxy)";
-      after = ["network-online.target"];
-      wants = ["network-online.target"];
-      startAt = "*:0/5";
-      serviceConfig = {
-        Type = "oneshot";
-        ExecStart = "${app}/bin/dyndns-${slug}";
-      };
-    };
-  };
-
   immichPort = toString config.services.immich.port;
   sharedPhotosPort = toString config.services.immich-public-proxy.port;
   papraPort = toString config.services.papra.environment.PORT;
@@ -110,18 +62,33 @@ in {
     };
   };
 
-  systemd.services =
-    (lib.listToAttrs (map mkDyndnsService dyndnsHosts))
-    // {
-      caddy = {
-        after = ["crowdsec-caddy-bouncer-register.service"];
-        wants = ["crowdsec-caddy-bouncer-register.service"];
-        serviceConfig.EnvironmentFile = [
-          config.sops.templates."caddy.env".path
-          "-${crowdsec.bouncerEnv}"
-        ];
+  systemd.services = {
+    dyndns = {
+      description = "Point the public hostnames at the household address";
+      after = ["network-online.target"];
+      wants = ["network-online.target"];
+      startAt = "*:0/5";
+      serviceConfig = {
+        Type = "oneshot";
+        DynamicUser = true;
+        ExecStart = bilboToolsCommand "dyndns" {
+          addressUrl = "https://api.ipify.org";
+          zone = domain;
+          hostnames = dyndnsHosts;
+        };
+        LoadCredential = ["cloudflare-dns-token:${config.sops.secrets.cloudflare-dns-token.path}"];
       };
     };
+
+    caddy = {
+      after = ["crowdsec-caddy-bouncer-register.service"];
+      wants = ["crowdsec-caddy-bouncer-register.service"];
+      serviceConfig.EnvironmentFile = [
+        config.sops.templates."caddy.env".path
+        "-${crowdsec.bouncerEnv}"
+      ];
+    };
+  };
 
   services.caddy = let
     tlsDnsCloudflare = ''

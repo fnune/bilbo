@@ -2,12 +2,13 @@ import argparse
 import json
 from pathlib import Path
 
-from . import arrs, bazarr, beszel, frigate, jellyfin, recyclarr
+from . import arrs, bazarr, beszel, dyndns, frigate, jellyfin, recyclarr
 
 APPLY = {
     "arr": arrs.apply,
     "bazarr": bazarr.apply,
     "beszel": beszel.apply,
+    "dyndns": dyndns.apply,
     "frigate": frigate.apply,
     "jellyfin": jellyfin.apply,
     "recyclarr": recyclarr.apply,

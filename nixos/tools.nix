@@ -1,5 +1,9 @@
-{pkgs, ...}: {
-  _module.args.bilboTools = pkgs.python3Packages.buildPythonApplication {
+{
+  lib,
+  pkgs,
+  ...
+}: let
+  bilboTools = pkgs.python3Packages.buildPythonApplication {
     pname = "bilbo-tools";
     version = "1.0.0";
     pyproject = true;
@@ -13,5 +17,10 @@
       pytest
     '';
     meta.mainProgram = "bilbo-tools";
+  };
+in {
+  _module.args = {
+    inherit bilboTools;
+    bilboToolsCommand = command: settings: "${lib.getExe bilboTools} ${command} ${pkgs.writeText "${command}.json" (builtins.toJSON settings)}";
   };
 }
