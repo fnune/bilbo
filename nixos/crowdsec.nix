@@ -57,6 +57,9 @@ in {
 
   systemd.services.crowdsec.serviceConfig.SupplementaryGroups = [config.services.caddy.group];
 
+  # https://github.com/NixOS/nixpkgs/issues/473707
+  systemd.services.crowdsec-update-hub.serviceConfig.ExecStartPost = lib.mkForce [];
+
   # cscli won't run without the central API credentials file, so it must exist (empty) first.
   # The local one is the opposite: the setup creates it only when missing.
   systemd.tmpfiles.rules = ["f ${capiCredentials} 0600 ${cfg.user} ${cfg.group} -"];
