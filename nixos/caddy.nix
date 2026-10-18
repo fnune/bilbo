@@ -147,7 +147,8 @@ in {
       ${staticAtSubpath "traffic" trafficReportSite}
       ${atSubpath "zigbee2mqtt" "localhost:8085"}
 
-      handle / {
+      @startPage path / /icons/*
+      handle @startPage {
         root * ${./start-page}
         file_server
       }

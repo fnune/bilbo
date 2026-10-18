@@ -13,6 +13,7 @@
       --rule: #e2ddd3;
       --link: #2f5d50;
       --hover: #f0ebe1;
+      --tile: #fff;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -23,6 +24,7 @@
         --rule: #33302c;
         --link: #8fc4b0;
         --hover: #25231f;
+        --tile: #f4f1ea;
       }
     }
 
@@ -69,19 +71,23 @@
     }
 
     ul {
-      margin: 0;
+      --cell: 5.5rem;
+      --icon: 3.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, var(--cell));
+      gap: 1rem 0.25rem;
+      margin: 0 calc((var(--icon) - var(--cell)) / 2);
       padding: 0;
       list-style: none;
     }
 
     li a {
       display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      gap: 0 0.75rem;
-      margin: 0 -0.5rem;
-      padding: 0.4rem 0.5rem;
-      border-radius: 4px;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 0.25rem;
+      border-radius: 12px;
       color: inherit;
       text-decoration: none;
     }
@@ -96,15 +102,21 @@
       outline-offset: -2px;
     }
 
-    .name {
-      min-width: 9rem;
-      color: var(--link);
-      font-weight: 600;
+    img {
+      width: var(--icon);
+      height: var(--icon);
+      padding: 0.45rem;
+      border-radius: 22%;
+      background: var(--tile);
+      box-shadow: 0 1px 2px rgb(0 0 0 / 0.15), inset 0 0 0 1px var(--rule);
+      object-fit: contain;
     }
 
-    .what {
-      flex: 1 1 14rem;
-      color: var(--muted);
+    .name {
+      font-size: 0.8rem;
+      line-height: 1.25;
+      text-align: center;
+      text-wrap: balance;
     }
   </style>
 </head>
@@ -117,57 +129,57 @@
     <section>
       <h2>Watch and request</h2>
       <ul>
-        <li><a href="/jellyfin/"><span class="name">Jellyfin</span><span class="what">Films and series, on any screen.</span></a></li>
-        <li><a href="https://requests.fnune.com"><span class="name">Seerr</span><span class="what">Ask for something new to watch.</span></a></li>
+        <li><a href="/jellyfin/" title="Films and series, on any screen."><img src="icons/jellyfin.svg" alt=""><span class="name">Jellyfin</span></a></li>
+        <li><a href="https://requests.fnune.com" title="Ask for something new to watch."><img src="icons/seerr.svg" alt=""><span class="name">Seerr</span></a></li>
       </ul>
     </section>
 
     <section>
       <h2>Media management</h2>
       <ul>
-        <li><a href="/radarr/"><span class="name">Radarr</span><span class="what">Finds and organizes films.</span></a></li>
-        <li><a href="/sonarr/"><span class="name">Sonarr</span><span class="what">Finds and organizes series.</span></a></li>
-        <li><a href="/bazarr/"><span class="name">Bazarr</span><span class="what">Fetches subtitles.</span></a></li>
-        <li><a href="/prowlarr/"><span class="name">Prowlarr</span><span class="what">Keeps the indexers in one place.</span></a></li>
-        <li><a href="/nzbget/"><span class="name">NZBGet</span><span class="what">Downloads from Usenet.</span></a></li>
+        <li><a href="/radarr/" title="Finds and organizes films."><img src="icons/radarr.svg" alt=""><span class="name">Radarr</span></a></li>
+        <li><a href="/sonarr/" title="Finds and organizes series."><img src="icons/sonarr.svg" alt=""><span class="name">Sonarr</span></a></li>
+        <li><a href="/bazarr/" title="Fetches subtitles."><img src="icons/bazarr.svg" alt=""><span class="name">Bazarr</span></a></li>
+        <li><a href="/prowlarr/" title="Keeps the indexers in one place."><img src="icons/prowlarr.svg" alt=""><span class="name">Prowlarr</span></a></li>
+        <li><a href="/nzbget/" title="Downloads from Usenet."><img src="icons/nzbget.svg" alt=""><span class="name">NZBGet</span></a></li>
       </ul>
     </section>
 
     <section>
       <h2>Library</h2>
       <ul>
-        <li><a href="https://immich.fnune.com"><span class="name">Immich</span><span class="what">Photos and videos from our phones.</span></a></li>
-        <li><a href="/calibre/"><span class="name">Calibre</span><span class="what">Books to read or send to the e-reader.</span></a></li>
-        <li><a href="https://docs.fnune.com"><span class="name">Papra</span><span class="what">Scanned letters, contracts and receipts.</span></a></li>
+        <li><a href="https://immich.fnune.com" title="Photos and videos from our phones."><img src="icons/immich.svg" alt=""><span class="name">Immich</span></a></li>
+        <li><a href="/calibre/" title="Books to read or send to the e-reader."><img src="icons/calibre.svg" alt=""><span class="name">Calibre</span></a></li>
+        <li><a href="https://docs.fnune.com" title="Scanned letters, contracts and receipts."><img src="icons/papra.svg" alt=""><span class="name">Papra</span></a></li>
       </ul>
     </section>
 
     <section>
       <h2>Home</h2>
       <ul>
-        <li><a href="https://home.fnune.com"><span class="name">Home Assistant</span><span class="what">Lights, sensors and automations.</span></a></li>
-        <li><a href="https://frigate.fnune.com"><span class="name">Frigate</span><span class="what">Camera recordings and detections.</span></a></li>
-        <li><a href="/zigbee2mqtt/"><span class="name">Zigbee2MQTT</span><span class="what">Pairs and inspects Zigbee devices.</span></a></li>
+        <li><a href="https://home.fnune.com" title="Lights, sensors and automations."><img src="icons/home-assistant.svg" alt=""><span class="name">Home Assistant</span></a></li>
+        <li><a href="https://frigate.fnune.com" title="Camera recordings and detections."><img src="icons/frigate.svg" alt=""><span class="name">Frigate</span></a></li>
+        <li><a href="/zigbee2mqtt/" title="Pairs and inspects Zigbee devices."><img src="icons/zigbee2mqtt.svg" alt=""><span class="name">Zigbee2MQTT</span></a></li>
       </ul>
     </section>
 
     <section>
       <h2>Server</h2>
       <ul>
-        <li><a href="https://health.fnune.com"><span class="name">Beszel</span><span class="what">CPU, memory, disks and temperatures.</span></a></li>
-        <li><a href="https://notify.fnune.com"><span class="name">ntfy</span><span class="what">Alerts the server sends to our phones.</span></a></li>
-        <li><a href="/traffic/"><span class="name">Traffic</span><span class="what">Who visits the public sites.</span></a></li>
+        <li><a href="https://health.fnune.com" title="CPU, memory, disks and temperatures."><img src="icons/beszel.svg" alt=""><span class="name">Beszel</span></a></li>
+        <li><a href="https://notify.fnune.com" title="Alerts the server sends to our phones."><img src="icons/ntfy.svg" alt=""><span class="name">ntfy</span></a></li>
+        <li><a href="/traffic/" title="Who visits the public sites."><img src="icons/goaccess.svg" alt=""><span class="name">Traffic</span></a></li>
       </ul>
     </section>
 
     <section>
       <h2>Apps</h2>
       <ul>
-        <li><a href="/apps/tashi/"><span class="name">Tashi</span><span class="what">Insulin dose calculator.</span></a></li>
-        <li><a href="/apps/fire/"><span class="name">FIRE</span><span class="what">Projections for financial independence.</span></a></li>
-        <li><a href="/apps/lists/"><span class="name">Lists</span><span class="what">Books, games and recipes.</span></a></li>
-        <li><a href="/apps/shmups/"><span class="name">Shmups</span><span class="what">Where and how to 1CC arcade shooters.</span></a></li>
-        <li><a href="/apps/smb/"><span class="name">Museum map</span><span class="what">The museums on the annual pass, on a map.</span></a></li>
+        <li><a href="/apps/tashi/" title="Insulin dose calculator."><img src="icons/tashi.svg" alt=""><span class="name">Tashi</span></a></li>
+        <li><a href="/apps/fire/" title="Projections for financial independence."><img src="icons/fire.svg" alt=""><span class="name">FIRE</span></a></li>
+        <li><a href="/apps/lists/" title="Books, games and recipes."><img src="icons/lists.svg" alt=""><span class="name">Lists</span></a></li>
+        <li><a href="/apps/shmups/" title="Where and how to 1CC arcade shooters."><img src="icons/shmups.svg" alt=""><span class="name">Shmups</span></a></li>
+        <li><a href="/apps/smb/" title="The museums on the annual pass, on a map."><img src="icons/smb.svg" alt=""><span class="name">Museum map</span></a></li>
       </ul>
     </section>
   </main>
