@@ -107,3 +107,7 @@ Or extract it:
 ```sh
 borg extract ./borg-restore::bilbo-mirrored-2025-03-15T17:10:29 ./borg-out
 ```
+
+SQLite databases are in the archive as snapshots under
+`var/lib/backup-sqlite-snapshots/<original path>`, not at their original path.
+See [Backups](../README.md#backups) for how to put one back.

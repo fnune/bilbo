@@ -2,6 +2,7 @@ import json
 import os
 import random
 import subprocess
+import tempfile
 from collections.abc import Callable, Sequence
 from datetime import datetime
 from pathlib import Path
@@ -81,13 +82,56 @@ def check_local(config: dict[str, Any], run: Run = run_command) -> None:
     if not compared:
         raise LookupError(f"no file under {config['samplePath']} in {archive} could be compared")
 
+    databases = check_sqlite_snapshots(config, archive, environment, lock_wait, run)
+
     run(
         [
             config["notify"],
             "Local backup verified",
-            f"borg check passed and {len(compared)} files restored from {archive} match.",
+            f"borg check passed, {len(compared)} files restored from {archive} match"
+            f" and {databases} SQLite snapshots pass integrity_check.",
         ],
     )
+
+
+def check_sqlite_snapshots(
+    config: dict[str, Any], archive: str, environment: dict[str, str], lock_wait: list[str], run: Run
+) -> int:
+    borg, repository = config["borg"], config["repository"]
+    listing = run(
+        [
+            borg,
+            "list",
+            "--format",
+            "{type} {path}{NL}",
+            *lock_wait,
+            f"{repository}::{archive}",
+            config["sqliteSnapshotPath"],
+        ],
+        env=environment,
+        capture_output=True,
+        text=True,
+    ).stdout
+    snapshots = [path for kind, path in (line.split(" ", 1) for line in listing.splitlines()) if kind == "-"]
+    if not snapshots:
+        raise LookupError(f"no SQLite snapshot under {config['sqliteSnapshotPath']} in {archive}")
+
+    with tempfile.TemporaryDirectory() as directory:
+        restored = Path(directory) / "restored.db"
+        for path in snapshots:
+            restored.write_bytes(
+                run(
+                    [borg, "extract", "--stdout", *lock_wait, f"{repository}::{archive}", path],
+                    env=environment,
+                    capture_output=True,
+                ).stdout
+            )
+            result = run(
+                [config["sqlite"], str(restored), "PRAGMA integrity_check"], capture_output=True, text=True
+            ).stdout.strip()
+            if result != "ok":
+                raise ValueError(f"{path} in {archive} fails integrity_check: {result}")
+    return len(snapshots)
 
 
 def remote_path(config: dict[str, Any]) -> str:

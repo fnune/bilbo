@@ -47,6 +47,8 @@ def local_config(**overrides: Any) -> dict[str, Any]:
         "maxFileBytes": 1000,
         "notify": "notify",
         "root": "/",
+        "sqliteSnapshotPath": "snapshots",
+        "sqlite": "sqlite3",
     } | overrides
 
 
@@ -57,18 +59,50 @@ def test_local_check_verifies_the_repository_and_compares_restored_files(
     run = FakeRun(
         {
             "--short": "archive-1\n",
+            "{type} {path}": "- snapshots/var/lib/app/app.db\nd snapshots/var/lib/app\n",
             "--format": f"- 6 {BACKED_UP_AT} photos/a.jpg\n- 5000 {BACKED_UP_AT} photos/huge.mov\n"
             f"d 0 {BACKED_UP_AT} photos\n",
+            "snapshots/": b"SQLite format 3",
             "extract": b"pixels",
+            "integrity_check": "ok\n",
         }
     )
 
     restore.check_local(local_config(root=str(tmp_path)), run=run)
 
-    commands = [call[1] for call in run.calls]
-    assert commands == ["check", "list", "list", "extract", "Local backup verified"]
+    commands = [call[0] if call[0] == "sqlite3" else call[1] for call in run.calls]
+    assert commands == [
+        "check",
+        "list",
+        "list",
+        "extract",
+        "list",
+        "extract",
+        "sqlite3",
+        "Local backup verified",
+    ]
     assert run.calls[0][:3] == ["borg", "check", "--verify-data"]
     assert run.calls[3][-1] == "photos/a.jpg"
+    assert run.calls[5][-1] == "snapshots/var/lib/app/app.db"
+    assert run.calls[6][-1] == "PRAGMA integrity_check"
+
+
+def test_local_check_fails_when_a_sqlite_snapshot_is_corrupt(secrets: None, tmp_path: Path) -> None:
+    write_original(tmp_path, b"pixels")
+    run = FakeRun(
+        {
+            "--short": "archive-1\n",
+            "{type} {path}": "- snapshots/var/lib/app/app.db\n",
+            "--format": f"- 6 {BACKED_UP_AT} photos/a.jpg\n",
+            "snapshots/": b"garbage",
+            "extract": b"pixels",
+            "integrity_check": "*** in database main ***\nPage 2 is never used\n",
+        }
+    )
+
+    with pytest.raises(ValueError, match="integrity_check"):
+        restore.check_local(local_config(root=str(tmp_path)), run=run)
+    assert not any("verified" in " ".join(call) for call in run.calls)
 
 
 def test_local_check_fails_when_a_restored_file_differs(secrets: None, tmp_path: Path) -> None:

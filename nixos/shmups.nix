@@ -8,6 +8,7 @@
 in {
   bilbo.apps.shmups = {
     description = "Arcade shmup 1CC guide";
+    backup = true;
     port = 3220;
     command = lib.getExe pkgs.shmups;
     environment = {

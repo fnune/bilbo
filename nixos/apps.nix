@@ -59,6 +59,11 @@
         type = types.attrs;
         default = {};
       };
+      backup = mkOption {
+        type = types.bool;
+        default = false;
+        description = "Back up /var/lib/<name> daily. SQLite databases in it are backed up from a consistent snapshot.";
+      };
       rateLimit = mkOption {
         type = types.nullOr (types.submodule {
           options = {
@@ -135,6 +140,8 @@ in {
         }
       ])
       apps);
+
+    bilbo.backups.paths = lib.mapAttrsToList (name: _: "/var/lib/${name}") (lib.filterAttrs (_: app: app.backup) servedApps);
 
     users.users =
       lib.mapAttrs (name: _: {

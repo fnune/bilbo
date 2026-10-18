@@ -307,7 +307,7 @@ Off for now. `INGESTION_FOLDER_IS_ENABLED` makes Papra import files dropped into
 
 ### Backups
 
-Borg covers `/mnt/mirrored/papra/documents` and `db-snapshot`, a copy of the database taken with Papra briefly stopped. The live `db` is excluded. The keys are in `secrets/bilbo.yaml` and in Bitwarden.
+Borg covers `/mnt/mirrored/papra/documents`, and the database through a [SQLite snapshot](#backups). The keys are in `secrets/bilbo.yaml` and in Bitwarden.
 
 ## Apps
 
@@ -326,6 +326,7 @@ Small apps of my own, each in a private repository whose flake has a default pac
 - A public app gets the CrowdSec bouncer, an optional per-IP `rateLimit` and a `<name>-traffic-alert` timer that tells ntfy about unusual traffic. Its visits show up in the [traffic report](#monitoring). Setting `exposure` back to `vpn` takes it off the internet.
 - To ship a change, push it to the app's `main`, then run `nix flake update <name>` here and rebuild. The inputs are private: Nix on bilbo reads them with the `github-read-token` secret, a fine-grained token with read-only Contents access. Wherever you run `nix flake update`, Nix needs the same `access-tokens` setting.
 - To add one, add its flake as an input and to `appsOverlay` in `flake.nix`, and give it a module that sets `bilbo.apps.<name>`.
+- Set `backup = true` for an app whose `/var/lib/<name>` holds data worth keeping. Tashi, the museum map and Shmups do.
 
 Tashi keeps the last 20 snapshots of its data in `/var/lib/tashi/backups`, taken on every start. sourcesli.st runs its own Postgres 18 on port 5433, refills it from the Ultimate Debian Database every night (`sourceslist-ingest`) and keeps nothing worth backing up.
 
@@ -333,9 +334,11 @@ Tashi keeps the last 20 snapshots of its data in `/var/lib/tashi/backups`, taken
 
 For files kept only for safekeeping, copy them into `/mnt/mirrored/archive` with `scp` or `sftp://bilbo/mnt/mirrored/archive`. The backup covers it like the rest of `/mnt/mirrored`.
 
-The Borg job in `nixos/backups.nix` runs daily over `/mnt/mirrored`, Home Assistant's and Zigbee2MQTT's state, Tashi's data, and the Jellyfin, Radarr, Sonarr, Bazarr, Prowlarr and Seerr state (users, watch history, quality profiles; logs and cover art are left out). On Sundays `borgbackup-offsite-mirrored` mirrors the repository to S3 Deep Archive with `rclone sync`, holding Borg's lock so a daily run cannot change it mid-upload. It stays weekly because Deep Archive bills deleted objects for 180 days. The bucket keeps deleted and overwritten objects as noncurrent versions for 180 days (`remote/aws/backups.ts`), so a damaged local repository does not destroy the off-site copy on the next run. Restoring is documented in `remote/README.md`.
+The Borg job in `nixos/backups.nix` runs daily over `/mnt/mirrored`, Home Assistant's and Zigbee2MQTT's state, the apps with `backup = true`, Calibre-Web's users and shelves, and the Jellyfin, Radarr, Sonarr, Bazarr, Prowlarr and Seerr state (users, watch history, quality profiles; logs and cover art are left out). Other modules add directories with `bilbo.backups.paths`.
 
-Restores are tested on a schedule, at idle priority. On the 2nd of each month, `backup-restore-check-local` runs `borg check --verify-data` and compares a few restored photos with the originals. Each quarter, `backup-restore-start-remote` thaws a random 10 GB of the off-site repository (Bulk tier, about $0.03, inside the free monthly egress) and `backup-restore-check-remote` compares it byte for byte with the local copy three days later. Each sends "verified" to ntfy when it passes.
+Borg copies files while services run, which can catch a SQLite database mid-write. So before each run, every SQLite database under `bilbo.backups.paths`, and under the `/mnt/mirrored` directories in `bilbo.backups.sqliteUnderMirrored` (Papra's), is copied with SQLite's online backup into `/var/lib/backup-sqlite-snapshots/<original path>`, without stopping the app. Borg backs up that copy and skips the live file with its `-wal`, `-shm` and `-journal`. To restore a database, stop its service, delete the live file and its `-wal` and `-shm`, put the snapshot in its place and give it back to the app's user. On Sundays `borgbackup-offsite-mirrored` mirrors the repository to S3 Deep Archive with `rclone sync`, holding Borg's lock so a daily run cannot change it mid-upload. It stays weekly because Deep Archive bills deleted objects for 180 days. The bucket keeps deleted and overwritten objects as noncurrent versions for 180 days (`remote/aws/backups.ts`), so a damaged local repository does not destroy the off-site copy on the next run. Restoring is documented in `remote/README.md`.
+
+Restores are tested on a schedule, at idle priority. On the 2nd of each month, `backup-restore-check-local` runs `borg check --verify-data`, compares a few restored photos with the originals and runs `PRAGMA integrity_check` on every restored SQLite snapshot. Each quarter, `backup-restore-start-remote` thaws a random 10 GB of the off-site repository (Bulk tier, about $0.03, inside the free monthly egress) and `backup-restore-check-remote` compares it byte for byte with the local copy three days later. Each sends "verified" to ntfy when it passes.
 
 A run that fails, including a failed S3 upload, notifies like any other failed unit. `backup-freshness` checks daily that the last local run is less than 2 days old and the last upload less than 8, which catches a timer that stopped firing. It also fails until the first successful run of each after deploying, so start them with `systemctl start borgbackup-job-mirrored borgbackup-offsite-mirrored`.
 

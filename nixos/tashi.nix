@@ -32,6 +32,7 @@ in {
 
   bilbo.apps.tashi = {
     description = "Tashi - T1D insulin dose calculator";
+    backup = true;
     port = 3210;
     command = "${start}";
     environment = {

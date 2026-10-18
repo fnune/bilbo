@@ -8,6 +8,7 @@
 in {
   bilbo.apps.smb = {
     description = "Museum map for the SMB annual pass";
+    backup = true;
     port = 8799;
     command = lib.getExe pkgs.smb;
     environment = {
