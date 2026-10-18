@@ -295,11 +295,11 @@
         "nixpkgs": "nixpkgs_6"
       },
       "locked": {
-        "lastModified": 1792314669,
-        "narHash": "sha256-moJQUw8pHwcbO6P38mOaSvnsLthkrj8+gilY3JyHlbE=",
+        "lastModified": 1792327221,
+        "narHash": "sha256-Kl6CNfYT8WKEfQ2TFIuSMPwGUBTR/wD131WJz7YfHRU=",
         "owner": "fnune",
         "repo": "tashi",
-        "rev": "90d4a18730d93ed24afddb86372346e881766612",
+        "rev": "96e1bf133ad25c50fb0768b6d97599e0328d28a3",
         "type": "github"
       },
       "original": {
