@@ -4,6 +4,7 @@
 
   storage = "/mnt/mirrored/papra";
   databaseDirectory = "${storage}/db";
+  databaseSnapshot = "${storage}/db-snapshot";
   documentsDirectory = "${storage}/documents";
 in {
   sops.secrets.papra-env = {};
@@ -45,5 +46,19 @@ in {
     "d ${documentsDirectory} 0700 papra papra -"
   ];
 
-  bilbo.backups.sqliteUnderMirrored = [databaseDirectory];
+  # Borg copies files while services run, which can catch SQLite mid-write.
+  # Papra is stopped for the few seconds a copy takes, and the copy is what
+  # gets restored.
+  services.borgbackup.jobs.mirrored = {
+    exclude = [databaseDirectory];
+    readWritePaths = [storage];
+    preHook = ''
+      (
+        trap 'systemctl start papra.service' EXIT
+        systemctl stop papra.service
+        rm -rf ${databaseSnapshot}
+        cp --archive ${databaseDirectory} ${databaseSnapshot}
+      )
+    '';
+  };
 }

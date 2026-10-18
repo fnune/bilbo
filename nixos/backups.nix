@@ -28,7 +28,6 @@
 
   sqliteSnapshots = "/var/lib/backup-sqlite-snapshots";
   sqliteExcludes = "${statusDir}/sqlite-excludes";
-  sqliteSearchPaths = cfg.paths ++ cfg.sqliteUnderMirrored;
   busyTimeoutMilliseconds = 60 * 1000;
   skipIfMissing = path: "-${path}";
   # Borg copies files mid-write; SQLite's online backup gives a consistent copy without stopping the app.
@@ -47,7 +46,7 @@
 
       find ${sqliteSnapshots} -mindepth 1 -delete
       : > ${sqliteExcludes}
-      { find ${lib.escapeShellArgs sqliteSearchPaths} -type f \( -name "*.db" -o -name "*.sqlite" -o -name "*.sqlite3" \) -print0 2>/dev/null || true; } |
+      { find ${lib.escapeShellArgs cfg.paths} -type f \( -name "*.db" -o -name "*.sqlite" -o -name "*.sqlite3" \) -print0 2>/dev/null || true; } |
         while IFS= read -r -d "" database; do
           is_sqlite "$database" || continue
           snapshot=${sqliteSnapshots}$database
@@ -108,11 +107,6 @@ in {
       type = lib.types.listOf lib.types.str;
       default = [];
       description = "Backed up daily with /mnt/mirrored. SQLite databases under them are backed up from a consistent snapshot.";
-    };
-    sqliteUnderMirrored = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [];
-      description = "Directories under /mnt/mirrored to search for SQLite databases. All of /mnt/mirrored is too many files to read on every run.";
     };
   };
 
@@ -176,7 +170,7 @@ in {
       "d ${sqliteSnapshots} 0700 root root -"
     ];
 
-    systemd.services.borgbackup-job-mirrored.serviceConfig.ReadWritePaths = map skipIfMissing sqliteSearchPaths; # SQLite writes to a WAL database's -shm even to read it.
+    systemd.services.borgbackup-job-mirrored.serviceConfig.ReadWritePaths = map skipIfMissing cfg.paths; # SQLite writes to a WAL database's -shm even to read it.
 
     systemd.services.borgbackup-offsite-mirrored = {
       description = "Mirror the mirrored Borg repository to S3 Deep Archive";
