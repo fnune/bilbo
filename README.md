@@ -398,3 +398,21 @@ like `immich`, are listed by hand in `extraServices` and
 Comparing names means a package rebuilt at the same version, after a patch or a
 dependency change, does not show up. Catching that needs real store paths, which
 means building.
+
+## Deploying
+
+Run `./deploy.sh REV ACTION` from your own machine. It evaluates the jj revision there, then builds and runs the `nixos-rebuild` action on bilbo over SSH, asking for the sudo password once. Both are always explicit, so work in progress only goes out on purpose.
+
+```sh
+./deploy.sh main switch                   # deploy main
+./deploy.sh main@origin switch            # deploy what is pushed
+./deploy.sh @- dry-activate               # show what the last commit would restart
+./deploy.sh @- test                       # try it without a boot entry
+./deploy.sh @ test                        # try the working copy, edits included
+./deploy.sh ltxmspot switch               # any revset that names one commit
+./deploy.sh main switch --show-trace      # options after the action go to nixos-rebuild
+```
+
+`@` is the working-copy commit, with whatever is on disk. `@-` is its parent, usually the last finished commit.
+
+It needs `sops` and the admin age key: some flake inputs are private repositories, and the script decrypts bilbo's scoped `github-read-token` from `secrets/bilbo.yaml` to fetch them. `nixos-rebuild` comes from the nixpkgs bilbo is pinned to, so that machine needs only Nix.
