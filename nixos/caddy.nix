@@ -4,6 +4,7 @@
   pkgs,
   lib,
   crowdsec,
+  trafficReportSite,
   servarrAddress,
   ...
 }: let
@@ -144,6 +145,7 @@ in {
       redir /pincho* /apps/tashi/ 308
       redir /smb* /apps/smb/ 308
       ${lib.concatMapAttrsStringSep "\n" (name: app: appAtSubpath "apps/${name}" app) vpnApps}
+      ${staticAtSubpath "traffic" trafficReportSite}
       ${atSubpath "zigbee2mqtt" "localhost:8085"}
 
       handle / {

@@ -320,7 +320,7 @@ Small apps of my own, each in a private repository whose flake has a default pac
 | [sourcesli.st](https://github.com/fnune/sourcesli.st) | `sourcesli.st`, public | `nixos/sourceslist.nix` |
 
 - An app is VPN-only at `/apps/<name>` unless it sets `exposure = "public"` and a `hostname`. Caddy forwards the path unchanged, so the app must serve under `basePath`.
-- A public app gets the CrowdSec bouncer, an optional per-IP `rateLimit` and a `<name>-traffic-alert` timer that tells ntfy about unusual traffic. Setting `exposure` back to `vpn` takes it off the internet.
+- A public app gets the CrowdSec bouncer, an optional per-IP `rateLimit` and a `<name>-traffic-alert` timer that tells ntfy about unusual traffic. Its visits show up in the [traffic report](#monitoring). Setting `exposure` back to `vpn` takes it off the internet.
 - To ship a change, push it to the app's `main`, then run `nix flake update <name>` here and rebuild. The inputs are private: Nix on bilbo reads them with the `github-read-token` secret, a fine-grained token with read-only Contents access. Wherever you run `nix flake update`, Nix needs the same `access-tokens` setting.
 - To add one, add its flake as an input and to `appsOverlay` in `flake.nix`, and give it a module that sets `bilbo.apps.<name>`.
 
@@ -349,6 +349,8 @@ What notifies on its own (`nixos/monitoring.nix`):
 - Backups, see [Backups](#backups)
 
 [Beszel][beszel] shows disks, SMART, the mirror, temperatures, the iGPU, network and systemd services over time. Its alerts (status, disk at 85%, temperature at 80 °C, bandwidth at 100 MB/s) go to ntfy (`nixos/monitoring.nix`).
+
+[`bilbo.fnune.com/traffic`](https://bilbo.fnune.com/traffic) is a GoAccess report of every public hostname's Caddy log, per hostname, updated every 10 minutes: visitors, pages, status codes and the busiest addresses.
 
 For downloads, Sonarr and Radarr notify on grab, import, upgrade and health issues (`nixos/arr-settings.nix`). Their calendars show what's coming next.
 

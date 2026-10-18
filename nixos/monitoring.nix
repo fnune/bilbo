@@ -1,4 +1,5 @@
 {
+  caddyPublicLogs,
   config,
   lib,
   mkSettingsService,
@@ -67,11 +68,42 @@
   shortSelfTestNightly = "S/../.././02";
   longSelfTestMonthly = "L/../01/./04";
 
+  trafficReportDir = "/var/lib/traffic-report";
+  trafficReportSite = "${trafficReportDir}/site";
+  trafficReport = pkgs.writeShellApplication {
+    name = "traffic-report";
+    runtimeInputs = [pkgs.coreutils pkgs.goaccess];
+    text = ''
+      logs=()
+      for log in ${lib.escapeShellArgs caddyPublicLogs}; do
+        [ -e "$log" ] && logs+=("$log")
+      done
+      [ ''${#logs[@]} -gt 0 ] || exit 0
+      mkdir -p ${trafficReportDir}/db ${trafficReportSite}
+      goaccess "''${logs[@]}" --log-format CADDY --persist --restore --db-path ${trafficReportDir}/db \
+        --html-report-title "Public traffic" --no-progress --output ${trafficReportSite}/index.html
+    '';
+  };
+
   smartdEvent = pkgs.writeShellScript "smartd-event" ''
     ${notify}/bin/notify "Disk problem: $SMARTD_DEVICESTRING" "$SMARTD_FULLMESSAGE" urgent
   '';
 in {
-  _module.args.notify = notify;
+  _module.args = {
+    inherit notify trafficReportSite;
+  };
+
+  systemd.services.traffic-report = {
+    description = "Update the report of traffic to the public hostnames";
+    startAt = "*:0/10";
+    serviceConfig = {
+      Type = "oneshot";
+      User = config.services.caddy.user;
+      Group = config.services.caddy.group;
+      StateDirectory = "traffic-report";
+      ExecStart = lib.getExe trafficReport;
+    };
+  };
 
   services.ntfy-sh = {
     enable = true;
