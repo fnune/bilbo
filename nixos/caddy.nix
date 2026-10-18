@@ -142,7 +142,6 @@ in {
       ${atSubpath "bazarr" "127.0.0.1:${toString config.services.bazarr.listenPort}"}
       ${calibreAtSubpath}
       ${jellyfinAtSubpath}
-      redir /pincho* /apps/tashi/ 308
       redir /smb* /apps/smb/ 308
       ${lib.concatMapAttrsStringSep "\n" (name: app: appAtSubpath "apps/${name}" app) vpnApps}
       ${staticAtSubpath "traffic" trafficReportSite}
