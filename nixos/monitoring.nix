@@ -1,5 +1,7 @@
 {
   caddyPublicLogs,
+  publicIpAlias,
+  vpnSubnet,
   config,
   lib,
   mkSettingsService,
@@ -70,17 +72,40 @@
 
   trafficReportDir = "/var/lib/traffic-report";
   trafficReportSite = "${trafficReportDir}/site";
+  householdAddressesBeforeTracking = ["91.41.231.71"];
+  vpnRange = let
+    prefix = lib.removeSuffix ".0/24" vpnSubnet;
+  in "${prefix}.0-${prefix}.255";
   trafficReport = pkgs.writeShellApplication {
     name = "traffic-report";
-    runtimeInputs = [pkgs.coreutils pkgs.goaccess];
+    runtimeInputs = [pkgs.coreutils pkgs.getent pkgs.gnugrep pkgs.goaccess];
     text = ''
+      householdAddresses=${trafficReportDir}/household-addresses
+      touch "$householdAddresses"
+      current=$(getent ahostsv4 ${publicIpAlias} | head -n 1 | cut -d " " -f 1 || true)
+      if [ -n "$current" ] && ! grep -qxF "$current" "$householdAddresses"; then
+        echo "$current" >> "$householdAddresses"
+      fi
+
+      earlier="${lib.concatStringsSep " " householdAddressesBeforeTracking}"
+      builtWithEarlier=${trafficReportDir}/built-with-earlier
+      if [ "$(cat "$builtWithEarlier" 2>/dev/null)" != "$earlier" ]; then
+        rm -rf ${trafficReportDir}/db
+        echo "$earlier" > "$builtWithEarlier"
+      fi
+
+      excludes=(--exclude-ip ${vpnRange})
+      for address in $earlier $(cat "$householdAddresses"); do
+        excludes+=(--exclude-ip "$address")
+      done
+
       logs=()
       for log in ${lib.escapeShellArgs caddyPublicLogs}; do
         [ -e "$log" ] && logs+=("$log")
       done
       [ ''${#logs[@]} -gt 0 ] || exit 0
       mkdir -p ${trafficReportDir}/db ${trafficReportSite}
-      goaccess "''${logs[@]}" --log-format CADDY --persist --restore --db-path ${trafficReportDir}/db \
+      goaccess "''${logs[@]}" "''${excludes[@]}" --log-format CADDY --persist --restore --db-path ${trafficReportDir}/db \
         --html-report-title "Public traffic" --no-progress --output ${trafficReportSite}/index.html
     '';
   };

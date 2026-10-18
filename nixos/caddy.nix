@@ -50,9 +50,10 @@ in {
   _module.args = {
     caddyPublicLogs = publicLogs;
     caddyLogFile = logFile;
+    inherit publicIpAlias vpnSubnet;
   };
 
-  systemd.tmpfiles.rules = map (log: "z ${log} 0640 caddy caddy -") publicLogs;
+  systemd.tmpfiles.rules = map (log: "f ${log} 0640 caddy caddy -") publicLogs;
 
   networking.firewall = {
     allowedTCPPorts = [443];
