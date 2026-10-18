@@ -72,4 +72,6 @@ in {
   };
 
   systemd.services.zigbee2mqtt.serviceConfig.EnvironmentFile = config.sops.templates."zigbee2mqtt.env".path;
+
+  bilbo.backups.zigbee2mqtt.paths = [config.services.zigbee2mqtt.dataDir];
 }

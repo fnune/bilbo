@@ -31,6 +31,24 @@ in {
     prowlarr = behindCaddy "prowlarr";
   };
 
+  bilbo.backups = let
+    rebuildingLogsAndCovers = name: let
+      inherit (config.services.${name}) dataDir;
+    in {
+      paths = [dataDir];
+      exclude = ["${dataDir}/logs" "${dataDir}/MediaCover"];
+    };
+  in {
+    radarr = rebuildingLogsAndCovers "radarr";
+    sonarr = rebuildingLogsAndCovers "sonarr";
+    prowlarr = {
+      # Prowlarr uses DynamicUser, so /var/lib/prowlarr is a symlink, which Borg would back up as just a link.
+      # https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html#DynamicUser=
+      paths = ["/var/lib/private/prowlarr"];
+      exclude = ["/var/lib/private/prowlarr/logs"];
+    };
+  };
+
   sops = {
     secrets = {
       radarr-api-key = {};

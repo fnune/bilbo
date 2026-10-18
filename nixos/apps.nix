@@ -141,7 +141,7 @@ in {
       ])
       apps);
 
-    bilbo.backups.paths = lib.mapAttrsToList (name: _: "/var/lib/${name}") (lib.filterAttrs (_: app: app.backup) servedApps);
+    bilbo.backups = lib.mapAttrs (name: _: {paths = ["/var/lib/${name}"];}) (lib.filterAttrs (_: app: app.backup) servedApps);
 
     users.users =
       lib.mapAttrs (name: _: {

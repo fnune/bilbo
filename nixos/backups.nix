@@ -6,20 +6,25 @@
   pkgs,
   ...
 }: let
-  cfg = config.bilbo.backups;
+  inherit (lib) mkOption types;
+  backups = builtins.attrValues config.bilbo.backups;
+  backedUpPaths = lib.concatMap (backup: backup.paths) backups;
+  excludedPaths = lib.concatMap (backup: backup.exclude) backups;
+  stoppedCopies = lib.concatMap (backup: lib.optional (backup.stopToCopy != null) backup.stopToCopy) backups;
+  copyWhileStopped = {
+    service,
+    directory,
+  }: ''
+    (
+      trap 'systemctl start ${service}.service' EXIT
+      systemctl stop ${service}.service
+      rm -rf ${directory}-snapshot
+      cp --archive ${directory} ${directory}-snapshot
+    )
+  '';
+
   mirroredRepoPath = "/mnt/downloads-2t/Backups/borg/mirrored";
   mirroredStorage = "/mnt/mirrored";
-  inherit (config.services) jellyfin radarr sonarr bazarr;
-  rebuildableOnTheirOwn = [
-    jellyfin.logDir
-    "${jellyfin.dataDir}/transcodes"
-    "${radarr.dataDir}/logs"
-    "${radarr.dataDir}/MediaCover"
-    "${sonarr.dataDir}/logs"
-    "${sonarr.dataDir}/MediaCover"
-    "${bazarr.dataDir}/log"
-    "/var/lib/private/prowlarr/logs"
-  ];
   mirroredBucketNamePath = config.sops.secrets.borg-s3-bucket-name.path;
   mirroredBorgPassphrasePath = config.sops.secrets.borg-passphrase.path;
   mirroredRcloneConfPath = config.sops.secrets.rclone-conf.path;
@@ -46,7 +51,7 @@
 
       find ${sqliteSnapshots} -mindepth 1 -delete
       : > ${sqliteExcludes}
-      { find ${lib.escapeShellArgs cfg.paths} -type f \( -name "*.db" -o -name "*.sqlite" -o -name "*.sqlite3" \) -print0 2>/dev/null || true; } |
+      { find ${lib.escapeShellArgs backedUpPaths} -type f \( -name "*.db" -o -name "*.sqlite" -o -name "*.sqlite3" \) -print0 2>/dev/null || true; } |
         while IFS= read -r -d "" database; do
           is_sqlite "$database" || continue
           snapshot=${sqliteSnapshots}$database
@@ -102,29 +107,36 @@
   };
   quarterly = day: "*-01,04,07,10-${day} 10:00:00";
 in {
-  options.bilbo.backups = {
-    paths = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [];
-      description = "Backed up daily with /mnt/mirrored. SQLite databases under them are backed up from a consistent snapshot.";
-    };
+  options.bilbo.backups = mkOption {
+    default = {};
+    description = "What each service keeps in the daily backup, alongside all of /mnt/mirrored.";
+    type = types.attrsOf (types.submodule {
+      options = {
+        paths = mkOption {
+          type = types.listOf types.str;
+          default = [];
+          description = "Backed up daily. SQLite databases under them are backed up from a snapshot taken while the service runs.";
+        };
+        exclude = mkOption {
+          type = types.listOf types.str;
+          default = [];
+          description = "Paths the service rebuilds on its own, such as logs and caches.";
+        };
+        stopToCopy = mkOption {
+          default = null;
+          description = "For data a live snapshot cannot read, such as an encrypted database: the service stops while directory is copied to <directory>-snapshot, which must sit under a backed-up path.";
+          type = types.nullOr (types.submodule {
+            options = {
+              service = mkOption {type = types.str;};
+              directory = mkOption {type = types.str;};
+            };
+          });
+        };
+      };
+    });
   };
 
   config = {
-    bilbo.backups.paths = [
-      config.services.home-assistant.configDir
-      config.services.zigbee2mqtt.dataDir
-      jellyfin.dataDir
-      radarr.dataDir
-      sonarr.dataDir
-      bazarr.dataDir
-      # Prowlarr uses DynamicUser, so /var/lib/prowlarr is a symlink, which Borg would back up as just a link.
-      # https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html#DynamicUser=
-      "/var/lib/private/prowlarr"
-      config.services.seerr.configDir
-      "/var/lib/${config.services.calibre-web.dataDir}"
-    ];
-
     sops.secrets = {
       borg-passphrase = {};
       borg-s3-bucket-name = {};
@@ -134,8 +146,8 @@ in {
     services.borgbackup = {
       jobs = {
         mirrored = {
-          paths = [mirroredStorage sqliteSnapshots] ++ cfg.paths;
-          exclude = rebuildableOnTheirOwn;
+          paths = [mirroredStorage sqliteSnapshots] ++ backedUpPaths;
+          exclude = excludedPaths ++ map (copy: copy.directory) stoppedCopies;
           repo = mirroredRepoPath;
           startAt = "daily";
           inhibitsSleep = false;
@@ -154,13 +166,13 @@ in {
             monthly = 6;
             yearly = 3;
           };
-          preHook = lib.getExe snapshotSqlite;
+          preHook = lib.concatLines ([(lib.getExe snapshotSqlite)] ++ map copyWhileStopped stoppedCopies);
           postHook = ''
             if [ "$exitStatus" = 0 ]; then
               touch ${freshness.local.stamp}
             fi
           '';
-          readWritePaths = [statusDir sqliteSnapshots];
+          readWritePaths = [statusDir sqliteSnapshots] ++ map (copy: dirOf copy.directory) stoppedCopies;
         };
       };
     };
@@ -170,7 +182,7 @@ in {
       "d ${sqliteSnapshots} 0700 root root -"
     ];
 
-    systemd.services.borgbackup-job-mirrored.serviceConfig.ReadWritePaths = map skipIfMissing cfg.paths; # SQLite writes to a WAL database's -shm even to read it.
+    systemd.services.borgbackup-job-mirrored.serviceConfig.ReadWritePaths = map skipIfMissing backedUpPaths; # SQLite writes to a WAL database's -shm even to read it.
 
     systemd.services.borgbackup-offsite-mirrored = {
       description = "Mirror the mirrored Borg repository to S3 Deep Archive";

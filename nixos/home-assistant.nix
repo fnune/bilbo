@@ -757,4 +757,6 @@ in {
   ];
 
   systemd.tmpfiles.settings."10-home-assistant" = uiManagedFiles;
+
+  bilbo.backups.home-assistant.paths = [configDir];
 }

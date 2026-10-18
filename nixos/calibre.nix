@@ -53,4 +53,6 @@ in {
     restartTriggers = [applySettings];
     serviceConfig.PrivateUsers = true;
   };
+
+  bilbo.backups.calibre-web.paths = ["/var/lib/${cfg.dataDir}"];
 }

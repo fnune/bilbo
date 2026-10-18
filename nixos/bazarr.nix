@@ -113,4 +113,9 @@ in {
       inherit secretFields;
     };
   };
+
+  bilbo.backups.bazarr = {
+    paths = [cfg.dataDir];
+    exclude = ["${cfg.dataDir}/log"];
+  };
 }

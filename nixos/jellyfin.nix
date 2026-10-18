@@ -92,4 +92,9 @@ in {
       inherit userPlayback libraryOptions network startup;
     };
   };
+
+  bilbo.backups.jellyfin = {
+    paths = [dataDir];
+    exclude = [config.services.jellyfin.logDir "${dataDir}/transcodes"];
+  };
 }
