@@ -1,6 +1,6 @@
 {
   "files": {
-    "ignore": ["node_modules", "bin"]
+    "includes": ["**", "!**/node_modules", "!**/bin"]
   },
   "formatter": {
     "enabled": true,
