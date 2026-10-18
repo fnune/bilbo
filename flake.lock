@@ -61,11 +61,11 @@
     "lists": {
       "flake": false,
       "locked": {
-        "lastModified": 1788098792,
-        "narHash": "sha256-sLEAKVrIcYwTZjV6l1CMlpUsDuAUd81BKD+o7sCGiEw=",
+        "lastModified": 1792320954,
+        "narHash": "sha256-8MimC0Je9Gof3lyAB/2Jj0M3lIR5CnoPKbVgThBhcS8=",
         "owner": "fnune",
         "repo": "lists",
-        "rev": "746836a7098509202aa681ae8c628fd6780314ad",
+        "rev": "1253ec5b224847e5b278349ef0e130178dfdb855",
         "type": "github"
       },
       "original": {
