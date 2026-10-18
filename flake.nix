@@ -12,6 +12,14 @@
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    sourceslist.url = "github:fnune/sourcesli.st";
+    fire.url = "github:fnune/fire";
+    lists = {
+      url = "github:fnune/lists";
+      flake = false;
+    };
+    smb.url = "github:fnune/smb";
+    tashi.url = "github:fnune/tashi";
   };
 
   outputs = {
@@ -19,6 +27,11 @@
     nixpkgs-unstable,
     disko,
     sops-nix,
+    fire,
+    lists,
+    smb,
+    sourceslist,
+    tashi,
     ...
   }: let
     system = "x86_64-linux";
@@ -27,10 +40,19 @@
       unstable = nixpkgs-unstable.legacyPackages.${system};
     };
 
+    appsOverlay = final: prev: {
+      fire = fire.packages.${system}.default;
+      fireSource = fire;
+      listsVault = lists;
+      smb = smb.packages.${system}.default;
+      sourceslist = sourceslist.packages.${system}.default;
+      tashi = tashi.packages.${system}.default;
+    };
+
     bilbo = nixpkgs.lib.nixosSystem {
       inherit system;
       modules = [
-        {nixpkgs.overlays = [unstableOverlay];}
+        {nixpkgs.overlays = [unstableOverlay appsOverlay];}
         ./nixos/configuration.nix
         ./nixos/drives.nix
         ./nixos/hardware-configuration.nix

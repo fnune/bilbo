@@ -27,12 +27,17 @@
     guestJellyfin = host "watch";
   };
   vpnEndpoint = host "wireguard";
-  dyndnsHosts = builtins.attrValues public ++ [vpnEndpoint];
+  publicIpAlias = host "ip";
+  dyndnsHosts = builtins.attrValues public ++ [vpnEndpoint publicIpAlias];
+
+  vpnApps = lib.filterAttrs (_: app: app.exposure == "vpn") config.bilbo.apps;
+  publicApps = lib.filterAttrs (_: app: app.exposure == "public") config.bilbo.apps;
+  publicHostnames = builtins.attrValues public ++ lib.mapAttrsToList (_: app: app.hostname) publicApps;
 
   vpnSubnet = "10.100.0.0/24";
 
   logFile = hostname: "${config.services.caddy.logDir}/access-${hostname}.log";
-  publicLogs = map logFile (builtins.attrValues public);
+  publicLogs = map logFile publicHostnames;
 
   immichPort = toString config.services.immich.port;
   sharedPhotosPort = toString config.services.immich-public-proxy.port;
@@ -41,7 +46,10 @@
   ntfyListen = config.services.ntfy-sh.settings.listen-http;
   seerrPort = toString config.services.seerr.port;
 in {
-  _module.args.caddyPublicLogs = publicLogs;
+  _module.args = {
+    caddyPublicLogs = publicLogs;
+    caddyLogFile = logFile;
+  };
 
   systemd.tmpfiles.rules = map (log: "z ${log} 0640 caddy caddy -") publicLogs;
 
@@ -96,6 +104,8 @@ in {
         dns cloudflare {$CLOUDFLARE_API_TOKEN}
       }
     '';
+    inOurDnsZone = hostname: lib.hasSuffix ".${domain}" hostname;
+    tlsFor = hostname: lib.optionalString (inOurDnsZone hostname) tlsDnsCloudflare;
     outsideVpn = ''
       @outsideVpn not remote_ip ${vpnSubnet} 127.0.0.1/8 ::1
     '';
@@ -111,6 +121,17 @@ in {
       reverse_proxy /${path}/* ${upstream}
       reverse_proxy /${path} ${upstream}
     '';
+    staticAtSubpath = path: site: ''
+      redir /${path} /${path}/ 308
+      handle_path /${path}/* {
+        root * ${site}
+        file_server
+      }
+    '';
+    appAtSubpath = path: app:
+      if app.site != null
+      then staticAtSubpath path app.site
+      else atSubpath path "127.0.0.1:${toString app.port}";
     jellyfinAtSubpath = atSubpath "jellyfin" "localhost:8096";
     adminSubpaths = ''
       ${atSubpath "nzbget" "localhost:6789"}
@@ -120,9 +141,10 @@ in {
       ${atSubpath "bazarr" "127.0.0.1:${toString config.services.bazarr.listenPort}"}
       ${calibreAtSubpath}
       ${jellyfinAtSubpath}
-      ${atSubpath "pincho" "localhost:3210"}
+      redir /pincho* /apps/tashi/ 308
+      redir /smb* /apps/smb/ 308
+      ${lib.concatMapAttrsStringSep "\n" (name: app: appAtSubpath "apps/${name}" app) vpnApps}
       ${atSubpath "zigbee2mqtt" "localhost:8085"}
-      ${atSubpath "smb" "localhost:8799"}
 
       handle / {
         root * ${./start-page}
@@ -150,13 +172,35 @@ in {
         }
       '';
       extraConfig = ''
-        ${tlsDnsCloudflare}
+        ${tlsFor hostname}
         route {
           crowdsec
           ${handlers}
         }
       '';
     };
+    rateLimit = name: limit: ''
+      rate_limit {
+        zone ${name} {
+          match {
+            path ${lib.concatStringsSep " " limit.paths}
+          }
+          key {remote_host}
+          events ${toString limit.perMinute}
+          window 1m
+        }
+      }
+    '';
+    publicAppSites = lib.mapAttrs' (name: app:
+      lib.nameValuePair app.hostname (publicSite app.hostname ''
+        ${lib.optionalString (app.rateLimit != null) (rateLimit name app.rateLimit)}
+        ${
+          if app.site != null
+          then "root * ${app.site}\nfile_server"
+          else rootIs "127.0.0.1:${toString app.port}"
+        }
+      ''))
+    publicApps;
   in {
     enable = true;
     # nixpkgs' install check can't find plugins that live in a subfolder of their repo, like the bouncer.
@@ -166,8 +210,9 @@ in {
         "github.com/hslatman/caddy-crowdsec-bouncer/http@v0.9.2"
         # The bouncer's own ipstore version doesn't build with the one Caddy pulls in.
         "github.com/hslatman/ipstore@v0.5.0"
+        "github.com/mholt/caddy-ratelimit@v0.1.1-0.20260612195517-5625512f24f6"
       ];
-      hash = "sha256-7nQ2ikk0ugapEp0NdLZqGbQlxfSZRO7pAV2UAIy2RwE=";
+      hash = "sha256-fizI2dUvfM1xtMdm1LLlCv2brhjA+3ukJRXDeLWYX7w=";
     }).overrideAttrs {doInstallCheck = false;};
     globalConfig = ''
       crowdsec {
@@ -177,65 +222,67 @@ in {
         api_key {$CROWDSEC_API_KEY:unregistered}
       }
     '';
-    virtualHosts = {
-      "${vpnOnly.admin}".extraConfig = ''
-        ${tlsDnsCloudflare}
-        ${vpnOnlyRoute adminSubpaths}
-      '';
-      "${vpnOnly.immich}".extraConfig = ''
-        ${tlsDnsCloudflare}
-        ${vpnOnlyRoute (rootIs "localhost:${immichPort}")}
-      '';
-      "${vpnOnly.frigate}".extraConfig = ''
-        ${tlsDnsCloudflare}
-        ${vpnOnlyRoute (rootIs "localhost:8971")}
-      '';
-      "${vpnOnly.homeAssistant}".extraConfig = ''
-        ${tlsDnsCloudflare}
-        ${vpnOnlyRoute (rootIs "localhost:8123")}
-      '';
-      "${vpnOnly.papra}".extraConfig = ''
-        ${tlsDnsCloudflare}
-        ${vpnOnlyRoute (rootIs "127.0.0.1:${papraPort}")}
-      '';
-      "${vpnOnly.health}".extraConfig = ''
-        ${tlsDnsCloudflare}
-        ${vpnOnlyRoute (rootIs "127.0.0.1:${beszelPort}")}
-      '';
-      "${vpnOnly.notify}".extraConfig = ''
-        ${tlsDnsCloudflare}
-        ${vpnOnlyRoute (rootIs ntfyListen)}
-      '';
-      "${vpnOnly.requests}".extraConfig = ''
-        ${tlsDnsCloudflare}
-        ${vpnOnlyRoute (rootIs "localhost:${seerrPort}")}
-      '';
+    virtualHosts =
+      publicAppSites
+      // {
+        "${vpnOnly.admin}".extraConfig = ''
+          ${tlsDnsCloudflare}
+          ${vpnOnlyRoute adminSubpaths}
+        '';
+        "${vpnOnly.immich}".extraConfig = ''
+          ${tlsDnsCloudflare}
+          ${vpnOnlyRoute (rootIs "localhost:${immichPort}")}
+        '';
+        "${vpnOnly.frigate}".extraConfig = ''
+          ${tlsDnsCloudflare}
+          ${vpnOnlyRoute (rootIs "localhost:8971")}
+        '';
+        "${vpnOnly.homeAssistant}".extraConfig = ''
+          ${tlsDnsCloudflare}
+          ${vpnOnlyRoute (rootIs "localhost:8123")}
+        '';
+        "${vpnOnly.papra}".extraConfig = ''
+          ${tlsDnsCloudflare}
+          ${vpnOnlyRoute (rootIs "127.0.0.1:${papraPort}")}
+        '';
+        "${vpnOnly.health}".extraConfig = ''
+          ${tlsDnsCloudflare}
+          ${vpnOnlyRoute (rootIs "127.0.0.1:${beszelPort}")}
+        '';
+        "${vpnOnly.notify}".extraConfig = ''
+          ${tlsDnsCloudflare}
+          ${vpnOnlyRoute (rootIs ntfyListen)}
+        '';
+        "${vpnOnly.requests}".extraConfig = ''
+          ${tlsDnsCloudflare}
+          ${vpnOnlyRoute (rootIs "localhost:${seerrPort}")}
+        '';
 
-      "${public.sharedPhotos}" = publicSite public.sharedPhotos (rootIs "localhost:${sharedPhotosPort}");
-      # The token in the Kobo sync URL is its login.
-      "${public.koboSync}" = publicSite public.koboSync ''
-        reverse_proxy /kobo/* 127.0.0.1:8083 {
-          header_up X-Scheme {scheme}
-        }
-        respond 404
-      '';
-      "${public.guestJellyfin}" = publicSite public.guestJellyfin ''
-        redir / /jellyfin/ 302
-        ${jellyfinAtSubpath}
-        respond 404
-      '';
-
-      ":80".extraConfig = ''
-        @lan remote_ip private_ranges
-        handle @lan {
-          route {
-            ${adminSubpaths}
+        "${public.sharedPhotos}" = publicSite public.sharedPhotos (rootIs "localhost:${sharedPhotosPort}");
+        # The token in the Kobo sync URL is its login.
+        "${public.koboSync}" = publicSite public.koboSync ''
+          reverse_proxy /kobo/* 127.0.0.1:8083 {
+            header_up X-Scheme {scheme}
           }
-        }
-        handle {
-          redir https://{host}{uri} permanent
-        }
-      '';
-    };
+          respond 404
+        '';
+        "${public.guestJellyfin}" = publicSite public.guestJellyfin ''
+          redir / /jellyfin/ 302
+          ${jellyfinAtSubpath}
+          respond 404
+        '';
+
+        ":80".extraConfig = ''
+          @lan remote_ip private_ranges
+          handle @lan {
+            route {
+              ${adminSubpaths}
+            }
+          }
+          handle {
+            redir https://{host}{uri} permanent
+          }
+        '';
+      };
   };
 }

@@ -1,4 +1,8 @@
-{pkgs, ...}: {
+{
+  config,
+  pkgs,
+  ...
+}: {
   boot.loader.grub = {
     enable = true;
     efiSupport = true;
@@ -15,6 +19,16 @@
       automatic = true;
       dates = "weekly";
       options = "--delete-older-than 1d";
+    };
+    extraOptions = "!include ${config.sops.templates."nix-private-github-access.conf".path}";
+  };
+
+  sops = {
+    secrets.github-read-token = {};
+    templates."nix-private-github-access.conf" = {
+      content = "access-tokens = github.com=${config.sops.placeholder.github-read-token}";
+      group = "wheel";
+      mode = "0440";
     };
   };
 
@@ -101,6 +115,7 @@
   system.stateVersion = "23.05";
 
   imports = [
+    ./apps.nix
     ./arr-settings.nix
     ./backups.nix
     ./bazarr.nix
@@ -108,22 +123,25 @@
     ./calibre.nix
     ./crowdsec.nix
     ./fail2ban.nix
+    ./fire.nix
     ./frigate.nix
     ./home-assistant.nix
     ./immich.nix
     ./immich-public-proxy.nix
     ./jellyfin.nix
+    ./lists
     ./monitoring.nix
     ./mosquitto.nix
     ./nzbget.nix
     ./papra.nix
-    ./pincho.nix
+    ./tashi.nix
     ./recyclarr.nix
     ./secrets.nix
     ./seerr.nix
     ./servarr.nix
     ./settings-services.nix
-    ./smb-jahreskarte.nix
+    ./smb.nix
+    ./sourceslist.nix
     ./tools.nix
     ./wireguard.nix
     ./zigbee2mqtt.nix

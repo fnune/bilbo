@@ -40,6 +40,7 @@ from the internet.
 | `photos.fnune.com` | anyone with a share link | Immich Public Proxy. It serves only what Immich shares. |
 | `calibre.fnune.com` | the Kobo | `/kobo/*` only. The token is in the URL. |
 | `watch.fnune.com` | guests with a Jellyfin account | Jellyfin at `/jellyfin` |
+| `sourcesli.st` | anyone | The sourcesli.st [app](#apps). Its record is set by hand in Cloudflare, as a CNAME to `ip.fnune.com`, which `dyndns` keeps on the household address. |
 | `http://192.168.178.36/...` | the LAN and the TV | plain HTTP, same subpaths as `bilbo.fnune.com` |
 
 The public hostnames sit behind CrowdSec (`nixos/crowdsec.nix`). It reads their Caddy logs, and Caddy's bouncer refuses IPs it has banned, plus those on the community blocklist. LAN and VPN addresses are never banned. `sudo cscli decisions list` shows active bans, `sudo cscli decisions delete --ip <ip>` lifts one. If CrowdSec is down, the bouncer lets traffic through.
@@ -48,7 +49,7 @@ The `dyndns` service keeps the public records on the household address, every 5 
 
 `bilbo.fnune.com/` serves a start page linking every service. It is hand-written HTML in `nixos/start-page/index.html`; add a link there when adding a service.
 
-To add a private service, add a subpath to `adminSubpaths` in `nixos/caddy.nix`. To add a public one, add a hostname to `public` with its own site block, and decide what the internet may see.
+To add a private service, add a subpath to `adminSubpaths` in `nixos/caddy.nix`; for an app of my own, see [Apps](#apps). To add a public one, add a hostname to `public` with its own site block, and decide what the internet may see.
 
 ### WireGuard
 
@@ -308,14 +309,22 @@ Off for now. `INGESTION_FOLDER_IS_ENABLED` makes Papra import files dropped into
 
 Borg covers `/mnt/mirrored/papra/documents` and `db-snapshot`, a copy of the database taken with Papra briefly stopped. The live `db` is excluded. The keys are in `secrets/bilbo.yaml` and in Bitwarden.
 
-## Pincho and the museum map
+## Apps
 
-Two small apps of my own run as system services with their own users.
+Small apps of my own, each in a private repository whose flake has a default package. `nixos/apps.nix` gives each one a hardened service with its own user and `/var/lib/<name>`, and a Caddy route.
 
-- Pincho (`nixos/pincho.nix`): the code is in `/srv/pincho`, user data in `/var/lib/pincho`. `deploy.sh` in the Pincho repository builds locally, syncs the tree to `/srv/pincho` and restarts the unit through a passwordless sudo rule. The unit snapshots the user data files into `/var/lib/pincho/backups` on every start and keeps the last 20. The Anthropic key comes from sops.
-- Museum map (`nixos/smb-jahreskarte.nix`): a static page and a stdlib Python server in `/srv/smb-jahreskarte`, edited in place. Its state file lives next to it.
+| App | Where | Module |
+| --- | --- | --- |
+| [Tashi](https://github.com/fnune/tashi) | `bilbo.fnune.com/apps/tashi` | `nixos/tashi.nix` |
+| [Museum map](https://github.com/fnune/smb) | `bilbo.fnune.com/apps/smb` | `nixos/smb.nix` |
+| [sourcesli.st](https://github.com/fnune/sourcesli.st) | `sourcesli.st`, public | `nixos/sourceslist.nix` |
 
-Both are served under `bilbo.fnune.com` and have no login of their own; the tunnel is the gate.
+- An app is VPN-only at `/apps/<name>` unless it sets `exposure = "public"` and a `hostname`. Caddy forwards the path unchanged, so the app must serve under `basePath`.
+- A public app gets the CrowdSec bouncer, an optional per-IP `rateLimit` and a `<name>-traffic-alert` timer that tells ntfy about unusual traffic. Setting `exposure` back to `vpn` takes it off the internet.
+- To ship a change, push it to the app's `main`, then run `nix flake update <name>` here and rebuild. The inputs are private: Nix on bilbo reads them with the `github-read-token` secret, a fine-grained token with read-only Contents access. Wherever you run `nix flake update`, Nix needs the same `access-tokens` setting.
+- To add one, add its flake as an input and to `appsOverlay` in `flake.nix`, and give it a module that sets `bilbo.apps.<name>`.
+
+Tashi keeps the last 20 snapshots of its data in `/var/lib/tashi/backups`, taken on every start. sourcesli.st runs its own Postgres 18 on port 5433, refills it from the Ultimate Debian Database every night (`sourceslist-ingest`) and keeps nothing worth backing up.
 
 ## Backups
 

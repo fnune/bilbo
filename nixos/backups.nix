@@ -12,7 +12,7 @@
     "/mnt/mirrored"
     config.services.home-assistant.configDir
     config.services.zigbee2mqtt.dataDir
-    "/var/lib/pincho"
+    "/var/lib/tashi"
     jellyfin.dataDir
     radarr.dataDir
     sonarr.dataDir
