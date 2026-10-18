@@ -114,7 +114,7 @@ in {
           StateDirectoryMode = "0700";
           RuntimeDirectory = dbUser;
           ExecStart = lib.concatStringsSep " " [
-            "${postgres}/bin/postgres --pgdata ${dbDir}"
+            "${postgres}/bin/postgres -D ${dbDir}"
             "-c listen_addresses=127.0.0.1"
             "-c port=${toString dbPort}"
             "-c unix_socket_directories=${dbSocketDir}"
