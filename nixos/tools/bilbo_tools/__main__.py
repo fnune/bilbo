@@ -2,7 +2,7 @@ import argparse
 import json
 from pathlib import Path
 
-from . import arrs, bazarr, beszel, dyndns, frigate, jellyfin, recyclarr, restore
+from . import arrs, bazarr, beszel, dyndns, frigate, jellyfin, papra_dates, recyclarr, restore
 
 COMMANDS = {
     "arr": arrs.apply,
@@ -11,6 +11,7 @@ COMMANDS = {
     "dyndns": dyndns.apply,
     "frigate": frigate.apply,
     "jellyfin": jellyfin.apply,
+    "papra-dates": papra_dates.apply,
     "recyclarr": recyclarr.apply,
     "restore-check-local": restore.check_local,
     "restore-start-remote": restore.start_remote,

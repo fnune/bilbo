@@ -102,6 +102,8 @@ Secrets are encrypted in `secrets/bilbo.yaml`. `sops-nix` decrypts them at boot 
 | `beszel-email`, `beszel-password` | Beszel's admin | choose one |
 | `anthropic-api-key` | Tashi's LLM | the Anthropic console |
 | `papra-env` | Papra's environment file, see its section | generated once |
+| `papra-api-key` | the `papra-dates` timer's access to Papra, also readable by `fausto` at `/run/secrets/papra-api-key` for scripts, with `organizations:read`, `documents:read` and `documents:update` | Papra -> Settings -> API keys |
+| `papra-anthropic-api-key` | the `papra-dates` timer's LLM, the same key as `ANTHROPIC_API_KEY` in `papra-env` | copied from `papra-env` |
 | `mosquitto-*-password` | one MQTT password per client. Frigate's and Zigbee2MQTT's environment files use the same entries. | generated |
 | `zigbee2mqtt-frontend-auth-token` | gates the Zigbee2MQTT frontend, which can re-pair or reset devices | generated |
 | `zigbee2mqtt-network-key` | the Zigbee network key. A change means re-pairing every device. | generated once |
@@ -300,6 +302,10 @@ Clients reach the API over the VPN with a Papra API key; nothing else stands in 
 ### Auto-tagging
 
 AI runs on Claude Haiku. Enable it per organization under Settings -> Auto tagging. Turn off "Create new tags" once the tags are settled, and give each tag a description, which is what steers the model.
+
+### Document dates
+
+Papra only sets a document's date by hand. The `papra-dates` timer fills it in every 4 hours for documents that have none: from a date in the file name, else by asking Claude Haiku for the issue date in the extracted text. It asks once per document and remembers the answer in `/var/lib/papra-dates/asked`, so undatable documents such as passports stay empty. Delete a line there to ask again.
 
 ### Ingestion folder
 

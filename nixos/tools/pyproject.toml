@@ -2,7 +2,7 @@
 name = "bilbo-tools"
 version = "1.0.0"
 requires-python = ">=3.12"
-dependencies = ["pyyaml", "requests"]
+dependencies = ["anthropic", "pydantic", "pyyaml", "requests"]
 
 [project.scripts]
 bilbo-tools = "bilbo_tools.__main__:main"

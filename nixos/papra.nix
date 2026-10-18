@@ -1,4 +1,8 @@
-{config, ...}: let
+{
+  bilboToolsCommand,
+  config,
+  ...
+}: let
   hostname = "docs.fnune.com";
   port = 1221;
 
@@ -6,7 +10,11 @@
   databaseDirectory = "${storage}/db";
   documentsDirectory = "${storage}/documents";
 in {
-  sops.secrets.papra-env = {};
+  sops.secrets = {
+    papra-env = {};
+    papra-api-key.owner = "fausto";
+    papra-anthropic-api-key = {};
+  };
 
   services.papra = {
     enable = true;
@@ -37,7 +45,29 @@ in {
     };
   };
 
-  systemd.services.papra.unitConfig.RequiresMountsFor = [storage];
+  systemd.services = {
+    papra.unitConfig.RequiresMountsFor = [storage];
+    papra-dates = {
+      description = "Date undated Papra documents from their names or text";
+      after = ["papra.service"];
+      wants = ["papra.service"];
+      startAt = "0/4:00";
+      serviceConfig = {
+        Type = "oneshot";
+        DynamicUser = true;
+        StateDirectory = "papra-dates";
+        ExecStart = bilboToolsCommand "papra-dates" {
+          url = "http://127.0.0.1:${toString port}";
+          model = "claude-haiku-5-5";
+          askedFile = "/var/lib/papra-dates/asked";
+        };
+        LoadCredential = [
+          "papra-api-key:${config.sops.secrets.papra-api-key.path}"
+          "anthropic-api-key:${config.sops.secrets.papra-anthropic-api-key.path}"
+        ];
+      };
+    };
+  };
 
   systemd.tmpfiles.rules = [
     "d ${storage} 0700 papra papra -"

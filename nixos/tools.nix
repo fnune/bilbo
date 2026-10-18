@@ -9,7 +9,7 @@
     pyproject = true;
     src = ./tools;
     build-system = [pkgs.python3Packages.setuptools];
-    dependencies = with pkgs.python3Packages; [pyyaml requests];
+    dependencies = with pkgs.python3Packages; [anthropic pydantic pyyaml requests];
     nativeCheckInputs = [pkgs.ruff] ++ (with pkgs.python3Packages; [pytest responses]);
     checkPhase = ''
       ruff check .
