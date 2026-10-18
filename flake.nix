@@ -18,6 +18,7 @@
       url = "github:fnune/lists";
       flake = false;
     };
+    shmups.url = "github:fnune/shmups";
     smb.url = "github:fnune/smb";
     tashi.url = "github:fnune/tashi";
   };
@@ -29,6 +30,7 @@
     sops-nix,
     fire,
     lists,
+    shmups,
     smb,
     sourceslist,
     tashi,
@@ -44,6 +46,7 @@
       fire = fire.packages.${system}.default;
       fireSource = fire;
       listsVault = lists;
+      shmups = shmups.packages.${system}.default;
       smb = smb.packages.${system}.default;
       sourceslist = sourceslist.packages.${system}.default;
       tashi = tashi.packages.${system}.default;

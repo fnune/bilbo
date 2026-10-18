@@ -140,6 +140,22 @@
     },
     "nixpkgs_4": {
       "locked": {
+        "lastModified": 1792094642,
+        "narHash": "sha256-zp8ToDMnqZcu4o4IH9pdwXFXGp7yLm/M0dEnNWnyd7I=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "fe13242281a67641c0102cdb1087f0ebe586c7df",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_5": {
+      "locked": {
         "lastModified": 1785571196,
         "narHash": "sha256-KoTsyMQqnXQZq8deCEnu4QkyldkwH/bpMMhUcfMdGIw=",
         "owner": "NixOS",
@@ -154,7 +170,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_5": {
+    "nixpkgs_6": {
       "locked": {
         "lastModified": 1775710090,
         "narHash": "sha256-ar3rofg+awPB8QXDaFJhJ2jJhu+KqN/PRCXeyuXR76E=",
@@ -177,15 +193,34 @@
         "lists": "lists",
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-unstable": "nixpkgs-unstable",
+        "shmups": "shmups",
         "smb": "smb",
         "sops-nix": "sops-nix",
         "sourceslist": "sourceslist",
         "tashi": "tashi"
       }
     },
-    "smb": {
+    "shmups": {
       "inputs": {
         "nixpkgs": "nixpkgs_3"
+      },
+      "locked": {
+        "lastModified": 1792317533,
+        "narHash": "sha256-gxFSf1Ta4kIryqdVbFI6tU2VWOQSuD8//a88bfZkny8=",
+        "owner": "fnune",
+        "repo": "shmups",
+        "rev": "8689dc06007696126585a3106a1b093e41dcbf6b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "fnune",
+        "repo": "shmups",
+        "type": "github"
+      }
+    },
+    "smb": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_4"
       },
       "locked": {
         "lastModified": 1792313022,
@@ -223,7 +258,7 @@
     },
     "sourceslist": {
       "inputs": {
-        "nixpkgs": "nixpkgs_4",
+        "nixpkgs": "nixpkgs_5",
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
@@ -257,7 +292,7 @@
     },
     "tashi": {
       "inputs": {
-        "nixpkgs": "nixpkgs_5"
+        "nixpkgs": "nixpkgs_6"
       },
       "locked": {
         "lastModified": 1792314669,

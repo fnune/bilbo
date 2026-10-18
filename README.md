@@ -317,6 +317,9 @@ Small apps of my own, each in a private repository whose flake has a default pac
 | --- | --- | --- |
 | [Tashi](https://github.com/fnune/tashi) | `bilbo.fnune.com/apps/tashi` | `nixos/tashi.nix` |
 | [Museum map](https://github.com/fnune/smb) | `bilbo.fnune.com/apps/smb` | `nixos/smb.nix` |
+| [Shmups](https://github.com/fnune/shmups) | `bilbo.fnune.com/apps/shmups` | `nixos/shmups.nix` |
+| [Lists](https://github.com/fnune/lists) | `bilbo.fnune.com/apps/lists` | `nixos/lists/` |
+| [FIRE](https://github.com/fnune/fire) | `bilbo.fnune.com/apps/fire` | `nixos/fire.nix` |
 | [sourcesli.st](https://github.com/fnune/sourcesli.st) | `sourcesli.st`, public | `nixos/sourceslist.nix` |
 
 - An app is VPN-only at `/apps/<name>` unless it sets `exposure = "public"` and a `hostname`. Caddy forwards the path unchanged, so the app must serve under `basePath`.

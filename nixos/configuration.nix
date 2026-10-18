@@ -140,6 +140,7 @@
     ./seerr.nix
     ./servarr.nix
     ./settings-services.nix
+    ./shmups.nix
     ./smb.nix
     ./sourceslist.nix
     ./tools.nix

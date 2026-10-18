@@ -13,6 +13,7 @@
     config.services.home-assistant.configDir
     config.services.zigbee2mqtt.dataDir
     "/var/lib/tashi"
+    "/var/lib/shmups"
     jellyfin.dataDir
     radarr.dataDir
     sonarr.dataDir
