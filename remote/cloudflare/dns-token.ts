@@ -15,9 +15,9 @@ export const bilboDnsToken = new cloudflare.ApiToken("bilbo-dns-token", {
       permissionGroups: dnsWrite.results.apply((groups) =>
         groups.map((group) => ({ id: group.id })),
       ),
-      resources: JSON.stringify({
+      resources: {
         [`com.cloudflare.api.account.zone.${ZONE_ID}`]: "*",
-      }),
+      },
     },
   ],
 });

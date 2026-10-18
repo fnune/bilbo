@@ -638,10 +638,10 @@
     docker-classic "npm:@pulumi/docker@3.6.1"
     mime "^2.0.0"
 
-"@pulumi/cloudflare@^6.9.1":
-  version "6.22.1"
-  resolved "https://registry.yarnpkg.com/@pulumi/cloudflare/-/cloudflare-6.22.1.tgz#98c4456ea0cf95d69a022f74fcf9de73f4c2fb04"
-  integrity sha512-ZpfS7qct6+1vSRXcuCqnNWwsm+EVGxo+JVJW/s4+6x3xCv5EhG/s/mIj2QWPew93aFSiN3GXu14P5GF7GejCeQ==
+"@pulumi/cloudflare@6.9.1":
+  version "6.9.1"
+  resolved "https://registry.yarnpkg.com/@pulumi/cloudflare/-/cloudflare-6.9.1.tgz#e0267bc0479ddd247c661fff39b8087a09367a78"
+  integrity sha512-DpZXRXhRyRat8BQxPIBO+V/opFjqktXA0tMrKBmZIo8QgjB5cDnrjvUWv5DrZRtHldE9Z3gTLT2T3OxgkD+f3g==
   dependencies:
     "@pulumi/pulumi" "^3.142.0"
 
