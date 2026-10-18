@@ -100,7 +100,7 @@ Secrets are encrypted in `secrets/bilbo.yaml`. `sops-nix` decrypts them at boot 
 | `jellyfin-admin-username`, `jellyfin-admin-password` | Jellyfin's admin, which also becomes Seerr's admin | choose one |
 | `radarr-username`, `radarr-password`, and the same for `sonarr` and `prowlarr` | each app's web login | the current one, or choose one |
 | `beszel-email`, `beszel-password` | Beszel's admin | choose one |
-| `anthropic-api-key` | Pincho's LLM | the Anthropic console |
+| `anthropic-api-key` | Tashi's LLM | the Anthropic console |
 | `papra-env` | Papra's environment file, see its section | generated once |
 | `mosquitto-*-password` | one MQTT password per client. Frigate's and Zigbee2MQTT's environment files use the same entries. | generated |
 | `zigbee2mqtt-frontend-auth-token` | gates the Zigbee2MQTT frontend, which can re-pair or reset devices | generated |
@@ -330,7 +330,7 @@ Tashi keeps the last 20 snapshots of its data in `/var/lib/tashi/backups`, taken
 
 For files kept only for safekeeping, copy them into `/mnt/mirrored/archive` with `scp` or `sftp://bilbo/mnt/mirrored/archive`. The backup covers it like the rest of `/mnt/mirrored`.
 
-The Borg job in `nixos/backups.nix` runs daily over `/mnt/mirrored`, Home Assistant's and Zigbee2MQTT's state, Pincho's data, and the Jellyfin, Radarr, Sonarr, Bazarr, Prowlarr and Seerr state (users, watch history, quality profiles; logs and cover art are left out). On Sundays `borgbackup-offsite-mirrored` mirrors the repository to S3 Deep Archive with `rclone sync`, holding Borg's lock so a daily run cannot change it mid-upload. It stays weekly because Deep Archive bills deleted objects for 180 days. The bucket keeps deleted and overwritten objects as noncurrent versions for 180 days (`remote/aws/backups.ts`), so a damaged local repository does not destroy the off-site copy on the next run. Restoring is documented in `remote/README.md`.
+The Borg job in `nixos/backups.nix` runs daily over `/mnt/mirrored`, Home Assistant's and Zigbee2MQTT's state, Tashi's data, and the Jellyfin, Radarr, Sonarr, Bazarr, Prowlarr and Seerr state (users, watch history, quality profiles; logs and cover art are left out). On Sundays `borgbackup-offsite-mirrored` mirrors the repository to S3 Deep Archive with `rclone sync`, holding Borg's lock so a daily run cannot change it mid-upload. It stays weekly because Deep Archive bills deleted objects for 180 days. The bucket keeps deleted and overwritten objects as noncurrent versions for 180 days (`remote/aws/backups.ts`), so a damaged local repository does not destroy the off-site copy on the next run. Restoring is documented in `remote/README.md`.
 
 Restores are tested on a schedule, at idle priority. On the 2nd of each month, `backup-restore-check-local` runs `borg check --verify-data` and compares a few restored photos with the originals. Each quarter, `backup-restore-start-remote` thaws a random 10 GB of the off-site repository (Bulk tier, about $0.03, inside the free monthly egress) and `backup-restore-check-remote` compares it byte for byte with the local copy three days later. Each sends "verified" to ntfy when it passes.
 
