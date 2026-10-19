@@ -26,11 +26,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1792425419,
-        "narHash": "sha256-0zT2UUYWJZG/bF9D8ALmIUNhbC37EwGESRr9OYCemRs=",
+        "lastModified": 1792426081,
+        "narHash": "sha256-e3t4tbEs0okeKP7/Q2Hou98O0weSB8RiX//G18LyKMI=",
         "owner": "fnune",
         "repo": "family-history",
-        "rev": "55bf8d315e2bfb59355a57a1cbadc122796def00",
+        "rev": "9fc6b41b81e56c5acefadef6a87d6485a23faf49",
         "type": "github"
       },
       "original": {
@@ -42,11 +42,11 @@
     "family-history-fausto": {
       "flake": false,
       "locked": {
-        "lastModified": 1792424908,
-        "narHash": "sha256-KezaXm6atES8HUzTKu2IcHOuP6Ab/u3ToSiQpJCdHcg=",
+        "lastModified": 1792426083,
+        "narHash": "sha256-cymmIajSIVT0EiG0vi+a0XCS5rZzJ0SoO2NXEYW7Fgw=",
         "owner": "fnune",
         "repo": "family-history-fausto",
-        "rev": "67f12656a55691acc7ea1ca19ca63b8933392f4f",
+        "rev": "d4365ec98ccde28bbd6870a45b867c90040d8b10",
         "type": "github"
       },
       "original": {

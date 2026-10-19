@@ -107,6 +107,6 @@ in {
 
   _module.args.family = {
     inherit hostname port;
-    map = pkgs.familyMap;
+    map = pkgs.familyMap.override {grampsUrl = "https://${hostname}";};
   };
 }
