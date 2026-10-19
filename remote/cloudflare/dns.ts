@@ -10,6 +10,7 @@ const VPN_ONLY_HOSTNAMES = [
   "health",
   "notify",
   "requests",
+  "family",
 ];
 const BILBO_VPN_ADDRESS = "10.100.0.1";
 

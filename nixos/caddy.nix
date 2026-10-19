@@ -4,6 +4,7 @@
   pkgs,
   lib,
   crowdsec,
+  family,
   trafficReportSite,
   servarrAddress,
   ...
@@ -17,6 +18,7 @@
     frigate = host "frigate";
     homeAssistant = host "home";
     papra = host "docs";
+    family = host "family";
     health = host "health";
     notify = host "notify";
     requests = host "requests";
@@ -247,6 +249,13 @@ in {
         "${vpnOnly.papra}".extraConfig = ''
           ${tlsDnsCloudflare}
           ${vpnOnlyRoute (rootIs "127.0.0.1:${papraPort}")}
+        '';
+        "${vpnOnly.family}".extraConfig = ''
+          ${tlsDnsCloudflare}
+          ${vpnOnlyRoute ''
+            ${staticAtSubpath "map" family.map}
+            ${rootIs "127.0.0.1:${toString family.port}"}
+          ''}
         '';
         "${vpnOnly.health}".extraConfig = ''
           ${tlsDnsCloudflare}

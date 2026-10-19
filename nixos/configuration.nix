@@ -123,6 +123,7 @@
     ./calibre.nix
     ./crowdsec.nix
     ./fail2ban.nix
+    ./family.nix
     ./fire.nix
     ./frigate.nix
     ./home-assistant.nix

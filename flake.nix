@@ -13,6 +13,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     sourceslist.url = "github:fnune/sourcesli.st";
+    family-history.url = "github:fnune/family-history";
+    family-history-fausto = {
+      url = "github:fnune/family-history-fausto";
+      flake = false;
+    };
     fire.url = "github:fnune/fire";
     lists = {
       url = "github:fnune/lists";
@@ -28,6 +33,8 @@
     nixpkgs-unstable,
     disko,
     sops-nix,
+    family-history,
+    family-history-fausto,
     fire,
     lists,
     shmups,
@@ -43,6 +50,8 @@
     };
 
     appsOverlay = final: prev: {
+      familyData = family-history-fausto;
+      familyMap = family-history.packages.${system}.default.override {family = family-history-fausto;};
       fire = fire.packages.${system}.default;
       fireSource = fire;
       listsVault = lists;

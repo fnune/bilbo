@@ -25,6 +25,7 @@ If you restore from Borg in step 5, skip steps 6 to 8.
 [frigate]: https://frigate.fnune.com
 [home-assistant]: https://home.fnune.com
 [papra]: https://docs.fnune.com
+[gramps-web]: https://family.fnune.com
 [zigbee2mqtt]: https://bilbo.fnune.com/zigbee2mqtt
 [seerr]: https://requests.fnune.com
 
@@ -36,7 +37,7 @@ from the internet.
 
 | Hostname | Who | How |
 | --- | --- | --- |
-| `bilbo.fnune.com` (subpaths), `immich`, `frigate`, `home`, `docs`, `health`, `notify`, `requests` | your devices | DNS record points at the WireGuard address. Caddy drops connections from outside the tunnel. |
+| `bilbo.fnune.com` (subpaths), `immich`, `frigate`, `home`, `docs`, `family`, `health`, `notify`, `requests` | your devices | DNS record points at the WireGuard address. Caddy drops connections from outside the tunnel. |
 | `photos.fnune.com` | anyone with a share link | Immich Public Proxy. It serves only what Immich shares. |
 | `calibre.fnune.com` | the Kobo | `/kobo/*` only. The token is in the URL. |
 | `watch.fnune.com` | guests with a Jellyfin account | Jellyfin at `/jellyfin` |
@@ -314,6 +315,22 @@ Off for now. `INGESTION_FOLDER_IS_ENABLED` makes Papra import files dropped into
 ### Backups
 
 Borg covers `/mnt/mirrored/papra/documents` and `db-snapshot`, a copy of the database taken with Papra briefly stopped. The live `db` is excluded. Papra encrypts its database, so the SQLite snapshots in [Backups](#backups) cannot read it. The keys are in `secrets/bilbo.yaml` and in Bitwarden.
+
+## Family history
+
+`family.fnune.com` serves the [family-history](https://github.com/fnune/family-history) research, over the VPN only: [Gramps Web][gramps-web] at the root, read-only, and the map and timeline at `/map/`. Gramps Web needs a hostname of its own, since it no longer supports serving under a subpath.
+
+Both come from two private inputs: `family-history`, whose package builds the map, and `family-history-fausto`, the family's data. To publish new research, push it to the family repository, run `nix flake update family-history-fausto` and deploy. The `github-read-token` needs read access to both repositories.
+
+Gramps Web has no NixOS package, so `nixos/family.nix` runs the upstream images with Podman, pinned by digest: the web app, its Celery worker and Redis, sharing one network namespace. The tree is a copy: `tree/family.json` in the family repository is the master. Nix builds the Gramps tree from its `family.ged` with the Gramps in nixpkgs, and the web container copies it in on every start and rebuilds the search index, so a deploy with a new input replaces the whole tree. The media are read from the input in place.
+
+The first time:
+
+1. Deploy, and check that `podman-grampsweb` is running: `systemctl status podman-grampsweb`.
+2. Open Gramps Web and create the owner account; registration is off after that.
+3. In Settings -> Administration -> Manage users, add one account per relative with the Member role, which can read but not change anything.
+
+Accounts live in `/var/lib/gramps-web/users` and are backed up. The tree is not: the next deploy rebuilds it.
 
 ## Apps
 
