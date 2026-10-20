@@ -42,11 +42,11 @@
     "family-history-fausto": {
       "flake": false,
       "locked": {
-        "lastModified": 1792430170,
-        "narHash": "sha256-gGuCeNnPFO6qBxKpum8P35nkoF/LLHLcKHIz8/UAk3Y=",
+        "lastModified": 1792496943,
+        "narHash": "sha256-RZFvRm1Da3Sk3rzoFeMeGVeqTzM+2Bcv2rTJAv1MYRg=",
         "owner": "fnune",
         "repo": "family-history-fausto",
-        "rev": "6659856406b45cc05070a522a8a6ceefdd9a5a1e",
+        "rev": "2dc50f25eefc31eefadaf9af7a7cd255c7e3a0e9",
         "type": "github"
       },
       "original": {
