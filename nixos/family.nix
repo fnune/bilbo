@@ -7,7 +7,7 @@
   port = 5150;
   tree = "Núñez Alberro";
 
-  grampsWebImage = "ghcr.io/gramps-project/grampsweb:26.9.1@sha256:ac4db1ba963f5d2604e6b9a34be50c5a2c37271699f5a6df93c9492ecc8870e5";
+  grampsWebImage = "ghcr.io/gramps-project/grampsweb:26.10.1@sha256:4348222c2ab2f5c53f15e7e170bd8b17db1c1691326e0e72b0d0d6df87724b94";
   redisImage = "docker.io/library/redis:7.4.6-alpine@sha256:3b73847e72874be07e6657b129a94761662b79bc0f679273757d4218573b2a98";
 
   storage = "/var/lib/gramps-web";
