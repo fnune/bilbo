@@ -257,11 +257,11 @@
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1792527255,
-        "narHash": "sha256-iZJJjO2y5z2mq+23hmijdc9Q4Unj54qZt3lrRQcMqeY=",
+        "lastModified": 1792532723,
+        "narHash": "sha256-Uysz6W3aFkoil2D+dOBAEllk7KGTT5saY81YQgZmKog=",
         "owner": "fnune",
         "repo": "shmups",
-        "rev": "148cb8b83ab075667a01b7652e7d336963fd6ed8",
+        "rev": "9f05552f172d3aa06edec5ba259a721f959f6184",
         "type": "github"
       },
       "original": {
