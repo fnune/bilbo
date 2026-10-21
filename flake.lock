@@ -26,11 +26,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1792491384,
-        "narHash": "sha256-E2veH9VLxzaG3D+s3ZdQXVaS1Ss92q1EfsV/XZ5K75k=",
+        "lastModified": 1792573457,
+        "narHash": "sha256-v93aNIpR31bjg02U7L0k/zy6lQ5hip6W9PNrlM51304=",
         "owner": "fnune",
         "repo": "family-history",
-        "rev": "c192d7112f3c487e55cb213ea1aca8d5e7a2741c",
+        "rev": "1402f3646dbdbf54f34073b91e94c274f485b550",
         "type": "github"
       },
       "original": {
