@@ -3,8 +3,29 @@ import * as pulumi from "@pulumi/pulumi";
 
 const NAME = "bilbo-backups";
 
+const BACKUP_USER_ACTIONS = [
+  "s3:PutObject",
+  "s3:GetObject",
+  "s3:ListBucket",
+  "s3:DeleteObject",
+  "s3:RestoreObject",
+];
+
 const bucket = new aws.s3.BucketV2(NAME);
-const user = new aws.iam.User(`${NAME}-user`, {});
+
+export const keepsBackupUserOnItsBucket = new aws.iam.Policy(`${NAME}-boundary`, {
+  name: `${NAME}-boundary`,
+  policy: bucket.arn.apply((arn) => ({
+    Version: "2012-10-17" as const,
+    Statement: [
+      { Effect: "Allow" as const, Action: BACKUP_USER_ACTIONS, Resource: [arn, `${arn}/*`] },
+    ],
+  })),
+});
+
+const user = new aws.iam.User(`${NAME}-user`, {
+  permissionsBoundary: keepsBackupUserOnItsBucket.arn,
+});
 const keys = new aws.iam.AccessKey(`${NAME}-user-keys`, { user: user.name });
 
 new aws.s3.BucketPublicAccessBlock(`${NAME}-bucket-public-access-block`, {
@@ -54,17 +75,7 @@ const policy = new aws.iam.Policy(`${NAME}-policy`, {
   policy: bucket.arn.apply((arn) => ({
     Version: "2012-10-17" as const,
     Statement: [
-      {
-        Effect: "Allow" as const,
-        Action: [
-          "s3:PutObject",
-          "s3:GetObject",
-          "s3:ListBucket",
-          "s3:DeleteObject",
-          "s3:RestoreObject",
-        ],
-        Resource: [arn, `${arn}/*`],
-      },
+      { Effect: "Allow" as const, Action: BACKUP_USER_ACTIONS, Resource: [arn, `${arn}/*`] },
     ],
   })),
 });

@@ -3,19 +3,9 @@
 Pulumi project for what Bilbo needs outside itself: the S3 bucket for off-site
 backups, the DNS records and the API token at Cloudflare.
 
-You need `direnv` and an `.envrc` file:
+You need `direnv`, an `.envrc` file with `use flake`, and a Pulumi login to the `fnune` org.
 
-```sh
-use flake
-
-export AWS_ACCESS_KEY_ID='<access_key>'
-export AWS_SECRET_ACCESS_KEY='<secret_key>'
-export AWS_REGION='eu-central-1'
-
-export PULUMI_CONFIG_PASSPHRASE='<pulumi_passphrase>'
-```
-
-> Look for `Bilbo Borg + S3 + Pulumi Credentials` on Bitwarden.
+AWS credentials come from the `production` ESC environment the stack imports: it assumes the `bilbo-esc` role over OIDC (`aws/esc-oidc.ts`) and hands each deploy one-hour credentials, so no AWS key is stored anywhere. The role can only manage the backup bucket, user and policy. Changing the role itself, its OIDC provider or the backup user's permissions boundary needs an admin login to the AWS account.
 
 The Cloudflare credential needs "API Tokens: Edit" in addition to its DNS
 permissions, because this project creates the DNS token that bilbo uses.
