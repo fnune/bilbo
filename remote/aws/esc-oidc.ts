@@ -6,6 +6,14 @@ const NAME = "bilbo-esc";
 const ORG = pulumi.getOrganization();
 const AUDIENCE_OF_DEFAULT_PROJECT_ESC_ENVIRONMENTS = ORG;
 const account = aws.getCallerIdentityOutput().accountId;
+const PRODUCTION_ENVIRONMENT_NAMES_WITH_AND_WITHOUT_DEFAULT_PROJECT = [
+  "production",
+  "default/production",
+];
+const SUBJECTS_OF_ONLY_THE_PRODUCTION_ENVIRONMENT =
+  PRODUCTION_ENVIRONMENT_NAMES_WITH_AND_WITHOUT_DEFAULT_PROJECT.map(
+    (name) => `pulumi:environments:pulumi.organization.login:${ORG}:rootEnvironment.name:${name}`,
+  );
 
 const oidc = new aws.iam.OpenIdConnectProvider("pulumi-esc-oidc", {
   url: "https://api.pulumi.com/oidc",
@@ -25,8 +33,8 @@ const role = new aws.iam.Role(NAME, {
           Condition: {
             StringEquals: {
               "api.pulumi.com/oidc:aud": AUDIENCE_OF_DEFAULT_PROJECT_ESC_ENVIRONMENTS,
+              "api.pulumi.com/oidc:sub": SUBJECTS_OF_ONLY_THE_PRODUCTION_ENVIRONMENT,
             },
-            StringLike: { "api.pulumi.com/oidc:sub": `pulumi:environments:org:${ORG}:env:*` },
           },
         },
       ],
