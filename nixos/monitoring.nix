@@ -120,7 +120,7 @@ in {
 
   systemd.services.traffic-report = {
     description = "Update the report of traffic to the public hostnames";
-    startAt = "*:0/10";
+    startAt = "00/12:00";
     serviceConfig = {
       Type = "oneshot";
       User = config.services.caddy.user;

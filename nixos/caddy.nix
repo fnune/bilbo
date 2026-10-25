@@ -174,6 +174,7 @@ in {
       logFormat = ''
         output file ${logFile hostname} {
           mode 0640
+          roll_size 10MiB
         }
       '';
       extraConfig = ''
