@@ -113,6 +113,12 @@ in {
     outsideVpn = ''
       @outsideVpn not remote_ip ${vpnSubnet} 127.0.0.1/8 ::1
     '';
+    aiCrawlers = ''
+      @aiCrawlers {
+        header_regexp User-Agent (?i)(Amazonbot|anthropic-ai|Applebot-Extended|Bytespider|CCBot|ClaudeBot|GPTBot|meta-externalagent|PerplexityBot)
+        not path /robots.txt
+      }
+    '';
     calibreAtSubpath = ''
       redir /calibre /calibre/ 308
       reverse_proxy /calibre/* 127.0.0.1:8083 {
@@ -179,7 +185,9 @@ in {
       '';
       extraConfig = ''
         ${tlsFor hostname}
+        ${aiCrawlers}
         route {
+          respond @aiCrawlers 403
           crowdsec
           ${handlers}
         }

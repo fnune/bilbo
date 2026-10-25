@@ -314,11 +314,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1792320384,
-        "narHash": "sha256-dfM5eNXmddHn+Io3f87xF7MMObUwCC9eqY4EY8MttIs=",
+        "lastModified": 1793105854,
+        "narHash": "sha256-eXJiVKSUiCPI+1hay7XhhPIF3ApLdrv2Er+Imo9jn84=",
         "owner": "fnune",
         "repo": "sourcesli.st",
-        "rev": "48ef4871427471b0973083aee70ec48b05f68237",
+        "rev": "d3b3c9b6471b7ab4f448c7ab5cc741af9aa39164",
         "type": "github"
       },
       "original": {
