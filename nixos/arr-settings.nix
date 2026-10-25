@@ -18,8 +18,9 @@
     }
     // extra;
 
+  indexers = ["NZBgeek" "NZBFinder"];
   logins = lib.concatMap (app: ["${app}-username" "${app}-password"]) ["radarr" "sonarr" "prowlarr"];
-  ownSecrets = ["nzbgeek-api-key"] ++ logins;
+  ownSecrets = map (indexer: "${lib.toLower indexer}-api-key") indexers ++ logins;
   secrets =
     ownSecrets
     ++ [
@@ -69,7 +70,7 @@ in {
       prowlarr = {
         url = servarrUrl "prowlarr";
         configFile = "/var/lib/private/prowlarr/config.xml";
-        indexer = "NZBgeek";
+        inherit indexers;
       };
       seerr = {
         url = "http://127.0.0.1:${toString seerr.port}/api/v1";

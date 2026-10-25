@@ -32,7 +32,7 @@ def config(tmp_path: Path) -> dict[str, Any]:
         "prowlarr": {
             "url": "http://prowlarr",
             "configFile": str(tmp_path / "config.xml"),
-            "indexer": "NZBgeek",
+            "indexers": ["NZBgeek", "NZBFinder"],
         },
         "seerr": {
             "url": "http://seerr/api/v1",
@@ -58,6 +58,7 @@ def secrets(credentials: Callable[..., None]) -> None:
         nzbget_username="nzbget",
         nzbget_password="nzbget-secret",
         nzbgeek_api_key="nzbgeek-key",
+        nzbfinder_api_key="nzbfinder-key",
         jellyfin_admin_username="admin",
         jellyfin_admin_password="secret",
     )
@@ -134,10 +135,13 @@ def serve(http: responses.RequestsMock, fresh: bool) -> None:
     http.get("http://prowlarr/ping")
     http.get(f"{prowlarr}/config/host", json={"id": 1, "username": "" if fresh else "admin"})
     http.put(f"{prowlarr}/config/host/1")
-    http.get(f"{prowlarr}/indexer", json=[] if fresh else [{"name": "NZBgeek"}])
+    http.get(f"{prowlarr}/indexer", json=[] if fresh else [{"name": "NZBgeek"}, {"name": "NZBFinder"}])
     http.get(
         f"{prowlarr}/indexer/schema",
-        json=[{"implementation": "Newznab", "name": "NZBgeek", "fields": [{"name": "apiKey"}]}],
+        json=[
+            {"implementation": "Newznab", "name": name, "fields": [{"name": "apiKey"}]}
+            for name in ["NZBgeek", "NZBFinder"]
+        ],
     )
     http.post(f"{prowlarr}/indexer")
     applications = [] if fresh else [{"implementation": "Radarr"}, {"implementation": "Sonarr"}]
@@ -208,8 +212,15 @@ def test_fresh_apps_get_set_up_end_to_end(
     assert body(http, "POST", "http://seerr/api/v1/user/import-from-jellyfin") == {
         "jellyfinUserIds": ["j1", "j2"]
     }
-    indexer = body(http, "POST", "http://prowlarr/api/v1/indexer")
-    assert indexer["fields"] == [{"name": "apiKey", "value": "nzbgeek-key"}]
+    indexers = [
+        json.loads(call.request.body)
+        for call in http.calls
+        if call.request.method == "POST" and call.request.url == "http://prowlarr/api/v1/indexer"
+    ]
+    assert {indexer["name"]: indexer["fields"] for indexer in indexers} == {
+        "NZBgeek": [{"name": "apiKey", "value": "nzbgeek-key"}],
+        "NZBFinder": [{"name": "apiKey", "value": "nzbfinder-key"}],
+    }
 
 
 def test_keeps_the_hand_added_indexer_until_prowlarr_has_synced(http: responses.RequestsMock) -> None:

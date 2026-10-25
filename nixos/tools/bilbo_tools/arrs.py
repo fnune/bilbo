@@ -28,7 +28,8 @@ def apply(config: dict[str, Any]) -> None:
     wait_until_up(f"{prowlarr_config['url']}/ping")
     apply_prowlarr(prowlarr, prowlarr_config, config["arrs"])
     for name in config["arrs"]:
-        drop_hand_added_indexer(arrs[name], prowlarr_config["indexer"])
+        for indexer in prowlarr_config["indexers"]:
+            drop_hand_added_indexer(arrs[name], indexer)
 
     finish_seerr_setup(seerr, config["seerr"])
 
@@ -122,23 +123,10 @@ def prowlarr_api_key(config_file: str) -> str:
 def apply_prowlarr(prowlarr: Api, config: dict[str, Any], arrs: dict[str, Any]) -> None:
     ensure_login(prowlarr, "prowlarr")
 
-    indexer = config["indexer"]
-    if not has(prowlarr.get("/indexer"), name=indexer):
-        definition = next(
-            (
-                item
-                for item in prowlarr.get("/indexer/schema")
-                if item["implementation"] == "Newznab" and item["name"].lower() == indexer.lower()
-            ),
-            None,
-        )
-        if definition is None:
-            raise LookupError(f"Prowlarr has no {indexer} indexer definition")
-        definition["fields"] = [
-            field | {"value": credential("nzbgeek-api-key")} if field["name"] == "apiKey" else field
-            for field in definition["fields"]
-        ]
-        prowlarr.post("/indexer", json=definition | {"name": indexer, "enable": True, "appProfileId": 1})
+    existing = prowlarr.get("/indexer")
+    for indexer in config["indexers"]:
+        if not has(existing, name=indexer):
+            add_indexer(prowlarr, indexer)
 
     applications = prowlarr.get("/applications")
     for name, arr in arrs.items():
@@ -160,6 +148,24 @@ def apply_prowlarr(prowlarr: Api, config: dict[str, Any], arrs: dict[str, Any]) 
             ),
         )
     prowlarr.post("/command", json={"name": "ApplicationIndexerSync"})
+
+
+def add_indexer(prowlarr: Api, indexer: str) -> None:
+    definition = next(
+        (
+            item
+            for item in prowlarr.get("/indexer/schema")
+            if item["implementation"] == "Newznab" and item["name"].lower() == indexer.lower()
+        ),
+        None,
+    )
+    if definition is None:
+        raise LookupError(f"Prowlarr has no {indexer} indexer definition")
+    definition["fields"] = [
+        field | {"value": credential(f"{indexer.lower()}-api-key")} if field["name"] == "apiKey" else field
+        for field in definition["fields"]
+    ]
+    prowlarr.post("/indexer", json=definition | {"name": indexer, "enable": True, "appProfileId": 1})
 
 
 def drop_hand_added_indexer(arr: Api, name: str) -> None:

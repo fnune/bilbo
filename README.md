@@ -96,6 +96,7 @@ Secrets are encrypted in `secrets/bilbo.yaml`. `sops-nix` decrypts them at boot 
 | `opensubtitles-username`, `opensubtitles-password` | Bazarr's OpenSubtitles.com account, by username, not email | opensubtitles.com |
 | `bazarr-username`, `bazarr-password` | Bazarr's web login | choose one |
 | `nzbgeek-api-key` | Prowlarr's NZBgeek indexer | nzbgeek.info -> My Account |
+| `nzbfinder-api-key` | Prowlarr's NZBFinder indexer | nzbfinder.ws -> Profile |
 | `eweka-username`, `eweka-password` | NZBGet's news server login | Eweka account |
 | `nzbget-username`, `nzbget-password` | NZBGet's web login, also used by Radarr and Sonarr | choose one |
 | `jellyfin-admin-username`, `jellyfin-admin-password` | Jellyfin's admin, which also becomes Seerr's admin | choose one |
