@@ -51,7 +51,10 @@ in {
 
   systemd.services.calibre-web = {
     restartTriggers = [applySettings];
-    serviceConfig.PrivateUsers = true;
+    serviceConfig = {
+      PrivateUsers = true;
+      SystemCallFilter = ["setpriority"];
+    };
   };
 
   bilbo.backups.calibre-web.paths = ["/var/lib/${cfg.dataDir}"];
