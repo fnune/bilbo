@@ -31,8 +31,12 @@ class Api:
         self.session = requests.Session()
         self.session.headers.update(headers or {})
 
-    def request(self, method: str, path: str, **kwargs: Any) -> Any:
-        response = self.session.request(method, self.base_url + path, timeout=120, **kwargs)
+    def request(self, method: str, path: str, attempts: int = 4, **kwargs: Any) -> Any:
+        for attempt in range(attempts):
+            response = self.session.request(method, self.base_url + path, timeout=120, **kwargs)
+            if response.status_code < 500 or attempt == attempts - 1:
+                break
+            time.sleep(2**attempt)
         if not response.ok:
             raise RuntimeError(f"{method} {path} returned {response.status_code}: {response.text}")
         return response.json() if response.content else None

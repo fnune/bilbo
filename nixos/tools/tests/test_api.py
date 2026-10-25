@@ -23,6 +23,19 @@ def test_errors_carry_the_app_message(http: responses.RequestsMock) -> None:
         Api("http://app").post("/thing", json={})
 
 
+def test_retries_server_errors(http: responses.RequestsMock) -> None:
+    http.get("http://app/thing", status=503)
+    http.get("http://app/thing", json={"ok": True})
+    assert Api("http://app").get("/thing") == {"ok": True}
+
+
+def test_gives_up_after_repeated_server_errors(http: responses.RequestsMock) -> None:
+    http.get("http://app/thing", status=500, body="unknown error")
+    with pytest.raises(RuntimeError, match="unknown error"):
+        Api("http://app").get("/thing", attempts=3)
+    assert len(http.calls) == 3
+
+
 def test_has_matches_every_given_field() -> None:
     items = [{"name": "a", "kind": "x"}, {"name": "b", "kind": "y"}]
     assert has(items, name="b", kind="y")
