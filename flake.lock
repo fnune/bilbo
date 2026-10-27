@@ -347,11 +347,11 @@
         "nixpkgs": "nixpkgs_7"
       },
       "locked": {
-        "lastModified": 1793131049,
-        "narHash": "sha256-RjeqMxuGNynBlanfl8QO7rbbDSo35N4n1ZdqhqESm8s=",
+        "lastModified": 1793139644,
+        "narHash": "sha256-0haOHIyhAHAZpc9UX55l6Tq36nYOpvYWtGp8/KhlikU=",
         "owner": "fnune",
         "repo": "tashi",
-        "rev": "01399b75d678a7fcc65933e12cabf46b1adada43",
+        "rev": "f80dee8d348474724cbfb84a5a999924b3acc3f0",
         "type": "github"
       },
       "original": {
