@@ -11,6 +11,7 @@
   downloads-2t-mount = "/mnt/downloads-2t";
 
   surveillance-storage = "${downloads-2t-mount}/frigate";
+  offline-kit-storage = "${downloads-2t-mount}/offline-kit";
   document-storage = "${mirrored-storage-mount}/papra";
 
   archive = "${mirrored-storage-mount}/archive";
@@ -21,7 +22,7 @@
     books = "${downloads-1t-mount}/Books";
   };
 
-  ownedByServices = [surveillance-storage document-storage config.services.immich.mediaLocation];
+  ownedByServices = [surveillance-storage offline-kit-storage document-storage config.services.immich.mediaLocation];
 
   outsideServiceOwned = "\\( ${lib.concatMapStringsSep " -o " (path: "-path ${path}") ownedByServices} \\) -prune -o";
 
@@ -49,7 +50,7 @@ in {
       downloads-2t = downloads-2t-mount;
       mirrored = mirrored-storage-mount;
     };
-    inherit libraries;
+    inherit libraries offline-kit-storage;
   };
 
   systemd.tmpfiles.rules = map (folder: "d ${folder} 0775 fausto users -") (builtins.attrValues libraries ++ [archive]);

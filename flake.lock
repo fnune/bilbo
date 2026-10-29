@@ -246,6 +246,7 @@
         "nixpkgs": "nixpkgs_3",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "shmups": "shmups",
+        "silmaril": "silmaril",
         "smb": "smb",
         "sops-nix": "sops-nix",
         "sourceslist": "sourceslist",
@@ -267,6 +268,26 @@
       "original": {
         "owner": "fnune",
         "repo": "shmups",
+        "type": "github"
+      }
+    },
+    "silmaril": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793310607,
+        "narHash": "sha256-fIz288poLb7Vk+/3z7wmUlHZZT5fZA81ke87YxxfUgA=",
+        "owner": "fnune",
+        "repo": "silmaril",
+        "rev": "c222f2a989fd0bc64aee08ea3cdfce85a7bbe1c9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "fnune",
+        "repo": "silmaril",
         "type": "github"
       }
     },

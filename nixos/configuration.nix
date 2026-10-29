@@ -134,6 +134,7 @@
     ./monitoring.nix
     ./mosquitto.nix
     ./nzbget.nix
+    ./offline-kit.nix
     ./papra.nix
     ./tashi.nix
     ./recyclarr.nix

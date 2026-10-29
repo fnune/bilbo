@@ -24,6 +24,10 @@
       flake = false;
     };
     shmups.url = "github:fnune/shmups";
+    silmaril = {
+      url = "github:fnune/silmaril";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     smb.url = "github:fnune/smb";
     tashi.url = "github:fnune/tashi";
   };
@@ -38,6 +42,7 @@
     fire,
     lists,
     shmups,
+    silmaril,
     smb,
     sourceslist,
     tashi,
@@ -55,6 +60,7 @@
       fire = fire.packages.${system}.default;
       fireSource = fire;
       listsVault = lists;
+      mkSilmaril = silmaril.lib.mkSilmaril;
       shmups = shmups.packages.${system}.default;
       smb = smb.packages.${system}.default;
       sourceslist = sourceslist.packages.${system}.default;

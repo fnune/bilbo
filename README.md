@@ -343,6 +343,7 @@ Small apps of my own, each in a private repository whose flake has a default pac
 | [Shmups](https://github.com/fnune/shmups) | `bilbo.fnune.com/apps/shmups` | `nixos/shmups.nix` |
 | [Lists](https://github.com/fnune/lists) | `bilbo.fnune.com/apps/lists` | `nixos/lists/` |
 | [FIRE](https://github.com/fnune/fire) | `bilbo.fnune.com/apps/fire` | `nixos/fire.nix` |
+| [Offline kit](https://github.com/fnune/silmaril) | `bilbo.fnune.com/apps/offline-kit` | `nixos/offline-kit.nix` |
 | [sourcesli.st](https://github.com/fnune/sourcesli.st) | `sourcesli.st`, public | `nixos/sourceslist.nix` |
 
 - An app is VPN-only at `/apps/<name>` unless it sets `exposure = "public"` and a `hostname`. Caddy forwards the path unchanged, so the app must serve under `basePath`.
@@ -350,6 +351,8 @@ Small apps of my own, each in a private repository whose flake has a default pac
 - To ship a change, push it to the app's `main`, then run `nix flake update <name>` here and rebuild. The inputs are private: Nix on bilbo reads them with the `github-read-token` secret, a fine-grained token with read-only Contents access. Wherever you run `nix flake update`, Nix needs the same `access-tokens` setting.
 - To add one, add its flake as an input and to `appsOverlay` in `flake.nix`, and give it a module that sets `bilbo.apps.<name>`.
 - Set `backup = true` for an app whose `/var/lib/<name>` holds data worth keeping. Tashi, the museum map and Shmups do.
+
+The offline kit keeps its downloads, about 200 GB, in `/mnt/downloads-2t/offline-kit`. `offline-kit-fetch` brings them up to date 5 minutes after a deploy and every night at 03:00, at idle priority; `journalctl -u offline-kit-fetch` shows its progress. Its content list is in `nixos/offline-kit.nix`, and [Silmaril's catalogue](https://github.com/fnune/silmaril/blob/main/CATALOG.md) lists the rest.
 
 Tashi keeps the last 20 snapshots of its data in `/var/lib/tashi/backups`, taken on every start. sourcesli.st runs its own Postgres 18 on port 5433, refills it from the Ultimate Debian Database every night (`sourceslist-ingest`) and keeps nothing worth backing up.
 
