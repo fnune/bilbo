@@ -100,7 +100,10 @@
     syncthingSync = 22100;
     syncthingLocalDiscovery = 21127;
     ssh = {allowedTCPPorts = [22];};
+    dropSynWithIpOptions = ''-p tcp --syn -m u32 ! --u32 "0>>24&0xF=5" -j DROP''; # https://ubuntu.com/security/CVE-2026-98432
   in {
+    extraCommands = "iptables -t raw -I PREROUTING ${dropSynWithIpOptions}";
+    extraStopCommands = "iptables -t raw -D PREROUTING ${dropSynWithIpOptions} || true";
     allowedTCPPorts = [syncthingSync];
     allowedUDPPorts = [syncthingSync syncthingLocalDiscovery];
     interfaces = {
