@@ -13,6 +13,7 @@
   dbDir = "/var/lib/${dbUser}/${postgres.psqlSchema}";
   dbSocketDir = "/run/${dbUser}";
   backupDir = "/var/lib/tashi/backups";
+  databasePath = "/var/lib/tashi/tashi.sqlite";
 
   model = "claude-haiku-5-5";
   keepBackups = 20;
@@ -39,12 +40,14 @@
     SELECT 'CREATE DATABASE ${database} OWNER tashi' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '${database}') \gexec
   '';
 
-  dumpDatabase = pkgs.writeShellScript "tashi-backup" ''
+  # The live file can change while borg reads it; these copies cannot.
+  backupDatabase = pkgs.writeShellScript "tashi-backup" ''
     set -euo pipefail
+    [ -f ${databasePath} ] || exit 0
     stamp=$(date +%Y%m%d-%H%M%S)
     mkdir -p ${backupDir}
-    ${postgres}/bin/pg_dump --host ${dbSocketDir} --format custom --file ${backupDir}/$stamp.dump ${database}
-    ls -1 ${backupDir}/*.dump | sort | head -n -${toString keepBackups} | xargs -r rm
+    ${pkgs.sqlite}/bin/sqlite3 ${databasePath} ".backup '${backupDir}/$stamp.sqlite'"
+    ls -1 ${backupDir}/*.sqlite | sort | head -n -${toString keepBackups} | xargs -r rm
   '';
 
   start = pkgs.writeShellScript "tashi-start" ''
@@ -70,12 +73,12 @@ in {
     command = "${start}";
     environment = {
       PORT = toString app.port;
-      DATABASE_URL = "postgres://tashi@localhost/${database}?host=${dbSocketDir}";
+      DATABASE_PATH = databasePath;
       BASE_PATH = app.basePath;
       LLM_MODEL = model;
     };
     credentials.anthropic-api-key = config.sops.secrets.anthropic-api-key.path;
-    serviceConfig.ExecStartPre = dumpDatabase;
+    serviceConfig.ExecStartPre = backupDatabase;
   };
 
   systemd = {
@@ -132,16 +135,9 @@ in {
         '';
       };
 
-      tashi = {
-        after = ["tashi-db-setup.service"];
-        requires = ["tashi-db-setup.service"];
-      };
-
-      # Before the midnight borg run, so the dump is in that night's archive.
+      # Before the midnight borg run, so the copy is in that night's archive.
       tashi-backup = {
-        description = "Dump Tashi's database";
-        after = ["tashi-db-setup.service"];
-        requires = ["tashi-db-setup.service"];
+        description = "Copy Tashi's database";
         startAt = "23:30";
         serviceConfig =
           hardening
@@ -151,7 +147,7 @@ in {
             Group = "tashi";
             StateDirectory = "tashi";
             StateDirectoryMode = "0700";
-            ExecStart = dumpDatabase;
+            ExecStart = backupDatabase;
           };
       };
     };
