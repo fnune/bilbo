@@ -5,11 +5,8 @@
   ...
 }: let
   app = config.bilbo.apps.tashi;
-  package = pkgs.tashi.override {inherit (app) basePath;};
   backupDir = "/var/lib/tashi/backups";
   databasePath = "/var/lib/tashi/tashi.sqlite";
-
-  model = "claude-haiku-5-5";
   keepBackups = 20;
 
   hardening = {
@@ -38,26 +35,12 @@
     ls -1 ${backupDir}/*.sqlite | sort | head -n -${toString keepBackups} | xargs -r rm
   '';
 
-  start = pkgs.writeShellScript "tashi-start" ''
-    ANTHROPIC_API_KEY=$(cat "$CREDENTIALS_DIRECTORY/anthropic-api-key")
-    export ANTHROPIC_API_KEY
-    exec ${lib.getExe package}
-  '';
 in {
-  sops.secrets.anthropic-api-key = {};
-
   bilbo.apps.tashi = {
     description = "Tashi - T1D insulin dose calculator";
     backup = true;
     port = 3210;
-    command = "${start}";
-    environment = {
-      PORT = toString app.port;
-      DATABASE_PATH = databasePath;
-      BASE_PATH = app.basePath;
-      LLM_MODEL = model;
-    };
-    credentials.anthropic-api-key = config.sops.secrets.anthropic-api-key.path;
+    command = "${lib.getExe pkgs.tashi} --database ${databasePath} --port ${toString app.port} --base-path ${app.basePath}";
     serviceConfig.ExecStartPre = backupDatabase;
   };
 

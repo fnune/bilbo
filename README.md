@@ -102,7 +102,6 @@ Secrets are encrypted in `secrets/bilbo.yaml`. `sops-nix` decrypts them at boot 
 | `jellyfin-admin-username`, `jellyfin-admin-password` | Jellyfin's admin, which also becomes Seerr's admin | choose one |
 | `radarr-username`, `radarr-password`, and the same for `sonarr` and `prowlarr` | each app's web login | the current one, or choose one |
 | `beszel-email`, `beszel-password` | Beszel's admin | choose one |
-| `anthropic-api-key` | Tashi's LLM | the Anthropic console |
 | `papra-env` | Papra's environment file, see its section | generated once |
 | `papra-api-key` | the `papra-dates` timer's access to Papra, also readable by `fausto` at `/run/secrets/papra-api-key` for scripts, with `organizations:read`, `documents:read` and `documents:update` | Papra -> Settings -> API keys |
 | `papra-anthropic-api-key` | the `papra-dates` timer's LLM, the same key as `ANTHROPIC_API_KEY` in `papra-env` | copied from `papra-env` |

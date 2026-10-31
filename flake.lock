@@ -368,11 +368,11 @@
         "nixpkgs": "nixpkgs_7"
       },
       "locked": {
-        "lastModified": 1793451616,
-        "narHash": "sha256-PLzsStGYX+fwxbkRjd1A23gjD1RvPKTUIy2Gwp2v++A=",
+        "lastModified": 1793463318,
+        "narHash": "sha256-DXevckKraxd+dLgKnTOpIbR2oZM+n0RpKB1wQlCKovY=",
         "owner": "fnune",
         "repo": "tashi",
-        "rev": "2a9e9d5fa5b2d7d24dc2f41723ea3a5e5a907dcd",
+        "rev": "51f7b525851a5d9832a72a51a5f862d94e29c8b5",
         "type": "github"
       },
       "original": {
