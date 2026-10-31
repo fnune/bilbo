@@ -354,7 +354,7 @@ Small apps of my own, each in a private repository whose flake has a default pac
 
 The offline kit keeps its downloads, about 200 GB, in `/mnt/downloads-2t/offline-kit`. `offline-kit-fetch` brings them up to date 5 minutes after a deploy and every night at 03:00, at idle priority; `journalctl -u offline-kit-fetch` shows its progress. Its content list is in `nixos/offline-kit.nix`, and [Silmaril's catalogue](https://github.com/fnune/silmaril/blob/main/CATALOG.md) lists the rest.
 
-Tashi keeps the last 20 snapshots of its data in `/var/lib/tashi/backups`, taken on every start. sourcesli.st runs its own Postgres 18 on port 5433, refills it from the Ultimate Debian Database every night (`sourceslist-ingest`) and keeps nothing worth backing up.
+Tashi keeps the last 20 copies of its SQLite database in `/var/lib/tashi/backups`, taken on every start and at 23:30, before the borg run. sourcesli.st runs its own Postgres 18 on port 5433, refills it from the Ultimate Debian Database every night (`sourceslist-ingest`) and keeps nothing worth backing up.
 
 ## Backups
 

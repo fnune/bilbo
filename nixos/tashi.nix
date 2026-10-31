@@ -6,12 +6,6 @@
 }: let
   app = config.bilbo.apps.tashi;
   package = pkgs.tashi.override {inherit (app) basePath;};
-  postgres = pkgs.postgresql_18;
-
-  database = "tashi";
-  dbUser = "tashi-db";
-  dbDir = "/var/lib/${dbUser}/${postgres.psqlSchema}";
-  dbSocketDir = "/run/${dbUser}";
   backupDir = "/var/lib/tashi/backups";
   databasePath = "/var/lib/tashi/tashi.sqlite";
 
@@ -34,12 +28,6 @@
     UMask = "0077";
   };
 
-  setUpDatabase = pkgs.writeText "tashi-db-setup.sql" ''
-    \set ON_ERROR_STOP on
-    SELECT 'CREATE ROLE tashi LOGIN' WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'tashi') \gexec
-    SELECT 'CREATE DATABASE ${database} OWNER tashi' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '${database}') \gexec
-  '';
-
   # The live file can change while borg reads it; these copies cannot.
   backupDatabase = pkgs.writeShellScript "tashi-backup" ''
     set -euo pipefail
@@ -58,14 +46,6 @@
 in {
   sops.secrets.anthropic-api-key = {};
 
-  users = {
-    users.${dbUser} = {
-      isSystemUser = true;
-      group = dbUser;
-    };
-    groups.${dbUser} = {};
-  };
-
   bilbo.apps.tashi = {
     description = "Tashi - T1D insulin dose calculator";
     backup = true;
@@ -83,58 +63,6 @@ in {
 
   systemd = {
     services = {
-      # Not the shared Postgres: that one is Immich's and ends support in November 2026.
-      ${dbUser} = {
-        description = "Postgres for Tashi";
-        after = ["network.target"];
-        wantedBy = ["multi-user.target"];
-        preStart = ''
-          if [ ! -e ${dbDir}/PG_VERSION ]; then
-            ${postgres}/bin/initdb --pgdata ${dbDir} --username ${dbUser} \
-              --auth-local peer --encoding UTF8 --locale C.UTF-8
-          fi
-        '';
-        serviceConfig =
-          hardening
-          // {
-            Type = "notify";
-            User = dbUser;
-            Group = dbUser;
-            StateDirectory = dbUser;
-            StateDirectoryMode = "0700";
-            RuntimeDirectory = dbUser;
-            ExecStart = lib.concatStringsSep " " [
-              "${postgres}/bin/postgres -D ${dbDir}"
-              "-c listen_addresses="
-              "-c unix_socket_directories=${dbSocketDir}"
-              "-c max_connections=20"
-              "-c shared_buffers=64MB"
-            ];
-            ExecReload = "${pkgs.coreutils}/bin/kill -HUP $MAINPID";
-            KillMode = "mixed";
-            KillSignal = "SIGINT";
-            TimeoutSec = 120;
-            MemoryMax = "512M";
-          };
-      };
-
-      tashi-db-setup = {
-        description = "Create Tashi's database role and database";
-        after = ["${dbUser}.service"];
-        requires = ["${dbUser}.service"];
-        serviceConfig =
-          hardening
-          // {
-            Type = "oneshot";
-            RemainAfterExit = true;
-            User = dbUser;
-            Group = dbUser;
-          };
-        script = ''
-          ${postgres}/bin/psql --host ${dbSocketDir} --dbname postgres --no-psqlrc --file ${setUpDatabase}
-        '';
-      };
-
       # Before the midnight borg run, so the copy is in that night's archive.
       tashi-backup = {
         description = "Copy Tashi's database";
