@@ -49,9 +49,9 @@ in {
     papra.unitConfig.RequiresMountsFor = [storage];
     papra-dates = {
       description = "Date undated Papra documents from their names or text";
-      after = ["papra.service" "borgbackup-job-mirrored.service"];
+      after = ["papra.service"];
       wants = ["papra.service"];
-      startAt = "0/4:00";
+      startAt = "2/4:00";
       serviceConfig = {
         Type = "oneshot";
         DynamicUser = true;
