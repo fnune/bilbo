@@ -3,8 +3,10 @@
   config,
   pkgs,
   lib,
+  cgit,
   crowdsec,
   family,
+  forgejo,
   trafficReportSite,
   servarrAddress,
   ...
@@ -22,12 +24,14 @@
     health = host "health";
     notify = host "notify";
     requests = host "requests";
+    git = forgejo.hostname;
   };
 
   public = {
     sharedPhotos = host "photos";
     koboSync = host "calibre";
     guestJellyfin = host "watch";
+    code = cgit.hostname;
   };
   vpnEndpoint = host "wireguard";
   publicIpAlias = host "ip";
@@ -136,6 +140,27 @@ in {
       handle_path /${path}/* {
         root * ${site}
         file_server
+      }
+    '';
+    cgitSite = ''
+      ${rateLimit "cgit" {
+        paths = ["/*"];
+        perMinute = 120;
+      }}
+      @assets path ${lib.concatStringsSep " " cgit.assetPaths}
+      handle @assets {
+        root * ${cgit.assets}
+        file_server
+      }
+      handle {
+        reverse_proxy unix/${cgit.socket} {
+          transport fastcgi {
+            env SCRIPT_FILENAME ${cgit.script}
+            env CGIT_CONFIG ${cgit.config}
+            env PATH_INFO {path}
+            env SCRIPT_NAME ""
+          }
+        }
       }
     '';
     appAtSubpath = path: app:
@@ -278,6 +303,10 @@ in {
           ${tlsDnsCloudflare}
           ${vpnOnlyRoute (rootIs "localhost:${seerrPort}")}
         '';
+        "${vpnOnly.git}".extraConfig = ''
+          ${tlsDnsCloudflare}
+          ${vpnOnlyRoute (rootIs "unix/${forgejo.socket}")}
+        '';
 
         "${public.sharedPhotos}" = publicSite public.sharedPhotos (rootIs "localhost:${sharedPhotosPort}");
         # The token in the Kobo sync URL is its login.
@@ -287,6 +316,7 @@ in {
           }
           respond 404
         '';
+        "${public.code}" = publicSite public.code cgitSite;
         "${public.guestJellyfin}" = publicSite public.guestJellyfin ''
           redir / /jellyfin/ 302
           ${jellyfinAtSubpath}

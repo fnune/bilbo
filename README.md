@@ -13,7 +13,7 @@ If you restore from Borg in step 5, skip steps 6 to 8.
 5. To restore, follow [Restoring from backups](remote/README.md#restoring-from-backups).
 6. In the Add New dialog of Radarr and Sonarr, select "1080p, then 720p" one time.
 7. [Calibre][calibre]: make a Kobo sync token in the user profile. On the Kobo, set `https://calibre.fnune.com/kobo/<token>`.
-8. Do the setup in [Camera](#camera), [Zigbee](#zigbee), [Home Assistant](#home-assistant) and [Papra](#papra).
+8. Do the setup in [Camera](#camera), [Zigbee](#zigbee), [Home Assistant](#home-assistant) and [Papra](#papra) and [Code](#code).
 
 [jellyfin]: https://bilbo.fnune.com/jellyfin
 [nzbget]: https://bilbo.fnune.com/nzbget
@@ -28,6 +28,8 @@ If you restore from Borg in step 5, skip steps 6 to 8.
 [gramps-web]: https://family.fnune.com
 [zigbee2mqtt]: https://bilbo.fnune.com/zigbee2mqtt
 [seerr]: https://requests.fnune.com
+[forgejo]: https://git.fnune.com
+[cgit]: https://code.fnune.com
 
 ## Network
 
@@ -37,9 +39,10 @@ from the internet.
 
 | Hostname | Who | How |
 | --- | --- | --- |
-| `bilbo.fnune.com` (subpaths), `immich`, `frigate`, `home`, `docs`, `family`, `health`, `notify`, `requests` | your devices | DNS record points at the WireGuard address. Caddy drops connections from outside the tunnel. |
+| `bilbo.fnune.com` (subpaths), `immich`, `frigate`, `home`, `docs`, `family`, `health`, `notify`, `requests`, `git` | your devices | DNS record points at the WireGuard address. Caddy drops connections from outside the tunnel. |
 | `photos.fnune.com` | anyone with a share link | Immich Public Proxy. It serves only what Immich shares. |
 | `calibre.fnune.com` | the Kobo | `/kobo/*` only. The token is in the URL. |
+| `code.fnune.com` | anyone | cgit, read-only, with the repositories listed in `nixos/cgit.nix`. See [Code](#code). |
 | `watch.fnune.com` | guests with a Jellyfin account | Jellyfin at `/jellyfin` |
 | `sourcesli.st` | anyone | The sourcesli.st [app](#apps). Its record is set by hand in Cloudflare, as a CNAME to `ip.fnune.com`, which `dyndns` keeps on the household address. |
 | `http://192.168.178.36/...` | the LAN and the TV | plain HTTP, same subpaths as `bilbo.fnune.com` |
@@ -109,6 +112,7 @@ Secrets are encrypted in `secrets/bilbo.yaml`. `sops-nix` decrypts them at boot 
 | `zigbee2mqtt-frontend-auth-token` | gates the Zigbee2MQTT frontend, which can re-pair or reset devices | generated |
 | `zigbee2mqtt-network-key` | the Zigbee network key. A change means re-pairing every device. | generated once |
 | `camera-password` | the camera's password, used only by go2rtc | the camera's web UI |
+| `forgejo-admin-password` | Forgejo's `fnune` admin | choose one |
 | `frigate-admin-password` | Frigate's `admin` account, which Home Assistant also uses | choose one, at least 12 characters |
 
 To generate the random ones:
@@ -331,6 +335,26 @@ The first time:
 3. In Settings -> Administration -> Manage users, add one account per relative with the Member role, which can read but not change anything.
 
 Accounts live in `/var/lib/gramps-web/users` and are backed up. The tree is not: the next deploy rebuilds it.
+
+## Code
+
+[Forgejo][forgejo] holds my repositories, over the VPN only. [cgit][cgit] shows a read-only copy of the public ones to anyone.
+
+- Forgejo runs on SQLite with its state in `/mnt/mirrored/forgejo/state`. Registration is closed and every repository is private. `forgejo-admin` creates the `fnune` admin from `forgejo-admin-password` on first start.
+- Git over SSH goes through the system sshd as the `git` user: `git@git.fnune.com:fnune/<repo>.git`. `git.fnune.com` resolves to the WireGuard address, so pushing from outside needs the tunnel. Forgejo writes the keys you add in its UI to `~git/.ssh/authorized_keys`.
+- The backup copies the state to `state-snapshot` with Forgejo stopped, so the repositories and the database match. To restore, stop `forgejo`, replace `state` with the snapshot and start it.
+- Mirrors to and from GitHub are set per repository in its settings. Both directions are bilbo connecting out, so they work from behind the VPN. A failed mirror sync does not notify.
+
+### Public repositories
+
+A repository is public when it is in `publicRepos` in `nixos/cgit.nix`, with a `desc`. Every 10 minutes `cgit-sync` copies its branches and tags into `/var/lib/cgit`, as Forgejo's user. cgit runs as its own user and cannot read Forgejo's state. Removing a name from the list removes the copy on the next sync. Forgejo stores repositories under their lowercase names.
+
+cgit renders the README on each repository's "about" tab. Over the VPN, a link to the same page in Forgejo shows in the top right corner (`nixos/cgit/forgejo-link.js`). Tarball downloads are off, since they cost the most CPU.
+
+### First-time setup
+
+1. Add `forgejo-admin-password` to the secrets, run `pulumi up` in `remote/` for the `git` record, and rebuild.
+2. Sign in as `fnune`, enable TOTP under Settings -> Security, and add your SSH key.
 
 ## Apps
 

@@ -13,6 +13,7 @@
   surveillance-storage = "${downloads-2t-mount}/frigate";
   offline-kit-storage = "${downloads-2t-mount}/offline-kit";
   document-storage = "${mirrored-storage-mount}/papra";
+  forge-storage = "${mirrored-storage-mount}/forgejo";
 
   archive = "${mirrored-storage-mount}/archive";
 
@@ -22,7 +23,7 @@
     books = "${downloads-1t-mount}/Books";
   };
 
-  ownedByServices = [surveillance-storage offline-kit-storage document-storage config.services.immich.mediaLocation];
+  ownedByServices = [surveillance-storage offline-kit-storage document-storage forge-storage config.services.immich.mediaLocation];
 
   outsideServiceOwned = "\\( ${lib.concatMapStringsSep " -o " (path: "-path ${path}") ownedByServices} \\) -prune -o";
 

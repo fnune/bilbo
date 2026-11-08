@@ -11,6 +11,7 @@ const VPN_ONLY_HOSTNAMES = [
   "notify",
   "requests",
   "family",
+  "git",
 ];
 const BILBO_VPN_ADDRESS = "10.100.0.1";
 

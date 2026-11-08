@@ -124,10 +124,12 @@
     ./bazarr.nix
     ./caddy.nix
     ./calibre.nix
+    ./cgit.nix
     ./crowdsec.nix
     ./fail2ban.nix
     ./family.nix
     ./fire.nix
+    ./forgejo.nix
     ./frigate.nix
     ./home-assistant.nix
     ./immich.nix
