@@ -338,7 +338,7 @@ Accounts live in `/var/lib/gramps-web/users` and are backed up. The tree is not:
 
 ## Code
 
-[Forgejo][forgejo] holds my repositories, over the VPN only. [cgit][cgit] shows a read-only copy of the public ones to anyone.
+[Forgejo][forgejo] holds my repositories, over the VPN only. [cgit][cgit] shows the public ones to anyone, read-only.
 
 - Forgejo runs on SQLite with its state in `/mnt/mirrored/forgejo/state`. Registration is closed and every repository is private. `forgejo-admin` creates the `fnune` admin from `forgejo-admin-password` on first start.
 - Git over SSH goes through the system sshd as the `git` user: `git@git.fnune.com:fnune/<repo>.git`. `git.fnune.com` resolves to the WireGuard address, so pushing from outside needs the tunnel. Forgejo writes the keys you add in its UI to `~git/.ssh/authorized_keys`.
@@ -347,9 +347,9 @@ Accounts live in `/var/lib/gramps-web/users` and are backed up. The tree is not:
 
 ### Public repositories
 
-A repository is public when it is in `publicRepos` in `nixos/cgit.nix`, with a `desc`. Every 10 minutes `cgit-sync` copies its branches and tags into `/var/lib/cgit`, as Forgejo's user. cgit runs as its own user and cannot read Forgejo's state. Removing a name from the list removes the copy on the next sync. Forgejo stores repositories under their lowercase names.
+A repository is public when it is in `publicRepos` in `nixos/cgit.nix`, with a `desc`. cgit reads it straight from Forgejo's storage: its service sees an empty, read-only `/mnt/mirrored` with only the public repositories bind-mounted back in, read-only, so it can never see or change anything else. A change to the list takes effect on the next deploy. Forgejo stores repositories under their lowercase names.
 
-cgit renders the README on each repository's "about" tab. Over the VPN, a link to the same page in Forgejo shows in the top right corner (`nixos/cgit/forgejo-link.js`). Tarball downloads are off, since they cost the most CPU.
+cgit renders the README on each repository's "about" tab. Tarball downloads are off, since they cost the most CPU.
 
 ### First-time setup
 
