@@ -2,3 +2,4 @@
 /node_modules/
 
 Pulumi.*.yaml
+!Pulumi.production.yaml
