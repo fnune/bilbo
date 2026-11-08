@@ -152,6 +152,10 @@ in {
         root * ${cgit.assets}
         file_server
       }
+      @repoPage path_regexp ^/[^/]+/$
+      redir @repoPage {path}about/
+      @readmeImage path_regexp readmeImage (?i)^/([^/]+)/about/(.+\.(png|jpe?g|gif|webp))$
+      rewrite @readmeImage /{re.readmeImage.1}/plain/{re.readmeImage.2}
       handle {
         reverse_proxy unix/${cgit.socket} {
           transport fastcgi {

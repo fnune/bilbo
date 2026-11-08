@@ -349,7 +349,7 @@ Accounts live in `/var/lib/gramps-web/users` and are backed up. The tree is not:
 
 A repository is on cgit when it is public on Forgejo; new repositories start private. Forgejo itself stays VPN-only and sign-in-only, so public only means public on cgit. Whenever Forgejo's database changes, such as when a repository turns public or private, `cgit-public-repos` reads the public repositories from Forgejo's database, writes cgit's list with their descriptions, and bind-mounts them into cgit's service through a runtime drop-in. cgit reads them straight from Forgejo's storage: its service sees an empty, read-only `/mnt/mirrored` with only the public repositories bind-mounted back in, read-only, so it can never see or change anything else. It also runs at boot and nightly, and on demand with `ssh bilbo sudo systemctl start cgit-public-repos`.
 
-cgit renders the README on each repository's "about" tab. Tarball downloads are off, since they cost the most CPU.
+A repository's page opens on its README, cgit's "about" tab, and its commits are under "log". cgit always opens a repository on its summary, so Caddy redirects there, and serves the README's relative images from cgit's raw view. Tarball downloads are off, since they cost the most CPU.
 
 ### First-time setup
 

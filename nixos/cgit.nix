@@ -22,6 +22,7 @@
     css=/cgit.css
     logo=/cgit.png
     favicon=/favicon.ico
+    mimetype-file=${pkgs.mailcap}/etc/mime.types
     readme=:README.md
     about-filter=${filters}/about-formatting.sh
     source-filter=${filters}/syntax-highlighting.py
