@@ -9,6 +9,7 @@
 
   storage = "/mnt/mirrored/forgejo";
   stateDir = "${storage}/state";
+  directoriesTmpfilesRefusesUnderFaustosMount = [stateDir] ++ map (dir: "${stateDir}/${dir}") ["conf" "custom" "custom/conf" "data" "dump" "log" "repositories"];
 
   admin = {
     username = "fnune";
@@ -67,7 +68,10 @@ in {
   };
 
   systemd.services = {
-    forgejo-secrets.unitConfig.RequiresMountsFor = [storage];
+    forgejo-secrets = {
+      unitConfig.RequiresMountsFor = [storage];
+      serviceConfig.ExecStartPre = "+${pkgs.coreutils}/bin/install -d -o ${cfg.user} -g ${cfg.group} -m 0750 ${lib.escapeShellArgs directoriesTmpfilesRefusesUnderFaustosMount}";
+    };
     forgejo = {
       unitConfig.RequiresMountsFor = [storage];
       serviceConfig.CPUWeight = 20;
