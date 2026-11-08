@@ -7,17 +7,17 @@
 }: let
   hostname = "code.fnune.com";
 
-  publicRepos = {};
-
-  forgejoRepository = name: "${forgejo.repositories}/${forgejo.username}/${lib.toLower name}.git";
+  publicRepos = "/run/cgit/public-repos";
+  bindMountsDropIn = "/run/systemd/system/fcgiwrap-cgit.service.d/public-repos.conf";
 
   assets = pkgs.linkFarm "cgit-assets" (lib.genAttrs ["cgit.css" "cgit.png" "favicon.ico" "robots.txt"] (file: "${pkgs.cgit}/cgit/${file}"));
 
   filters = "${pkgs.cgit}/lib/cgit/filters";
 
-  globalSettings = ''
+  cgitrc = pkgs.writeText "cgitrc" ''
     root-title=fnune's code
     root-desc=Public repositories
+    enable-index-owner=0
     virtual-root=/
     css=/cgit.css
     logo=/cgit.png
@@ -25,14 +25,8 @@
     readme=:README.md
     about-filter=${filters}/about-formatting.sh
     source-filter=${filters}/syntax-highlighting.py
+    include=${publicRepos}
   '';
-  repoSections = lib.concatStrings (lib.mapAttrsToList (name: repo: ''
-      repo.url=${name}
-      repo.path=${forgejoRepository name}
-      repo.desc=${repo.desc}
-    '')
-    publicRepos);
-  cgitrc = pkgs.writeText "cgitrc" (globalSettings + repoSections);
 
   everythingOnTheMirroredMount = "/mnt/mirrored";
 in {
@@ -60,8 +54,63 @@ in {
     serviceConfig = {
       SupplementaryGroups = [config.services.forgejo.group];
       TemporaryFileSystem = ["${everythingOnTheMirroredMount}:ro"];
-      BindReadOnlyPaths = lib.mapAttrsToList (name: _: "-${forgejoRepository name}") publicRepos;
     };
+  };
+
+  systemd.services.cgit-public-repos = {
+    description = "Show Forgejo's public repositories on cgit";
+    after = ["forgejo.service"];
+    wantedBy = ["multi-user.target"];
+    startAt = "daily";
+    path = [pkgs.diffutils pkgs.sqlite pkgs.systemd];
+    serviceConfig = {
+      Type = "oneshot";
+      RuntimeDirectory = "cgit";
+      RuntimeDirectoryPreserve = true;
+    };
+    script = ''
+      publicRepos() {
+        sqlite3 -readonly -cmd '.timeout 10000' -separator $'\t' ${lib.escapeShellArg forgejo.database} \
+          "SELECT name, lower_name, replace(replace(replace(description, char(9), ' '), char(10), ' '), char(13), ' ')
+           FROM repository WHERE owner_name = '${forgejo.username}' AND NOT is_private ORDER BY lower_name"
+      }
+
+      show() {
+        cgitrc=$(mktemp) dropIn=$(mktemp)
+        echo '[Service]' > "$dropIn"
+        while IFS=$'\t' read -r name lowerName description; do
+          [ -n "$name" ] || continue
+          path=${forgejo.repositories}/${forgejo.username}/$lowerName.git
+          printf 'repo.url=%s\nrepo.path=%s\nrepo.desc=%s\n' "$name" "$path" "$description" >> "$cgitrc"
+          echo "BindReadOnlyPaths=-$path" >> "$dropIn"
+        done <<< "$1"
+
+        install -m 0644 "$cgitrc" ${publicRepos}
+        if ! cmp --quiet "$dropIn" ${bindMountsDropIn}; then
+          install -D -m 0644 "$dropIn" ${bindMountsDropIn}
+          systemctl daemon-reload
+          systemctl try-restart fcgiwrap-cgit.service
+        fi
+        rm "$cgitrc" "$dropIn"
+      }
+
+      showUntilNothingChangedMeanwhile() {
+        local shown latest
+        latest=$(publicRepos)
+        while [ "''${shown-unset}" != "$latest" ]; do
+          show "$latest"
+          shown=$latest
+          latest=$(publicRepos)
+        done
+      }
+
+      showUntilNothingChangedMeanwhile
+    '';
+  };
+
+  systemd.paths.cgit-public-repos = {
+    wantedBy = ["multi-user.target"];
+    pathConfig.PathModified = [forgejo.database "${forgejo.database}-wal"];
   };
 
   _module.args.cgit = {

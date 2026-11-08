@@ -347,7 +347,7 @@ Accounts live in `/var/lib/gramps-web/users` and are backed up. The tree is not:
 
 ### Public repositories
 
-A repository is public when it is in `publicRepos` in `nixos/cgit.nix`, with a `desc`. cgit reads it straight from Forgejo's storage: its service sees an empty, read-only `/mnt/mirrored` with only the public repositories bind-mounted back in, read-only, so it can never see or change anything else. A change to the list takes effect on the next deploy. Forgejo stores repositories under their lowercase names.
+A repository is on cgit when it is public on Forgejo; new repositories start private. Forgejo itself stays VPN-only and sign-in-only, so public only means public on cgit. Whenever Forgejo's database changes, such as when a repository turns public or private, `cgit-public-repos` reads the public repositories from Forgejo's database, writes cgit's list with their descriptions, and bind-mounts them into cgit's service through a runtime drop-in. cgit reads them straight from Forgejo's storage: its service sees an empty, read-only `/mnt/mirrored` with only the public repositories bind-mounted back in, read-only, so it can never see or change anything else. It also runs at boot and nightly, and on demand with `ssh bilbo sudo systemctl start cgit-public-repos`.
 
 cgit renders the README on each repository's "about" tab. Tarball downloads are off, since they cost the most CPU.
 

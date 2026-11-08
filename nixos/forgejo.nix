@@ -53,10 +53,7 @@ in {
         DISABLE_REGISTRATION = true;
         REQUIRE_SIGNIN_VIEW = true;
       };
-      repository = {
-        FORCE_PRIVATE = true;
-        DEFAULT_PRIVATE = "private";
-      };
+      repository.DEFAULT_PRIVATE = "private";
       session.COOKIE_SECURE = true;
       mirror = {
         DEFAULT_INTERVAL = "1h";
@@ -113,5 +110,6 @@ in {
     inherit hostname socket;
     inherit (admin) username;
     repositories = cfg.repositoryRoot;
+    database = cfg.database.path;
   };
 }
